@@ -1,17 +1,15 @@
-CLASS z2ui5_cl_abap2ui5_standalone DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC .
+REPORT zabap2ui5 LINE-SIZE 100.
+
+CLASS zcl_abap2ui5_standalone DEFINITION FINAL CREATE PUBLIC.
 
   PUBLIC SECTION.
     INTERFACES if_http_extension.
+
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
 
-
-
-CLASS z2ui5_cl_abap2ui5_standalone IMPLEMENTATION.
+CLASS zcl_abap2ui5_standalone IMPLEMENTATION.
 
   METHOD if_http_extension~handle_request.
 
@@ -20,3 +18,8 @@ CLASS z2ui5_cl_abap2ui5_standalone IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
+
+START-OF-SELECTION.
+
+write `dummy`.

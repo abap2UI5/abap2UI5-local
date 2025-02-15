@@ -1,3 +1,4 @@
+REPORT zabap2ui5_standalone LINE-SIZE 100.
 
 INTERFACE z2ui5_if_types DEFERRED.
 INTERFACE z2ui5_if_client DEFERRED.
@@ -7,10 +8,6 @@ INTERFACE z2ui5_if_ajson_types DEFERRED.
 INTERFACE z2ui5_if_ajson_mapping DEFERRED.
 INTERFACE z2ui5_if_ajson_filter DEFERRED.
 INTERFACE z2ui5_if_ajson DEFERRED.
-
-INTERFACE z2ui5_if_types LOAD.
-
-
 CLASS z2ui5_cl_xml_view_cc DEFINITION DEFERRED.
 CLASS z2ui5_cl_xml_view DEFINITION DEFERRED.
 CLASS z2ui5_cl_http_handler DEFINITION DEFERRED.
@@ -76,128 +73,17 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson_mapping DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson_filter_lib DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson DEFINITION DEFERRED.
-
-
-
-CLASS z2ui5_cx_ajson_error DEFINITION
-  INHERITING FROM cx_static_check
-  FINAL
-  CREATE PUBLIC .
-
-  PUBLIC SECTION.
-
-    INTERFACES if_t100_message .
-
-    TYPES:
-      ty_rc TYPE c LENGTH 4 .
-
-    CONSTANTS:
-      BEGIN OF zcx_ajson_error,
-        msgid TYPE symsgid VALUE '00',
-        msgno TYPE symsgno VALUE '001',
-        attr1 TYPE scx_attrname VALUE 'A1',
-        attr2 TYPE scx_attrname VALUE 'A2',
-        attr3 TYPE scx_attrname VALUE 'A3',
-        attr4 TYPE scx_attrname VALUE 'A4',
-      END OF zcx_ajson_error .
-    DATA rc TYPE ty_rc READ-ONLY .
-    DATA message TYPE string READ-ONLY .
-    DATA location TYPE string READ-ONLY .
-    DATA a1 TYPE symsgv READ-ONLY .
-    DATA a2 TYPE symsgv READ-ONLY .
-    DATA a3 TYPE symsgv READ-ONLY .
-    DATA a4 TYPE symsgv READ-ONLY .
-
-    METHODS constructor
-      IMPORTING
-        !textid   LIKE if_t100_message=>t100key OPTIONAL
-        !previous LIKE previous OPTIONAL
-        !rc       TYPE ty_rc OPTIONAL
-        !message  TYPE string OPTIONAL
-        !location TYPE string OPTIONAL
-        !a1       TYPE symsgv OPTIONAL
-        !a2       TYPE symsgv OPTIONAL
-        !a3       TYPE symsgv OPTIONAL
-        !a4       TYPE symsgv OPTIONAL .
-    CLASS-METHODS raise
-      IMPORTING
-        !iv_msg      TYPE string
-        !iv_location TYPE string OPTIONAL
-        !is_node     TYPE any OPTIONAL
-      RAISING
-        z2ui5_cx_ajson_error .
-    METHODS set_location
-      IMPORTING
-        !iv_location TYPE string OPTIONAL
-        !is_node     TYPE any OPTIONAL
-          PREFERRED PARAMETER iv_location .
-  PROTECTED SECTION.
-  PRIVATE SECTION.
-    TYPES:
-      BEGIN OF ty_message_parts,
-        a1 LIKE a1,
-        a2 LIKE a1,
-        a3 LIKE a1,
-        a4 LIKE a1,
-      END OF ty_message_parts.
-ENDCLASS.
-"! <p class="shorttext synchronized" lang="en">Serializable RTTI any type</p>
-
-
-
-INTERFACE z2ui5_if_ajson_types.
-
-  TYPES:
-    ty_node_type TYPE string.
-
-  CONSTANTS:
-    BEGIN OF node_type,
-      boolean TYPE ty_node_type VALUE 'bool',
-      string  TYPE ty_node_type VALUE 'str',
-      number  TYPE ty_node_type VALUE 'num',
-      null    TYPE ty_node_type VALUE 'null',
-      array   TYPE ty_node_type VALUE 'array',
-      object  TYPE ty_node_type VALUE 'object',
-    END OF node_type.
-
-  TYPES:
-    BEGIN OF ty_node,
-      path     TYPE string,
-      name     TYPE string,
-      type     TYPE ty_node_type,
-      value    TYPE string,
-      index    TYPE i,
-      order    TYPE i,
-      children TYPE i,
-    END OF ty_node.
-  TYPES:
-    ty_nodes_tt TYPE STANDARD TABLE OF ty_node WITH KEY path name.
-  TYPES:
-    ty_nodes_ts TYPE SORTED TABLE OF ty_node
-      WITH UNIQUE KEY path name
-      WITH NON-UNIQUE SORTED KEY array_index COMPONENTS path index
-      WITH NON-UNIQUE SORTED KEY item_order COMPONENTS path order.
-
-  TYPES:
-    BEGIN OF ty_path_name,
-      path TYPE string,
-      name TYPE string,
-    END OF ty_path_name.
-
-ENDINTERFACE.
-
-
 INTERFACE z2ui5_if_ajson.
 
-  CONSTANTS version TYPE string VALUE 'v1.1.10'.            "#EC NOTEXT
+  CONSTANTS version TYPE string VALUE 'v1.1.10'. "#EC NOTEXT
   CONSTANTS origin TYPE string VALUE 'https://github.com/sbcgua/ajson'. "#EC NOTEXT
-  CONSTANTS license TYPE string VALUE 'MIT'.                "#EC NOTEXT
+  CONSTANTS license TYPE string VALUE 'MIT'. "#EC NOTEXT
 
   TYPES:
     BEGIN OF ty_opts,
-      read_only                  TYPE abap_bool,
-      keep_item_order            TYPE abap_bool,
-      format_datetime            TYPE abap_bool,
+      read_only TYPE abap_bool,
+      keep_item_order TYPE abap_bool,
+      format_datetime TYPE abap_bool,
       to_abap_corresponding_only TYPE abap_bool,
     END OF ty_opts.
 
@@ -214,14 +100,14 @@ INTERFACE z2ui5_if_ajson.
       z2ui5_cx_ajson_error.
   METHODS filter
     IMPORTING
-      ii_filter      TYPE REF TO z2ui5_if_ajson_filter
+      ii_filter TYPE REF TO z2ui5_if_ajson_filter
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
       z2ui5_cx_ajson_error.
   METHODS map
     IMPORTING
-      ii_mapper      TYPE REF TO z2ui5_if_ajson_mapping
+      ii_mapper TYPE REF TO z2ui5_if_ajson_mapping
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -235,12 +121,12 @@ INTERFACE z2ui5_if_ajson.
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
   METHODS format_datetime
     IMPORTING
-      iv_use_iso     TYPE abap_bool DEFAULT abap_true
+      iv_use_iso TYPE abap_bool DEFAULT abap_true
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
   METHODS to_abap_corresponding_only
     IMPORTING
-      iv_enable      TYPE abap_bool DEFAULT abap_true
+      iv_enable TYPE abap_bool DEFAULT abap_true
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
   METHODS opts
@@ -255,67 +141,67 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS exists
     IMPORTING
-      iv_path          TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_exists) TYPE abap_bool.
 
   METHODS members
     IMPORTING
-      iv_path           TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rt_members) TYPE string_table.
 
   METHODS get
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE string.
 
   METHODS get_node_type
     IMPORTING
-      iv_path             TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_node_type) TYPE z2ui5_if_ajson_types=>ty_node_type.
 
   METHODS get_boolean
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE abap_bool.
 
   METHODS get_integer
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE i.
 
   METHODS get_number
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE f.
 
   METHODS get_date
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE d.
 
   METHODS get_timestamp
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE timestamp.
 
   METHODS get_string
     IMPORTING
-      iv_path         TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rv_value) TYPE string.
 
   METHODS slice
     IMPORTING
-      iv_path        TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
 
@@ -323,13 +209,13 @@ INTERFACE z2ui5_if_ajson.
     IMPORTING
       iv_corresponding TYPE abap_bool DEFAULT abap_false
     EXPORTING
-      ev_container     TYPE any
+      ev_container TYPE any
     RAISING
       z2ui5_cx_ajson_error.
 
   METHODS array_to_string_table
     IMPORTING
-      iv_path                TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(rt_string_table) TYPE string_table
     RAISING
@@ -343,18 +229,18 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set
     IMPORTING
-      iv_path         TYPE string
-      iv_val          TYPE any
+      iv_path TYPE string
+      iv_val TYPE any
       iv_ignore_empty TYPE abap_bool DEFAULT abap_true
-      iv_node_type    TYPE z2ui5_if_ajson_types=>ty_node_type OPTIONAL
+      iv_node_type TYPE z2ui5_if_ajson_types=>ty_node_type OPTIONAL
     RETURNING
-      VALUE(ri_json)  TYPE REF TO z2ui5_if_ajson
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
       z2ui5_cx_ajson_error.
 
   METHODS setx
     IMPORTING
-      iv_param       TYPE string
+      iv_param TYPE string
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -362,8 +248,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set_boolean
     IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE any
+      iv_path TYPE string
+      iv_val TYPE any
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -371,8 +257,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set_string
     IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE clike
+      iv_path TYPE string
+      iv_val TYPE clike
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -380,8 +266,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set_integer
     IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE i
+      iv_path TYPE string
+      iv_val TYPE i
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -389,8 +275,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set_date
     IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE d
+      iv_path TYPE string
+      iv_val TYPE d
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -398,8 +284,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set_timestamp
     IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE timestamp
+      iv_path TYPE string
+      iv_val TYPE timestamp
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -407,7 +293,7 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS set_null
     IMPORTING
-      iv_path        TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -415,7 +301,7 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS delete
     IMPORTING
-      iv_path        TYPE string
+      iv_path TYPE string
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -423,8 +309,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS touch_array
     IMPORTING
-      iv_path        TYPE string
-      iv_clear       TYPE abap_bool DEFAULT abap_false
+      iv_path TYPE string
+      iv_clear TYPE abap_bool DEFAULT abap_false
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -432,8 +318,8 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS push
     IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE any
+      iv_path TYPE string
+      iv_val TYPE any
     RETURNING
       VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
     RAISING
@@ -441,7 +327,7 @@ INTERFACE z2ui5_if_ajson.
 
   METHODS stringify
     IMPORTING
-      iv_indent      TYPE i DEFAULT 0
+      iv_indent TYPE i DEFAULT 0
     RETURNING
       VALUE(rv_json) TYPE string
     RAISING
@@ -463,8 +349,8 @@ INTERFACE z2ui5_if_ajson_filter.
 
   METHODS keep_node
     IMPORTING
-      is_node        TYPE z2ui5_if_ajson_types=>ty_node
-      iv_visit       TYPE ty_visit_type DEFAULT visit_type-value
+      is_node TYPE z2ui5_if_ajson_types=>ty_node
+      iv_visit TYPE ty_visit_type DEFAULT visit_type-value
     RETURNING
       VALUE(rv_keep) TYPE abap_bool
     RAISING
@@ -486,7 +372,7 @@ INTERFACE z2ui5_if_ajson_mapping.
   TYPES:
     BEGIN OF ty_rename,
       from TYPE string,
-      to   TYPE string,
+      to TYPE string,
     END OF ty_rename,
     tty_rename_map TYPE STANDARD TABLE OF ty_rename
       WITH UNIQUE SORTED KEY by_name COMPONENTS from.
@@ -516,87 +402,46 @@ INTERFACE z2ui5_if_ajson_mapping.
 
 ENDINTERFACE.
 
-INTERFACE z2ui5_if_app.
-  INTERFACES if_serializable_object.
+INTERFACE z2ui5_if_ajson_types.
 
-  CONSTANTS version TYPE string VALUE '1.138.0'.
-  CONSTANTS origin  TYPE string VALUE 'https://github.com/abap2UI5/abap2UI5'.
-  CONSTANTS author  TYPE string VALUE 'https://github.com/oblomov-dev'.
-  CONSTANTS license TYPE string VALUE 'MIT'.
+  TYPES:
+    ty_node_type TYPE string.
 
-  DATA id_draft          TYPE string.
-  DATA id_app            TYPE string.
-  DATA check_initialized TYPE abap_bool.
-  DATA check_sticky      TYPE abap_bool.
+  CONSTANTS:
+    BEGIN OF node_type,
+      boolean TYPE ty_node_type VALUE 'bool',
+      string  TYPE ty_node_type VALUE 'str',
+      number  TYPE ty_node_type VALUE 'num',
+      null    TYPE ty_node_type VALUE 'null',
+      array   TYPE ty_node_type VALUE 'array',
+      object  TYPE ty_node_type VALUE 'object',
+    END OF node_type.
 
-  METHODS main
-    IMPORTING
-      !client TYPE REF TO z2ui5_if_client.
+  TYPES:
+    BEGIN OF ty_node,
+      path TYPE string,
+      name TYPE string,
+      type TYPE ty_node_type,
+      value TYPE string,
+      index TYPE i,
+      order TYPE i,
+      children TYPE i,
+    END OF ty_node.
+  TYPES:
+    ty_nodes_tt TYPE STANDARD TABLE OF ty_node WITH KEY path name.
+  TYPES:
+    ty_nodes_ts TYPE SORTED TABLE OF ty_node
+      WITH UNIQUE KEY path name
+      WITH NON-UNIQUE SORTED KEY array_index COMPONENTS path index
+      WITH NON-UNIQUE SORTED KEY item_order COMPONENTS path order.
+
+  TYPES:
+    BEGIN OF ty_path_name,
+      path TYPE string,
+      name TYPE string,
+    END OF ty_path_name.
 
 ENDINTERFACE.
-
-
-
-INTERFACE z2ui5_if_types.
-
-  TYPES:
-    BEGIN OF ty_s_name_value,
-      n TYPE string,
-      v TYPE string,
-    END OF ty_s_name_value.
-  TYPES ty_t_name_value TYPE STANDARD TABLE OF ty_s_name_value WITH EMPTY KEY.
-
-  TYPES:
-    BEGIN OF ty_s_http_config,
-      src                     TYPE string,
-      theme                   TYPE string,
-      content_security_policy TYPE string,
-      styles_css              TYPE string,
-      title                   TYPE string,
-      t_add_config            TYPE ty_t_name_value,
-      custom_js               TYPE string,
-    END OF ty_s_http_config.
-
-  TYPES:
-    BEGIN OF ty_s_draft,
-      id                TYPE string,
-      id_prev           TYPE string,
-      id_prev_app       TYPE string,
-      id_prev_app_stack TYPE string,
-    END OF ty_s_draft.
-
-  TYPES:
-    BEGIN OF ty_s_config,
-      origin           TYPE string,
-      pathname         TYPE string,
-      search           TYPE string,
-      hash             TYPE string,
-      t_startup_params TYPE ty_t_name_value,
-    END OF ty_s_config.
-
-  TYPES:
-    BEGIN OF ty_s_get,
-      event                  TYPE string,
-      t_event_arg            TYPE string_table,
-      check_launchpad_active TYPE abap_bool,
-      check_on_navigated     TYPE abap_bool,
-      viewname               TYPE string,
-      s_draft                TYPE ty_s_draft,
-      s_config               TYPE ty_s_config,
-      t_comp_params          TYPE ty_t_name_value,
-      r_event_data           TYPE REF TO data,
-    END OF ty_s_get.
-
-  TYPES:
-    BEGIN OF ty_s_event_control,
-      check_allow_multi_req TYPE abap_bool,
-    END OF ty_s_event_control.
-
-ENDINTERFACE.
-
-
-
-
 
 INTERFACE z2ui5_if_core_types.
 
@@ -809,12 +654,28 @@ INTERFACE z2ui5_if_core_types.
       r_data             TYPE REF TO data,
     END OF ty_s_actual.
 
-  TYPES ty_s_db TYPE z2ui5_t_99.
+  TYPES ty_s_db TYPE z2ui5_t_01.
 
 ENDINTERFACE.
 
+INTERFACE z2ui5_if_app.
+  INTERFACES if_serializable_object.
 
+  CONSTANTS version TYPE string VALUE '1.138.0'.
+  CONSTANTS origin  TYPE string VALUE 'https://github.com/abap2UI5/abap2UI5'.
+  CONSTANTS author  TYPE string VALUE 'https://github.com/oblomov-dev'.
+  CONSTANTS license TYPE string VALUE 'MIT'.
 
+  DATA id_draft          TYPE string.
+  DATA id_app            TYPE string.
+  DATA check_initialized TYPE abap_bool.
+  DATA check_sticky      TYPE abap_bool.
+
+  METHODS main
+    IMPORTING
+      !client TYPE REF TO z2ui5_if_client.
+
+ENDINTERFACE.
 
 INTERFACE z2ui5_if_client.
 
@@ -836,7 +697,7 @@ INTERFACE z2ui5_if_client.
       set_odata_model           TYPE string VALUE `SET_ODATA_MODEL`,
       urlhelper                 TYPE string VALUE `URLHELPER`,
       history_back              TYPE string VALUE `HISTORY_BACK`,
-      clipboard_app_state       TYPE string VALUE `CLIPBOARD_APP_STATE`,
+      CLIPBOARD_APP_STATE       TYPE string VALUE `CLIPBOARD_APP_STATE`,
     END OF cs_event.
 
   CONSTANTS:
@@ -868,7 +729,7 @@ INTERFACE z2ui5_if_client.
 
   METHODS set_push_state
     IMPORTING
-      val TYPE string OPTIONAL.
+      val TYPE string optional.
 
   METHODS set_nav_back
     IMPORTING
@@ -1047,6 +908,62 @@ INTERFACE z2ui5_if_client.
 
 ENDINTERFACE.
 
+INTERFACE z2ui5_if_types.
+
+  TYPES:
+    BEGIN OF ty_s_name_value,
+      n TYPE string,
+      v TYPE string,
+    END OF ty_s_name_value.
+  TYPES ty_t_name_value TYPE STANDARD TABLE OF ty_s_name_value WITH EMPTY KEY.
+
+  TYPES:
+    BEGIN OF ty_s_http_config,
+      src                     TYPE string,
+      theme                   TYPE string,
+      content_security_policy TYPE string,
+      styles_css              TYPE string,
+      title                   TYPE string,
+      t_add_config            TYPE ty_t_name_value,
+      custom_js               TYPE string,
+    END OF ty_s_http_config.
+
+  TYPES:
+    BEGIN OF ty_s_draft,
+      id                TYPE string,
+      id_prev           TYPE string,
+      id_prev_app       TYPE string,
+      id_prev_app_stack TYPE string,
+    END OF ty_s_draft.
+
+  TYPES:
+    BEGIN OF ty_s_config,
+      origin           TYPE string,
+      pathname         TYPE string,
+      search           TYPE string,
+      hash             TYPE string,
+      t_startup_params TYPE ty_t_name_value,
+    END OF ty_s_config.
+
+  TYPES:
+    BEGIN OF ty_s_get,
+      event                  TYPE string,
+      t_event_arg            TYPE string_table,
+      check_launchpad_active TYPE abap_bool,
+      check_on_navigated     TYPE abap_bool,
+      viewname               TYPE string,
+      s_draft                TYPE ty_s_draft,
+      s_config               TYPE ty_s_config,
+      t_comp_params          TYPE ty_t_name_value,
+      r_event_data           TYPE REF TO data,
+    END OF ty_s_get.
+
+  TYPES:
+    BEGIN OF ty_s_event_control,
+      check_allow_multi_req TYPE abap_bool,
+    END OF ty_s_event_control.
+
+ENDINTERFACE.
 
 CLASS z2ui5_cl_ajson DEFINITION
   CREATE PUBLIC .
@@ -1104,25 +1021,25 @@ CLASS z2ui5_cl_ajson DEFINITION
         !ii_custom_mapping  TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
         !iv_keep_item_order TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ro_instance)  TYPE REF TO z2ui5_cl_ajson
+        VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson
       RAISING
         z2ui5_cx_ajson_error .
 
     CLASS-METHODS create_empty " Might be deprecated, prefer using new( ) or create object
       IMPORTING
-        !ii_custom_mapping            TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        iv_keep_item_order            TYPE abap_bool DEFAULT abap_false
-        iv_format_datetime            TYPE abap_bool DEFAULT abap_true
+        !ii_custom_mapping TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
+        iv_format_datetime TYPE abap_bool DEFAULT abap_true
         iv_to_abap_corresponding_only TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ro_instance)            TYPE REF TO z2ui5_cl_ajson.
+        VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson.
 
     " Experimental ! May change
     CLASS-METHODS create_from " TODO, rename to 'from' ?
       IMPORTING
-        !ii_source_json    TYPE REF TO z2ui5_if_ajson
-        !ii_filter         TYPE REF TO z2ui5_if_ajson_filter OPTIONAL " Might be deprecated, use filter() instead
-        !ii_mapper         TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL " Might be deprecated, use map() instead
+        !ii_source_json TYPE REF TO z2ui5_if_ajson
+        !ii_filter TYPE REF TO z2ui5_if_ajson_filter OPTIONAL " Might be deprecated, use filter() instead
+        !ii_mapper TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL " Might be deprecated, use map() instead
       RETURNING
         VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson
       RAISING
@@ -1130,16 +1047,16 @@ CLASS z2ui5_cl_ajson DEFINITION
 
     METHODS constructor
       IMPORTING
-        iv_keep_item_order            TYPE abap_bool DEFAULT abap_false
-        iv_format_datetime            TYPE abap_bool DEFAULT abap_true
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
+        iv_format_datetime TYPE abap_bool DEFAULT abap_true
         iv_to_abap_corresponding_only TYPE abap_bool DEFAULT abap_false.
     CLASS-METHODS new
       IMPORTING
-        iv_keep_item_order            TYPE abap_bool DEFAULT abap_false
-        iv_format_datetime            TYPE abap_bool DEFAULT abap_true
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
+        iv_format_datetime TYPE abap_bool DEFAULT abap_true
         iv_to_abap_corresponding_only TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ro_instance)            TYPE REF TO z2ui5_cl_ajson.
+        VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson.
 
   PROTECTED SECTION.
 
@@ -1157,16 +1074,16 @@ CLASS z2ui5_cl_ajson DEFINITION
         VALUE(rv_item) TYPE REF TO z2ui5_if_ajson_types=>ty_node.
     METHODS prove_path_exists
       IMPORTING
-        iv_path            TYPE string
+        iv_path              TYPE string
       RETURNING
         VALUE(rr_end_node) TYPE REF TO z2ui5_if_ajson_types=>ty_node
       RAISING
         z2ui5_cx_ajson_error.
     METHODS delete_subtree
       IMPORTING
-        iv_path            TYPE string
-        iv_name            TYPE string
-        ir_parent          TYPE REF TO z2ui5_if_ajson_types=>ty_node OPTIONAL
+        iv_path           TYPE string
+        iv_name           TYPE string
+        ir_parent         TYPE REF TO z2ui5_if_ajson_types=>ty_node OPTIONAL
       RETURNING
         VALUE(rs_top_node) TYPE z2ui5_if_ajson_types=>ty_node.
     METHODS read_only_watchdog
@@ -1186,16 +1103,16 @@ CLASS z2ui5_cl_ajson_filter_lib DEFINITION
         z2ui5_cx_ajson_error .
     CLASS-METHODS create_path_filter
       IMPORTING
-        !it_skip_paths     TYPE string_table OPTIONAL
-        !iv_skip_paths     TYPE string OPTIONAL
+        !it_skip_paths TYPE string_table OPTIONAL
+        !iv_skip_paths TYPE string OPTIONAL
         !iv_pattern_search TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ri_filter)   TYPE REF TO z2ui5_if_ajson_filter
+        VALUE(ri_filter) TYPE REF TO z2ui5_if_ajson_filter
       RAISING
         z2ui5_cx_ajson_error .
     CLASS-METHODS create_and_filter
       IMPORTING
-        !it_filters      TYPE z2ui5_if_ajson_filter=>ty_filter_tab
+        !it_filters TYPE z2ui5_if_ajson_filter=>ty_filter_tab
       RETURNING
         VALUE(ri_filter) TYPE REF TO z2ui5_if_ajson_filter
       RAISING
@@ -1238,7 +1155,7 @@ CLASS kHGwlQWxBzogSXFKnfTxcwrelrEIET DEFINITION.
     METHODS constructor
       IMPORTING
         it_rename_map TYPE z2ui5_if_ajson_mapping~tty_rename_map
-        iv_rename_by  TYPE i.
+        iv_rename_by TYPE i.
 
   PROTECTED SECTION.
 
@@ -1343,7 +1260,7 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION
       BEGIN OF rename_by,
         attr_name TYPE i VALUE 0,
         full_path TYPE i VALUE 1,
-        pattern   TYPE i VALUE 2,
+        pattern TYPE i VALUE 2,
         " regex type i value 3, " TODO add if needed in future
       END OF rename_by.
 
@@ -1374,17 +1291,17 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION
 
     CLASS-METHODS create_rename
       IMPORTING
-        it_rename_map     TYPE z2ui5_if_ajson_mapping=>tty_rename_map
-        iv_rename_by      TYPE i DEFAULT rename_by-attr_name
+        it_rename_map TYPE z2ui5_if_ajson_mapping=>tty_rename_map
+        iv_rename_by TYPE i DEFAULT rename_by-attr_name
       RETURNING
         VALUE(ri_mapping) TYPE REF TO z2ui5_if_ajson_mapping.
 
     CLASS-METHODS create_compound_mapper
       IMPORTING
-        ii_mapper1        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        ii_mapper2        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        ii_mapper3        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        it_more           TYPE z2ui5_if_ajson_mapping=>ty_table_of OPTIONAL
+        ii_mapper1 TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        ii_mapper2 TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        ii_mapper3 TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        it_more TYPE z2ui5_if_ajson_mapping=>ty_table_of OPTIONAL
       RETURNING
         VALUE(ri_mapping) TYPE REF TO z2ui5_if_ajson_mapping.
 
@@ -1396,7 +1313,7 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION
       IMPORTING
         iv_first_json_upper TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ri_mapping)   TYPE REF TO z2ui5_if_ajson_mapping.
+        VALUE(ri_mapping) TYPE REF TO z2ui5_if_ajson_mapping.
 
   PROTECTED SECTION.
 
@@ -1445,10 +1362,10 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION
         z2ui5_cx_ajson_error .
     METHODS is_equal
       IMPORTING
-        !iv_json_a    TYPE string OPTIONAL
-        !iv_json_b    TYPE string OPTIONAL
-        !ii_json_a    TYPE REF TO z2ui5_if_ajson OPTIONAL
-        !ii_json_b    TYPE REF TO z2ui5_if_ajson OPTIONAL
+        !iv_json_a            TYPE string OPTIONAL
+        !iv_json_b            TYPE string OPTIONAL
+        !ii_json_a            TYPE REF TO z2ui5_if_ajson OPTIONAL
+        !ii_json_b            TYPE REF TO z2ui5_if_ajson OPTIONAL
       RETURNING
         VALUE(rv_yes) TYPE abap_bool
       RAISING
@@ -1490,7 +1407,69 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION
       RAISING
         z2ui5_cx_ajson_error .
 ENDCLASS.
+CLASS z2ui5_cx_ajson_error DEFINITION
+  inheriting from CX_STATIC_CHECK
+  final
+  create public .
 
+public section.
+
+  interfaces IF_T100_MESSAGE .
+
+  types:
+    ty_rc type c length 4 .
+
+  constants:
+    begin of ZCX_AJSON_ERROR,
+      msgid type symsgid value '00',
+      msgno type symsgno value '001',
+      attr1 type scx_attrname value 'A1',
+      attr2 type scx_attrname value 'A2',
+      attr3 type scx_attrname value 'A3',
+      attr4 type scx_attrname value 'A4',
+    end of ZCX_AJSON_ERROR .
+  data RC type TY_RC read-only .
+  data MESSAGE type STRING read-only .
+  data LOCATION type STRING read-only .
+  data A1 type SYMSGV read-only .
+  data A2 type SYMSGV read-only .
+  data A3 type SYMSGV read-only .
+  data A4 type SYMSGV read-only .
+
+  methods CONSTRUCTOR
+    importing
+      !TEXTID like IF_T100_MESSAGE=>T100KEY optional
+      !PREVIOUS like PREVIOUS optional
+      !RC type TY_RC optional
+      !MESSAGE type STRING optional
+      !LOCATION type STRING optional
+      !A1 type SYMSGV optional
+      !A2 type SYMSGV optional
+      !A3 type SYMSGV optional
+      !A4 type SYMSGV optional .
+  class-methods RAISE
+    importing
+      !IV_MSG type STRING
+      !IV_LOCATION type STRING optional
+      !IS_NODE type ANY optional
+    raising
+      z2ui5_cx_ajson_error .
+  methods SET_LOCATION
+    importing
+      !IV_LOCATION type STRING optional
+      !IS_NODE type ANY optional
+    preferred parameter IV_LOCATION .
+protected section.
+private section.
+  types:
+    begin of ty_message_parts,
+      a1 like a1,
+      a2 like a1,
+      a3 like a1,
+      a4 like a1,
+    end of ty_message_parts.
+ENDCLASS.
+"! <p class="shorttext synchronized" lang="en">Serializable RTTI any type</p>
 CLASS z2ui5_cl_srt_typedescr DEFINITION
   CREATE PUBLIC.
 
@@ -1517,7 +1496,7 @@ CLASS z2ui5_cl_srt_typedescr DEFINITION
         VALUE(rtti) TYPE REF TO cl_abap_typedescr.
     CLASS-METHODS create_by_rtti
       IMPORTING
-        !rtti        TYPE REF TO cl_abap_typedescr
+        !rtti TYPE REF TO cl_abap_typedescr
       RETURNING
         VALUE(srtti) TYPE REF TO z2ui5_cl_srt_typedescr.
     CLASS-METHODS create_by_data_object
@@ -1563,7 +1542,7 @@ CLASS z2ui5_cl_srt_elemdescr DEFINITION
         !rtti TYPE REF TO cl_abap_elemdescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
     METHODS get_rtti_by_type_kind
       IMPORTING
@@ -1574,20 +1553,20 @@ CLASS z2ui5_cl_srt_elemdescr DEFINITION
 ENDCLASS.
 "! <p class="shorttext synchronized" lang="en">Serializable RTTI object type</p>
 CLASS z2ui5_cl_srt_objectdescr DEFINITION
-  INHERITING FROM z2ui5_cl_srt_typedescr
-  CREATE PUBLIC .
+  inheriting from z2ui5_cl_srt_typedescr
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    DATA interfaces LIKE cl_abap_objectdescr=>interfaces .
-    DATA types LIKE cl_abap_objectdescr=>types .
-    DATA attributes LIKE cl_abap_objectdescr=>attributes .
-    DATA methods LIKE cl_abap_objectdescr=>methods .
-    DATA events LIKE cl_abap_objectdescr=>events .
+  data INTERFACES like CL_ABAP_OBJECTDESCR=>INTERFACES .
+  data TYPES like CL_ABAP_OBJECTDESCR=>TYPES .
+  data ATTRIBUTES like CL_ABAP_OBJECTDESCR=>ATTRIBUTES .
+  data METHODS like CL_ABAP_OBJECTDESCR=>METHODS .
+  data EVENTS like CL_ABAP_OBJECTDESCR=>EVENTS .
 
-    METHODS constructor
-      IMPORTING
-        !rtti TYPE REF TO cl_abap_objectdescr .
+  methods CONSTRUCTOR
+    importing
+      !RTTI type ref to CL_ABAP_OBJECTDESCR .
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1636,7 +1615,7 @@ CLASS z2ui5_cl_srt_refdescr DEFINITION
         !rtti TYPE REF TO cl_abap_refdescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1665,7 +1644,7 @@ CLASS z2ui5_cl_srt_structdescr DEFINITION
         !rtti TYPE REF TO cl_abap_structdescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1688,23 +1667,23 @@ CLASS z2ui5_cl_srt_tabledescr DEFINITION
         !rtti TYPE REF TO cl_abap_tabledescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
 CLASS z2ui5_cx_srt DEFINITION
-  INHERITING FROM cx_no_check
-  FINAL
-  CREATE PUBLIC .
+  inheriting from CX_NO_CHECK
+  final
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    INTERFACES if_t100_message .
+  interfaces IF_T100_MESSAGE .
 
-    METHODS constructor
-      IMPORTING
-        !textid   LIKE if_t100_message=>t100key OPTIONAL
-        !previous LIKE previous OPTIONAL .
+  methods CONSTRUCTOR
+    importing
+      !TEXTID like IF_T100_MESSAGE=>T100KEY optional
+      !PREVIOUS like PREVIOUS optional .
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -2658,7 +2637,6 @@ CLASS z2ui5_cl_core_srv_attri DEFINITION FINAL
 
   PRIVATE SECTION.
 ENDCLASS.
-
 CLASS z2ui5_cl_core_srv_bind DEFINITION FINAL
   CREATE PUBLIC.
 
@@ -4034,11 +4012,11 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
       IMPORTING
         ns                  TYPE clike OPTIONAL
         link                TYPE clike OPTIONAL
-        id                  TYPE clike OPTIONAL
-        class               TYPE clike OPTIONAL
-        currentlocationtext TYPE clike OPTIONAL
-        separatorstyle      TYPE clike OPTIONAL
-        visible             TYPE clike OPTIONAL
+        ID                  type CLIKE optional
+        CLASS               type CLIKE optional
+        CURRENTLOCATIONTEXT type CLIKE optional
+        SEPARATORSTYLE      type CLIKE optional
+        VISIBLE             type CLIKE optional
       RETURNING
         VALUE(result)       TYPE REF TO z2ui5_cl_xml_view.
 
@@ -9256,7 +9234,7 @@ CLASS z2ui5_cl_xml_view_cc DEFINITION FINAL
       IMPORTING
         title                TYPE clike OPTIONAL
         ApplicationFullWidth TYPE clike OPTIONAL
-          PREFERRED PARAMETER title
+        PREFERRED PARAMETER title
       RETURNING
         VALUE(result)        TYPE REF TO z2ui5_cl_xml_view.
 
@@ -16859,10 +16837,8 @@ CLASS z2ui5_cl_pop_itab_json_dl IMPLEMENTATION.
 
           DATA(lv_classname) = `Z2UI5_DBT_CL_APP_03`.
           CALL METHOD (lv_classname)=>('FACTORY_POPUP_BY_ITAB')
-            EXPORTING
-              itab   = mr_itab
-            RECEIVING
-              result = app.
+            EXPORTING itab   = mr_itab
+            RECEIVING result = app.
 
           client->nav_app_leave( CAST #( app ) ).
 
@@ -20862,8 +20838,7 @@ CLASS z2ui5_cl_core_srv_attri IMPLEMENTATION.
 
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_util_error
-        EXPORTING
-          val = `DEREF_FAILED_TARGET_INITIAL`.
+        EXPORTING val = `DEREF_FAILED_TARGET_INITIAL`.
     ENDIF.
 
     GET REFERENCE OF <attri> INTO result.
@@ -21708,7 +21683,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
     DATA(lv_four_hours_ago) = z2ui5_cl_util=>time_substract_seconds( time    = z2ui5_cl_util=>time_get_timestampl( )
                                                                      seconds = 60 * 60 * 4 ).
 
-    DELETE FROM z2ui5_t_99 WHERE timestampl < @lv_four_hours_ago.
+    DELETE FROM z2ui5_t_01 WHERE timestampl < @lv_four_hours_ago.
     COMMIT WORK.
 
   ENDMETHOD.
@@ -21725,11 +21700,10 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
                                                       timestampl        = z2ui5_cl_util=>time_get_timestampl( )
                                                       data              = model_xml ).
 
-    MODIFY z2ui5_t_99 FROM @ls_db.
+    MODIFY z2ui5_t_01 FROM @ls_db.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_util_error
-        EXPORTING
-          val = `CREATE_OF_DRAFT_ENTRY_ON_DATABASE_FAILED`.
+        EXPORTING val = `CREATE_OF_DRAFT_ENTRY_ON_DATABASE_FAILED`.
     ENDIF.
     COMMIT WORK AND WAIT.
 
@@ -21739,14 +21713,14 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
     IF check_load_app = abap_true.
 
-      SELECT SINGLE * FROM z2ui5_t_99
+      SELECT SINGLE * FROM z2ui5_t_01
         WHERE id = @id
         INTO @result ##SUBRC_OK.
 
     ELSE.
 
       SELECT SINGLE id, id_prev, id_prev_app, id_prev_app_stack
-        FROM z2ui5_t_99
+        FROM z2ui5_t_01
         WHERE id = @id
         INTO CORRESPONDING FIELDS OF @result ##SUBRC_OK.
 
@@ -21754,8 +21728,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_util_error
-        EXPORTING
-          val = `NO_DRAFT_ENTRY_OF_PREVIOUS_REQUEST_FOUND`.
+        EXPORTING val = `NO_DRAFT_ENTRY_OF_PREVIOUS_REQUEST_FOUND`.
     ENDIF.
 
   ENDMETHOD.
@@ -21778,7 +21751,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
   METHOD count_entries.
 
     SELECT COUNT( * )
-      FROM z2ui5_t_99
+      FROM z2ui5_t_01
       INTO @result.
 
   ENDMETHOD.
@@ -21828,8 +21801,7 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('DELETE_COOKIE')
-        EXPORTING
-          name = lv_val.
+        EXPORTING name = lv_val.
 
     ELSE.
 
@@ -21854,10 +21826,8 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('GET_COOKIE')
-        EXPORTING
-          name  = lv_val
-        IMPORTING
-          value = result.
+        EXPORTING name  = lv_val
+        IMPORTING value = result.
 
     ELSE.
 
@@ -21884,18 +21854,14 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('GET_HEADER_FIELD')
-        EXPORTING
-          name  = lv_val
-        RECEIVING
-          value = result.
+        EXPORTING name  = lv_val
+        RECEIVING value = result.
 
     ELSE.
 
       CALL METHOD mo_request_cloud->('IF_WEB_HTTP_REQUEST~GET_HEADER_FIELD')
-        EXPORTING
-          i_name  = lv_val
-        RECEIVING
-          r_value = result.
+        EXPORTING i_name  = lv_val
+        RECEIVING r_value = result.
 
     ENDIF.
 
@@ -21914,16 +21880,14 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('SET_HEADER_FIELD')
-        EXPORTING
-          name  = lv_n
-          value = lv_v.
+        EXPORTING name  = lv_n
+                  value = lv_v.
 
     ELSE.
 
       CALL METHOD mo_response_cloud->('IF_WEB_HTTP_RESPONSE~SET_HEADER_FIELD')
-        EXPORTING
-          i_name  = lv_n
-          i_value = lv_v.
+        EXPORTING i_name  = lv_n
+                  i_value = lv_v.
 
     ENDIF.
 
@@ -21955,14 +21919,12 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('GET_CDATA')
-        RECEIVING
-          data = result.
+        RECEIVING data = result.
 
     ELSE.
 
       CALL METHOD mo_request_cloud->('IF_WEB_HTTP_REQUEST~GET_TEXT')
-        RECEIVING
-          r_value = result.
+        RECEIVING r_value = result.
 
     ENDIF.
 
@@ -21979,14 +21941,12 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('IF_HTTP_REQUEST~GET_METHOD')
-        RECEIVING
-          method = result.
+        RECEIVING method = result.
 
     ELSE.
 
       CALL METHOD mo_request_cloud->('IF_WEB_HTTP_REQUEST~GET_METHOD')
-        RECEIVING
-          r_value = result.
+        RECEIVING r_value = result.
 
     ENDIF.
 
@@ -22003,14 +21963,12 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('SET_CDATA')
-        EXPORTING
-          data = val.
+        EXPORTING data = val.
 
     ELSE.
 
       CALL METHOD mo_response_cloud->('IF_WEB_HTTP_RESPONSE~SET_TEXT')
-        EXPORTING
-          i_text = val.
+        EXPORTING i_text = val.
 
     ENDIF.
 
@@ -22029,16 +21987,14 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('IF_HTTP_RESPONSE~SET_STATUS')
-        EXPORTING
-          code   = code
-          reason = lv_reason.
+        EXPORTING code   = code
+                  reason = lv_reason.
 
     ELSE.
 
       CALL METHOD mo_response_cloud->('IF_WEB_HTTP_RESPONSE~SET_STATUS')
-        EXPORTING
-          i_code   = code
-          i_reason = lv_reason.
+        EXPORTING i_code   = code
+                  i_reason = lv_reason.
 
     ENDIF.
 
@@ -22049,8 +22005,7 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
     IF mo_server_onprem IS BOUND.
 
       CALL METHOD mo_server_onprem->('SET_SESSION_STATEFUL')
-        EXPORTING
-          stateful = val.
+        EXPORTING stateful = val.
 
     ELSE.
 
@@ -22089,19 +22044,16 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     DATA lv_langu TYPE c LENGTH 1.
     DATA temp1 LIKE LINE OF lt_values.
     DATA lr_fix LIKE REF TO temp1.
-    DATA temp2 TYPE z2ui5_cl_util_abap=>ty_s_fix_val.
+      DATA temp2 TYPE z2ui5_cl_util_abap=>ty_s_fix_val.
     lv_langu = ' '.
     lv_langu = langu.
 
     CALL METHOD elemdescr->('GET_DDIC_FIXED_VALUES')
-      EXPORTING
-        p_langu        = lv_langu
-      RECEIVING
-        p_fixed_values = lt_values
-      EXCEPTIONS
-        not_found      = 1
-        no_ddic_type   = 2
-        OTHERS         = 3.
+      EXPORTING  p_langu        = lv_langu
+      RECEIVING  p_fixed_values = lt_values
+      EXCEPTIONS not_found      = 1
+                 no_ddic_type   = 2
+                 OTHERS         = 3.
 
     LOOP AT lt_values REFERENCE INTO lr_fix.
       CLEAR temp2.
@@ -22116,48 +22068,40 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD conv_decode_x_base64.
-    DATA lv_web_http_name TYPE c LENGTH 19.
-    DATA classname TYPE c LENGTH 15.
+        DATA lv_web_http_name TYPE c LENGTH 19.
+        DATA classname TYPE c LENGTH 15.
 
     TRY.
         lv_web_http_name = 'CL_WEB_HTTP_UTILITY'.
         CALL METHOD (lv_web_http_name)=>('DECODE_X_BASE64')
-          EXPORTING
-            encoded = val
-          RECEIVING
-            decoded = result.
+          EXPORTING encoded = val
+          RECEIVING decoded = result.
 
       CATCH cx_root.
         classname = 'CL_HTTP_UTILITY'.
         CALL METHOD (classname)=>('DECODE_X_BASE64')
-          EXPORTING
-            encoded = val
-          RECEIVING
-            decoded = result.
+          EXPORTING encoded = val
+          RECEIVING decoded = result.
 
     ENDTRY.
 
   ENDMETHOD.
 
   METHOD conv_encode_x_base64.
-    DATA lv_web_http_name TYPE c LENGTH 19.
-    DATA classname TYPE c LENGTH 15.
+        DATA lv_web_http_name TYPE c LENGTH 19.
+        DATA classname TYPE c LENGTH 15.
 
     TRY.
         lv_web_http_name = 'CL_WEB_HTTP_UTILITY'.
         CALL METHOD (lv_web_http_name)=>('ENCODE_X_BASE64')
-          EXPORTING
-            unencoded = val
-          RECEIVING
-            encoded   = result.
+          EXPORTING unencoded = val
+          RECEIVING encoded   = result.
 
       CATCH cx_root.
         classname = 'CL_HTTP_UTILITY'.
         CALL METHOD (classname)=>('ENCODE_X_BASE64')
-          EXPORTING
-            unencoded = val
-          RECEIVING
-            encoded   = result.
+          EXPORTING unencoded = val
+          RECEIVING encoded   = result.
 
     ENDTRY.
 
@@ -22166,35 +22110,28 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
   METHOD conv_get_string_by_xstring.
 
     DATA conv TYPE REF TO object.
-    DATA conv_codepage TYPE c LENGTH 21.
-    DATA conv_in_class TYPE c LENGTH 18.
+        DATA conv_codepage TYPE c LENGTH 21.
+        DATA conv_in_class TYPE c LENGTH 18.
 
     TRY.
 
         conv_codepage = 'CL_ABAP_CONV_CODEPAGE'.
         CALL METHOD (conv_codepage)=>create_in
-          RECEIVING
-            instance = conv.
+          RECEIVING instance = conv.
 
         CALL METHOD conv->('IF_ABAP_CONV_IN~CONVERT')
-          EXPORTING
-            source = val
-          RECEIVING
-            result = result.
+          EXPORTING source = val
+          RECEIVING result = result.
 
       CATCH cx_root.
         conv_in_class = 'CL_ABAP_CONV_IN_CE'.
         CALL METHOD (conv_in_class)=>create
-          EXPORTING
-            encoding = 'UTF-8'
-          RECEIVING
-            conv     = conv.
+          EXPORTING encoding = 'UTF-8'
+          RECEIVING conv     = conv.
 
         CALL METHOD conv->('CONVERT')
-          EXPORTING
-            input = val
-          IMPORTING
-            data  = result.
+          EXPORTING input = val
+          IMPORTING data  = result.
     ENDTRY.
 
   ENDMETHOD.
@@ -22202,35 +22139,28 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
   METHOD conv_get_xstring_by_string.
 
     DATA conv TYPE REF TO object.
-    DATA conv_codepage TYPE c LENGTH 21.
-    DATA conv_out_class TYPE c LENGTH 19.
+        DATA conv_codepage TYPE c LENGTH 21.
+        DATA conv_out_class TYPE c LENGTH 19.
 
     TRY.
 
         conv_codepage = 'CL_ABAP_CONV_CODEPAGE'.
         CALL METHOD (conv_codepage)=>create_out
-          RECEIVING
-            instance = conv.
+          RECEIVING instance = conv.
 
         CALL METHOD conv->('IF_ABAP_CONV_OUT~CONVERT')
-          EXPORTING
-            source = val
-          RECEIVING
-            result = result.
+          EXPORTING source = val
+          RECEIVING result = result.
 
       CATCH cx_root.
         conv_out_class = 'CL_ABAP_CONV_OUT_CE'.
         CALL METHOD (conv_out_class)=>create
-          EXPORTING
-            encoding = 'UTF-8'
-          RECEIVING
-            conv     = conv.
+          EXPORTING encoding = 'UTF-8'
+          RECEIVING conv     = conv.
 
         CALL METHOD conv->('CONVERT')
-          EXPORTING
-            data   = val
-          IMPORTING
-            buffer = result.
+          EXPORTING data   = val
+          IMPORTING buffer = result.
     ENDTRY.
 
   ENDMETHOD.
@@ -22241,13 +22171,13 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     FIELD-SYMBOLS <any> TYPE any.
     DATA lt_source TYPE string_table.
     DATA lt_string TYPE string_table.
-    DATA lv_class TYPE string.
-    DATA lv_method TYPE string.
-    DATA xco_cp_abap TYPE c LENGTH 11.
-    DATA lv_name TYPE c LENGTH 13.
-    DATA lv_check_method LIKE abap_false.
-    DATA lv_source LIKE LINE OF lt_source.
-    DATA lv_source_upper TYPE string.
+        DATA lv_class TYPE string.
+        DATA lv_method TYPE string.
+        DATA xco_cp_abap TYPE c LENGTH 11.
+        DATA lv_name TYPE c LENGTH 13.
+        DATA lv_check_method LIKE abap_false.
+        DATA lv_source LIKE LINE OF lt_source.
+          DATA lv_source_upper TYPE string.
 
     TRY.
         lv_class  = to_upper( iv_classname ).
@@ -22255,44 +22185,34 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         lv_method = to_upper( iv_methodname ).
         xco_cp_abap = 'XCO_CP_ABAP'.
         CALL METHOD (xco_cp_abap)=>('CLASS')
-          EXPORTING
-            iv_name  = lv_class
-          RECEIVING
-            ro_class = object.
+          EXPORTING iv_name  = lv_class
+          RECEIVING ro_class = object.
 
         ASSIGN ('OBJECT->IF_XCO_AO_CLASS~IMPLEMENTATION') TO <any>.
         ASSERT sy-subrc = 0.
         object = <any>.
 
         CALL METHOD object->('IF_XCO_CLAS_IMPLEMENTATION~METHOD')
-          EXPORTING
-            iv_name   = lv_method
-          RECEIVING
-            ro_method = object.
+          EXPORTING iv_name   = lv_method
+          RECEIVING ro_method = object.
 
         CALL METHOD object->('IF_XCO_CLAS_I_METHOD~CONTENT')
-          RECEIVING
-            ro_content = object.
+          RECEIVING ro_content = object.
 
         CALL METHOD object->('IF_XCO_CLAS_I_METHOD_CONTENT~GET_SOURCE')
-          RECEIVING
-            rt_source = result.
+          RECEIVING rt_source = result.
 
       CATCH cx_root.
         lv_name = 'CL_OO_FACTORY'.
         CALL METHOD (lv_name)=>('CREATE_INSTANCE')
-          RECEIVING
-            result = object.
+          RECEIVING result = object.
 
         CALL METHOD object->('IF_OO_CLIF_SOURCE_FACTORY~CREATE_CLIF_SOURCE')
-          EXPORTING
-            clif_name = lv_class
-          RECEIVING
-            result    = object.
+          EXPORTING clif_name = lv_class
+          RECEIVING result    = object.
 
         CALL METHOD object->('IF_OO_CLIF_SOURCE~GET_SOURCE')
-          IMPORTING
-            source = lt_source.
+          IMPORTING source = lt_source.
         lv_check_method = abap_false.
 
         LOOP AT lt_source INTO lv_source.
@@ -22338,27 +22258,25 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     DATA   clsname TYPE c LENGTH 30.
     DATA END OF ls_clskey.
     DATA class TYPE REF TO data.
-    DATA xco_cp_abap TYPE c LENGTH 11.
-    DATA temp3 TYPE z2ui5_cl_util_abap=>ty_t_classes.
-    DATA implementation_name LIKE LINE OF lt_implementation_names.
-    DATA temp4 LIKE LINE OF temp3.
-    DATA lv_fm TYPE string.
-    DATA type TYPE c LENGTH 12.
-    FIELD-SYMBOLS <class> TYPE data.
-    DATA temp5 LIKE LINE OF lt_impl.
-    DATA lr_impl LIKE REF TO temp5.
-    FIELD-SYMBOLS <description> TYPE any.
-    DATA temp6 TYPE z2ui5_cl_util_abap=>ty_s_class_descr.
+        DATA xco_cp_abap TYPE c LENGTH 11.
+        DATA temp3 TYPE z2ui5_cl_util_abap=>ty_t_classes.
+        DATA implementation_name LIKE LINE OF lt_implementation_names.
+          DATA temp4 LIKE LINE OF temp3.
+        DATA lv_fm TYPE string.
+        DATA type TYPE c LENGTH 12.
+        FIELD-SYMBOLS <class> TYPE data.
+        DATA temp5 LIKE LINE OF lt_impl.
+        DATA lr_impl LIKE REF TO temp5.
+          FIELD-SYMBOLS <description> TYPE any.
+          DATA temp6 TYPE z2ui5_cl_util_abap=>ty_s_class_descr.
 
     TRY.
 
         ls_clskey-clsname = val.
         xco_cp_abap = 'XCO_CP_ABAP'.
         CALL METHOD (xco_cp_abap)=>interface
-          EXPORTING
-            iv_name      = ls_clskey-clsname
-          RECEIVING
-            ro_interface = obj.
+          EXPORTING iv_name      = ls_clskey-clsname
+          RECEIVING ro_interface = obj.
 
         ASSIGN obj->('IF_XCO_AO_INTERFACE~IMPLEMENTATIONS') TO <any>.
         IF sy-subrc <> 0.
@@ -22373,8 +22291,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         obj = <any>.
 
         CALL METHOD obj->('IF_XCO_INTF_IMPLEMENTATIONS~GET_NAMES')
-          RECEIVING
-            rt_names = lt_implementation_names.
+          RECEIVING rt_names = lt_implementation_names.
         CLEAR temp3.
 
         LOOP AT lt_implementation_names INTO implementation_name.
@@ -22390,13 +22307,10 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         ls_key-intkey = val.
         lv_fm = `SEO_INTERFACE_IMPLEM_GET_ALL`.
         CALL FUNCTION lv_fm
-          EXPORTING
-            intkey       = ls_key
-          IMPORTING
-            impkeys      = lt_impl
-          EXCEPTIONS
-            not_existing = 1
-            OTHERS       = 2.
+          EXPORTING  intkey       = ls_key
+          IMPORTING  impkeys      = lt_impl
+          EXCEPTIONS not_existing = 1
+                     OTHERS       = 2.
         IF sy-subrc <> 0.
           RETURN.
         ENDIF.
@@ -22413,10 +22327,8 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
           lv_fm = `SEO_CLASS_READ`.
           CALL FUNCTION lv_fm
-            EXPORTING
-              clskey = ls_clskey
-            IMPORTING
-              class  = <class>.
+            EXPORTING clskey = ls_clskey
+            IMPORTING class  = <class>.
           ASSIGN
             COMPONENT 'DESCRIPT'
             OF STRUCTURE <class>
@@ -22448,13 +22360,13 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     DATA exists TYPE abap_bool.
 
     DATA data_element_name LIKE i_data_element_name.
-    DATA temp7 TYPE REF TO cl_abap_structdescr.
-    DATA struct_desrc LIKE temp7.
-    FIELD-SYMBOLS <ddic> TYPE data.
-    DATA lo_typedescr TYPE REF TO cl_abap_typedescr.
-    DATA temp8 TYPE REF TO cl_abap_datadescr.
-    DATA data_descr LIKE temp8.
-    DATA xco_cp_abap_dictionary TYPE c LENGTH 22.
+        DATA temp7 TYPE REF TO cl_abap_structdescr.
+        DATA struct_desrc LIKE temp7.
+        FIELD-SYMBOLS <ddic> TYPE data.
+        DATA lo_typedescr TYPE REF TO cl_abap_typedescr.
+        DATA temp8 TYPE REF TO cl_abap_datadescr.
+        DATA data_descr LIKE temp8.
+            DATA xco_cp_abap_dictionary TYPE c LENGTH 22.
     data_element_name = i_data_element_name.
 
     TRY.
@@ -22478,12 +22390,10 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         data_descr = temp8.
 
         CALL METHOD data_descr->('GET_DDIC_FIELD')
-          RECEIVING
-            p_flddescr   = <ddic>
-          EXCEPTIONS
-            not_found    = 1
-            no_ddic_type = 2
-            OTHERS       = 3.
+          RECEIVING  p_flddescr   = <ddic>
+          EXCEPTIONS not_found    = 1
+                     no_ddic_type = 2
+                     OTHERS       = 3.
         IF sy-subrc <> 0.
           RETURN.
         ENDIF.
@@ -22499,38 +22409,30 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
             xco_cp_abap_dictionary = 'XCO_CP_ABAP_DICTIONARY'.
             CALL METHOD (xco_cp_abap_dictionary)=>('DATA_ELEMENT')
-              EXPORTING
-                iv_name         = data_element_name
-              RECEIVING
-                ro_data_element = data_element.
+              EXPORTING iv_name         = data_element_name
+              RECEIVING ro_data_element = data_element.
 
             CALL METHOD data_element->('IF_XCO_AD_DATA_ELEMENT~EXISTS')
-              RECEIVING
-                rv_exists = exists.
+              RECEIVING rv_exists = exists.
 
             IF exists = abap_false.
               RETURN.
             ENDIF.
 
             CALL METHOD data_element->('IF_XCO_AD_DATA_ELEMENT~CONTENT')
-              RECEIVING
-                ro_content = content.
+              RECEIVING ro_content = content.
 
             CALL METHOD content->('IF_XCO_DTEL_CONTENT~GET_HEADING_FIELD_LABEL')
-              RECEIVING
-                rs_heading_field_label = result-header.
+              RECEIVING rs_heading_field_label = result-header.
 
             CALL METHOD content->('IF_XCO_DTEL_CONTENT~GET_SHORT_FIELD_LABEL')
-              RECEIVING
-                rs_short_field_label = result-short.
+              RECEIVING rs_short_field_label = result-short.
 
             CALL METHOD content->('IF_XCO_DTEL_CONTENT~GET_MEDIUM_FIELD_LABEL')
-              RECEIVING
-                rs_medium_field_label = result-medium.
+              RECEIVING rs_medium_field_label = result-medium.
 
             CALL METHOD content->('IF_XCO_DTEL_CONTENT~GET_LONG_FIELD_LABEL')
-              RECEIVING
-                rs_long_field_label = result-long.
+              RECEIVING rs_long_field_label = result-long.
 
           CATCH cx_root.
         ENDTRY.
@@ -22541,8 +22443,8 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
   METHOD uuid_get_c22.
 
     DATA lv_uuid TYPE c LENGTH 22.
-    DATA lv_classname TYPE string.
-    DATA lv_fm TYPE string.
+            DATA lv_classname TYPE string.
+            DATA lv_fm TYPE string.
 
     TRY.
 
@@ -22550,14 +22452,12 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
             lv_classname = `CL_SYSTEM_UUID`.
             CALL METHOD (lv_classname)=>if_system_uuid_static~create_uuid_c22
-              RECEIVING
-                uuid = lv_uuid.
+              RECEIVING uuid = lv_uuid.
 
           CATCH cx_sy_dyn_call_illegal_class.
             lv_fm = `GUID_CREATE`.
             CALL FUNCTION lv_fm
-              IMPORTING
-                ev_guid_22 = lv_uuid.
+              IMPORTING ev_guid_22 = lv_uuid.
 
         ENDTRY.
 
@@ -22588,8 +22488,8 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
   METHOD uuid_get_c32.
     DATA lv_uuid TYPE c LENGTH 32.
-    DATA lv_classname TYPE string.
-    DATA lv_fm TYPE string.
+            DATA lv_classname TYPE string.
+            DATA lv_fm TYPE string.
 
     TRY.
 
@@ -22597,14 +22497,12 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
             lv_classname = `CL_SYSTEM_UUID`.
             CALL METHOD (lv_classname)=>if_system_uuid_static~create_uuid_c32
-              RECEIVING
-                uuid = lv_uuid.
+              RECEIVING uuid = lv_uuid.
 
           CATCH cx_root.
             lv_fm = `GUID_CREATE`.
             CALL FUNCTION lv_fm
-              IMPORTING
-                ev_guid_32 = lv_uuid.
+              IMPORTING ev_guid_32 = lv_uuid.
 
         ENDTRY.
 
@@ -22625,18 +22523,14 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     lv_classname = i_classname.
     xco_cp_abap = 'XCO_CP_ABAP'.
     CALL METHOD (xco_cp_abap)=>('CLASS')
-      EXPORTING
-        iv_name  = lv_classname
-      RECEIVING
-        ro_class = obj.
+      EXPORTING iv_name  = lv_classname
+      RECEIVING ro_class = obj.
 
     CALL METHOD obj->('IF_XCO_AO_CLASS~CONTENT')
-      RECEIVING
-        ro_content = content.
+      RECEIVING ro_content = content.
 
     CALL METHOD content->('IF_XCO_CLAS_CONTENT~GET_SHORT_DESCRIPTION')
-      RECEIVING
-        rv_short_description = result.
+      RECEIVING rv_short_description = result.
 
   ENDMETHOD.
 
@@ -22653,11 +22547,11 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     DATA comps LIKE temp9.
     DATA temp10 TYPE REF TO cl_abap_structdescr.
     DATA lo_struct LIKE temp10.
-    DATA new_struct_desc TYPE REF TO cl_abap_structdescr.
-    DATA new_table_desc TYPE REF TO cl_abap_tabledescr.
-    DATA comp LIKE LINE OF comps.
-    FIELD-SYMBOLS <value> TYPE any.
-    FIELD-SYMBOLS <value_dest> TYPE any.
+        DATA new_struct_desc TYPE REF TO cl_abap_structdescr.
+        DATA new_table_desc TYPE REF TO cl_abap_tabledescr.
+          DATA comp LIKE LINE OF comps.
+            FIELD-SYMBOLS <value> TYPE any.
+            FIELD-SYMBOLS <value_dest> TYPE any.
     CLEAR temp9.
 
     comps = temp9.
@@ -22683,8 +22577,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         IF tabname IS INITIAL.
 
           RAISE EXCEPTION TYPE z2ui5_cx_util_error
-            EXPORTING
-              val = `RTTI_BY_NAME_TAB_INITIAL`.
+            EXPORTING val = `RTTI_BY_NAME_TAB_INITIAL`.
         ENDIF.
 
         structdescr ?= cl_abap_structdescr=>describe_by_name( tabname ).
@@ -24155,43 +24048,37 @@ CLASS z2ui5_cl_srt_typedescr IMPLEMENTATION.
 
         elem_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_elemdescr
-          EXPORTING
-            rtti = elem_rtti.
+          EXPORTING rtti = elem_rtti.
 
       WHEN cl_abap_typedescr=>kind_struct.
 
         struct_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_structdescr
-          EXPORTING
-            rtti = struct_rtti.
+          EXPORTING rtti = struct_rtti.
 
       WHEN cl_abap_typedescr=>kind_table.
 
         table_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_tabledescr
-          EXPORTING
-            rtti = table_rtti.
+          EXPORTING rtti = table_rtti.
 
       WHEN cl_abap_typedescr=>kind_ref.
 
         ref_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_refdescr
-          EXPORTING
-            rtti = ref_rtti.
+          EXPORTING rtti = ref_rtti.
 
       WHEN cl_abap_typedescr=>kind_class.
 
         class_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_classdescr
-          EXPORTING
-            rtti = class_rtti.
+          EXPORTING rtti = class_rtti.
 
       WHEN cl_abap_typedescr=>kind_intf.
 
         intf_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_intfdescr
-          EXPORTING
-            rtti = intf_rtti.
+          EXPORTING rtti = intf_rtti.
 
       WHEN OTHERS.
         " Unsupported (new ABAP features in the future)
@@ -24247,8 +24134,7 @@ CLASS z2ui5_cl_srt_tabledescr IMPLEMENTATION.
 
       CATCH cx_sy_table_creation INTO lo_error.
         RAISE EXCEPTION TYPE z2ui5_cx_srt
-          EXPORTING
-            previous = lo_error.
+          EXPORTING previous = lo_error.
     ENDTRY.
   ENDMETHOD.
 ENDCLASS.
@@ -24310,8 +24196,7 @@ CLASS z2ui5_cl_srt_refdescr IMPLEMENTATION.
   METHOD constructor.
     super->constructor( rtti ).
     CREATE OBJECT referenced_type TYPE z2ui5_cl_srt_typedescr
-      EXPORTING
-        rtti = rtti->get_referenced_type( ).
+      EXPORTING rtti = rtti->get_referenced_type( ).
     IF referenced_type->not_serializable = abap_true.
       not_serializable = abap_true.
     ENDIF.
@@ -24429,68 +24314,69 @@ CLASS z2ui5_cl_srt_classdescr IMPLEMENTATION.
 ENDCLASS.
 
 CLASS z2ui5_cx_ajson_error IMPLEMENTATION.
-  METHOD constructor.
-    CALL METHOD super->constructor
-      EXPORTING
-        previous = previous.
-    me->rc = rc .
-    me->message = message .
-    me->location = location .
-    me->a1 = a1 .
-    me->a2 = a2 .
-    me->a3 = a3 .
-    me->a4 = a4 .
-    CLEAR me->textid.
-    IF textid IS INITIAL.
-      if_t100_message~t100key = zcx_ajson_error .
-    ELSE.
-      if_t100_message~t100key = textid.
-    ENDIF.
-  ENDMETHOD.
-  METHOD raise.
+method CONSTRUCTOR.
+CALL METHOD SUPER->CONSTRUCTOR
+EXPORTING
+PREVIOUS = PREVIOUS
+.
+me->RC = RC .
+me->MESSAGE = MESSAGE .
+me->LOCATION = LOCATION .
+me->A1 = A1 .
+me->A2 = A2 .
+me->A3 = A3 .
+me->A4 = A4 .
+clear me->textid.
+if textid is initial.
+  IF_T100_MESSAGE~T100KEY = ZCX_AJSON_ERROR .
+else.
+  IF_T100_MESSAGE~T100KEY = TEXTID.
+endif.
+endmethod.
+method raise.
 
-    DATA lx TYPE REF TO z2ui5_cx_ajson_error.
+  data lx type ref to z2ui5_cx_ajson_error.
 
-    CREATE OBJECT lx EXPORTING message = iv_msg.
-    lx->set_location(
-      iv_location = iv_location
-      is_node     = is_node ).
-    RAISE EXCEPTION lx.
+  create object lx exporting message = iv_msg.
+  lx->set_location(
+    iv_location = iv_location
+    is_node     = is_node ).
+  raise exception lx.
 
-  ENDMETHOD.
-  METHOD set_location.
+endmethod.
+method set_location.
 
-    DATA ls_msg TYPE ty_message_parts.
-    DATA lv_location TYPE string.
-    DATA lv_tmp TYPE string.
-    FIELD-SYMBOLS <path> TYPE string.
-    FIELD-SYMBOLS <name> TYPE string.
+  data ls_msg type ty_message_parts.
+  data lv_location type string.
+  data lv_tmp type string.
+  field-symbols <path> type string.
+  field-symbols <name> type string.
 
-    IF iv_location IS NOT INITIAL.
-      lv_location = iv_location.
-    ELSEIF is_node IS NOT INITIAL.
-      ASSIGN COMPONENT 'PATH' OF STRUCTURE is_node TO <path>.
-      ASSIGN COMPONENT 'NAME' OF STRUCTURE is_node TO <name>.
-      IF <path> IS ASSIGNED AND <name> IS ASSIGNED.
-        lv_location = <path> && <name>.
-      ENDIF.
-    ENDIF.
+  if iv_location is not initial.
+    lv_location = iv_location.
+  elseif is_node is not initial.
+    assign component 'PATH' of structure is_node to <path>.
+    assign component 'NAME' of structure is_node to <name>.
+    if <path> is assigned and <name> is assigned.
+      lv_location = <path> && <name>.
+    endif.
+  endif.
 
-    IF lv_location IS NOT INITIAL.
-      lv_tmp = message && | @{ lv_location }|.
-    ELSE.
-      lv_tmp = message.
-    ENDIF.
+  if lv_location is not initial.
+    lv_tmp = message && | @{ lv_location }|.
+  else.
+    lv_tmp = message.
+  endif.
 
-    ls_msg = lv_tmp.
+  ls_msg = lv_tmp.
 
-    location = lv_location.
-    a1       = ls_msg-a1.
-    a2       = ls_msg-a2.
-    a3       = ls_msg-a3.
-    a4       = ls_msg-a4.
+  location = lv_location.
+  a1       = ls_msg-a1.
+  a2       = ls_msg-a2.
+  a3       = ls_msg-a3.
+  a4       = ls_msg-a4.
 
-  ENDMETHOD.
+endmethod.
 ENDCLASS.
 
 CLASS z2ui5_cl_ajson_utilities IMPLEMENTATION.
@@ -25120,7 +25006,7 @@ CLASS z2ui5_cl_ajson_mapping IMPLEMENTATION.
     CREATE OBJECT ri_mapping TYPE kHGwlQWxBzogSXFKnfTxcwrelrEIET
       EXPORTING
         it_rename_map = it_rename_map
-        iv_rename_by  = iv_rename_by.
+        iv_rename_by = iv_rename_by.
 
   ENDMETHOD.
   METHOD create_to_camel_case.
@@ -25178,8 +25064,8 @@ CLASS kHGwlWxTjQFgGKrGWSYpKlBZxFUUhA DEFINITION FINAL.
     INTERFACES z2ui5_if_ajson_filter.
     METHODS constructor
       IMPORTING
-        it_skip_paths     TYPE string_table OPTIONAL
-        iv_skip_paths     TYPE string OPTIONAL
+        it_skip_paths TYPE string_table OPTIONAL
+        iv_skip_paths TYPE string OPTIONAL
         iv_pattern_search TYPE abap_bool
       RAISING
         z2ui5_cx_ajson_error.
@@ -25308,8 +25194,8 @@ CLASS z2ui5_cl_ajson_filter_lib IMPLEMENTATION.
     CREATE OBJECT ri_filter TYPE kHGwlWxTjQFgGKrGWSYpKlBZxFUUhA
       EXPORTING
         iv_pattern_search = iv_pattern_search
-        it_skip_paths     = it_skip_paths
-        iv_skip_paths     = iv_skip_paths.
+        it_skip_paths = it_skip_paths
+        iv_skip_paths = iv_skip_paths.
   ENDMETHOD.
 ENDCLASS.
 
@@ -25386,42 +25272,42 @@ CLASS kHGwlzUrcuWxYGvxpUmmzByNvbZmNu DEFINITION FINAL.
 
     CLASS-METHODS normalize_path
       IMPORTING
-        iv_path        TYPE string
+        iv_path TYPE string
       RETURNING
         VALUE(rv_path) TYPE string.
     CLASS-METHODS split_path
       IMPORTING
-        iv_path             TYPE string
+        iv_path TYPE string
       RETURNING
         VALUE(rv_path_name) TYPE z2ui5_if_ajson_types=>ty_path_name.
     CLASS-METHODS validate_array_index
       IMPORTING
-        iv_path         TYPE string
-        iv_index        TYPE string
+        iv_path TYPE string
+        iv_index TYPE string
       RETURNING
         VALUE(rv_index) TYPE i
       RAISING
         z2ui5_cx_ajson_error.
     CLASS-METHODS string_to_xstring_utf8
       IMPORTING
-        iv_str         TYPE string
+        iv_str TYPE string
       RETURNING
         VALUE(rv_xstr) TYPE xstring.
     CLASS-METHODS xstring_to_string_utf8
       IMPORTING
-        iv_xstr       TYPE xstring
+        iv_xstr TYPE xstring
       RETURNING
         VALUE(rv_str) TYPE string.
     CLASS-METHODS any_to_xstring
       IMPORTING
-        iv_data        TYPE any
+        iv_data TYPE any
       RETURNING
         VALUE(rv_xstr) TYPE xstring
       RAISING
         z2ui5_cx_ajson_error.
     CLASS-METHODS any_to_string
       IMPORTING
-        iv_data       TYPE any
+        iv_data TYPE any
       RETURNING
         VALUE(rv_str) TYPE string
       RAISING
@@ -25440,24 +25326,24 @@ CLASS kHGwlzUrcuWxYGvxpUmmzByNvbZmNu IMPLEMENTATION.
 
     TRY.
         CALL METHOD ('CL_ABAP_CONV_CODEPAGE')=>create_out
-          RECEIVING
-            instance = lo_conv.
+        RECEIVING
+          instance = lo_conv.
         CALL METHOD lo_conv->('IF_ABAP_CONV_OUT~CONVERT')
-          EXPORTING
-            source = iv_str
-          RECEIVING
-            result = rv_xstr.
+        EXPORTING
+          source = iv_str
+        RECEIVING
+          result = rv_xstr.
       CATCH cx_sy_dyn_call_illegal_class.
         CALL METHOD (lv_out_ce)=>create
-          EXPORTING
-            encoding = 'UTF-8'
-          RECEIVING
-            conv     = lo_conv.
+        EXPORTING
+          encoding = 'UTF-8'
+        RECEIVING
+          conv = lo_conv.
         CALL METHOD lo_conv->('CONVERT')
-          EXPORTING
-            data   = iv_str
-          IMPORTING
-            buffer = rv_xstr.
+        EXPORTING
+          data = iv_str
+        IMPORTING
+          buffer = rv_xstr.
     ENDTRY.
 
   ENDMETHOD.
@@ -25471,24 +25357,24 @@ CLASS kHGwlzUrcuWxYGvxpUmmzByNvbZmNu IMPLEMENTATION.
 
     TRY.
         CALL METHOD ('CL_ABAP_CONV_CODEPAGE')=>create_in
-          RECEIVING
-            instance = lo_conv.
+        RECEIVING
+          instance = lo_conv.
         CALL METHOD lo_conv->('IF_ABAP_CONV_IN~CONVERT')
-          EXPORTING
-            source = iv_xstr
-          RECEIVING
-            result = rv_str.
+        EXPORTING
+          source = iv_xstr
+        RECEIVING
+          result = rv_str.
       CATCH cx_sy_dyn_call_illegal_class.
         CALL METHOD (lv_in_ce)=>create
-          EXPORTING
-            encoding = 'UTF-8'
-          RECEIVING
-            conv     = lo_conv.
+        EXPORTING
+          encoding = 'UTF-8'
+        RECEIVING
+          conv = lo_conv.
         CALL METHOD lo_conv->('CONVERT')
-          EXPORTING
-            data   = iv_xstr
-          IMPORTING
-            buffer = rv_str.
+        EXPORTING
+          data = iv_xstr
+        IMPORTING
+          buffer = rv_str.
     ENDTRY.
 
   ENDMETHOD.
@@ -25632,8 +25518,8 @@ CLASS kHGwlzUrcuWxYGvxpUmmfipvepHQnc DEFINITION FINAL.
 
     METHODS parse
       IMPORTING
-        iv_json             TYPE any
-        iv_keep_item_order  TYPE abap_bool DEFAULT abap_false
+        iv_json TYPE any
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_json_tree) TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -25656,7 +25542,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmfipvepHQnc DEFINITION FINAL.
 
     METHODS _parse
       IMPORTING
-        iv_json             TYPE xstring
+        iv_json TYPE xstring
       RETURNING
         VALUE(rt_json_tree) TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -25684,9 +25570,9 @@ CLASS kHGwlzUrcuWxYGvxpUmmfipvepHQnc IMPLEMENTATION.
     lv_json = kHGwlzUrcuWxYGvxpUmmzByNvbZmNu=>any_to_xstring( iv_json ).
 
     TRY.
-        " TODO sane JSON check:
-        " JSON can be true,false,null,(-)digits
-        " or start from " or from {
+      " TODO sane JSON check:
+      " JSON can be true,false,null,(-)digits
+      " or start from " or from {
         rt_json_tree = _parse( lv_json ).
       CATCH cx_sxml_parse_error INTO lx_sxml_parse.
         lv_location = _get_location(
@@ -25852,9 +25738,9 @@ CLASS kHGwlzUrcuWxYGvxpUmmFgyFungUrS DEFINITION FINAL CREATE PRIVATE.
 
     CLASS-METHODS stringify
       IMPORTING
-        it_json_tree          TYPE z2ui5_if_ajson_types=>ty_nodes_ts
-        iv_indent             TYPE i DEFAULT 0
-        iv_keep_item_order    TYPE abap_bool DEFAULT abap_false
+        it_json_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts
+        iv_indent TYPE i DEFAULT 0
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rv_json_string) TYPE string
       RAISING
@@ -25874,7 +25760,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmFgyFungUrS DEFINITION FINAL CREATE PRIVATE.
 
     CLASS-METHODS escape_string
       IMPORTING
-        iv_unescaped      TYPE string
+        iv_unescaped TYPE string
       RETURNING
         VALUE(rv_escaped) TYPE string.
 
@@ -25893,7 +25779,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmFgyFungUrS DEFINITION FINAL CREATE PRIVATE.
     METHODS stringify_set
       IMPORTING
         iv_parent_path TYPE string
-        iv_array       TYPE abap_bool
+        iv_array TYPE abap_bool
       RAISING
         z2ui5_cx_ajson_error.
 
@@ -26095,7 +25981,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI DEFINITION FINAL.
 
     METHODS to_abap
       IMPORTING
-        it_nodes    TYPE z2ui5_if_ajson_types=>ty_nodes_ts
+        it_nodes     TYPE z2ui5_if_ajson_types=>ty_nodes_ts
       CHANGING
         c_container TYPE any
       RAISING
@@ -26143,16 +26029,16 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI DEFINITION FINAL.
 
     METHODS any_to_abap
       IMPORTING
-        iv_path         TYPE string
-        is_parent_type  TYPE ty_type_cache OPTIONAL
+        iv_path        TYPE string
+        is_parent_type TYPE ty_type_cache OPTIONAL
         i_container_ref TYPE REF TO data
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS value_to_abap
       IMPORTING
-        is_node         TYPE z2ui5_if_ajson_types=>ty_node
-        is_node_type    TYPE ty_type_cache
+        is_node      TYPE z2ui5_if_ajson_types=>ty_node
+        is_node_type TYPE ty_type_cache
         i_container_ref TYPE REF TO data
       RAISING
         z2ui5_cx_ajson_error
@@ -26160,9 +26046,9 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI DEFINITION FINAL.
 
     METHODS get_node_type
       IMPORTING
-        is_node             TYPE z2ui5_if_ajson_types=>ty_node OPTIONAL " Empty for root
-        is_parent_type      TYPE ty_type_cache OPTIONAL
-        i_container_ref     TYPE REF TO data OPTIONAL
+        is_node            TYPE z2ui5_if_ajson_types=>ty_node OPTIONAL " Empty for root
+        is_parent_type     TYPE ty_type_cache OPTIONAL
+        i_container_ref    TYPE REF TO data OPTIONAL
       RETURNING
         VALUE(rs_node_type) TYPE ty_type_cache
       RAISING
@@ -26306,12 +26192,12 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI IMPLEMENTATION.
 
     TRY.
 
-        " array_index because stringified index goes in wrong order [1, 10, 2 ...]
+      " array_index because stringified index goes in wrong order [1, 10, 2 ...]
         LOOP AT mr_nodes->* ASSIGNING <n> USING KEY array_index WHERE path = iv_path.
 
-          " Get or create type cache record
+        " Get or create type cache record
           IF is_parent_type-type_kind <> iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>table OR ls_node_type-type_kind IS INITIAL.
-            " table records are the same, no need to refetch twice
+          " table records are the same, no need to refetch twice
 
             ls_node_type = get_node_type(
             is_node        = <n>
@@ -26323,18 +26209,18 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI IMPLEMENTATION.
 
           ENDIF.
 
-          " Validate node type
+        " Validate node type
           IF ls_node_type-type_kind = iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>data_ref OR
            ls_node_type-type_kind = iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>object_ref.
-            " TODO maybe in future
+          " TODO maybe in future
             z2ui5_cx_ajson_error=>raise( 'Cannot assign to ref' ).
           ENDIF.
 
-          " Find target field reference
+        " Find target field reference
           CASE is_parent_type-type_kind.
             WHEN iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>table.
               IF NOT ls_node_type-target_field_name CO '0123456789'.
-                " Does not affect anything actually but for integrity
+              " Does not affect anything actually but for integrity
                 z2ui5_cx_ajson_error=>raise( 'Need index to access tables' ).
               ENDIF.
 
@@ -26358,7 +26244,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI IMPLEMENTATION.
               z2ui5_cx_ajson_error=>raise( 'Unexpected parent type' ).
           ENDCASE.
 
-          " Process value assignment
+        " Process value assignment
           CASE <n>-type.
             WHEN z2ui5_if_ajson_types=>node_type-object.
               IF ls_node_type-type_kind <> iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>struct_flat AND
@@ -26587,12 +26473,12 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     CLASS-METHODS convert
       IMPORTING
-        iv_data           TYPE any
-        is_prefix         TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
-        iv_array_index    TYPE i DEFAULT 0
-        ii_custom_mapping TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        is_opts           TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
-        iv_item_order     TYPE i DEFAULT 0
+        iv_data            TYPE any
+        is_prefix          TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
+        iv_array_index     TYPE i DEFAULT 0
+        ii_custom_mapping  TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        is_opts            TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
+        iv_item_order      TYPE i DEFAULT 0
       RETURNING
         VALUE(rt_nodes)   TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -26600,13 +26486,13 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     CLASS-METHODS insert_with_type
       IMPORTING
-        iv_data           TYPE any
-        iv_type           TYPE z2ui5_if_ajson_types=>ty_node_type
-        is_prefix         TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
-        iv_array_index    TYPE i DEFAULT 0
-        ii_custom_mapping TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        is_opts           TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
-        iv_item_order     TYPE i DEFAULT 0
+        iv_data            TYPE any
+        iv_type            TYPE z2ui5_if_ajson_types=>ty_node_type
+        is_prefix          TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
+        iv_array_index     TYPE i DEFAULT 0
+        ii_custom_mapping  TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        is_opts            TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
+        iv_item_order      TYPE i DEFAULT 0
       RETURNING
         VALUE(rt_nodes)   TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -26614,17 +26500,17 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     CLASS-METHODS format_date
       IMPORTING
-        iv_date       TYPE d
+        iv_date TYPE d
       RETURNING
         VALUE(rv_str) TYPE string.
     CLASS-METHODS format_time
       IMPORTING
-        iv_time       TYPE t
+        iv_time TYPE t
       RETURNING
         VALUE(rv_str) TYPE string.
     CLASS-METHODS format_timestamp
       IMPORTING
-        iv_ts         TYPE timestamp
+        iv_ts TYPE timestamp
       RETURNING
         VALUE(rv_str) TYPE string.
 
@@ -26639,84 +26525,84 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     METHODS convert_any
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_ajson
       IMPORTING
-        io_json       TYPE REF TO z2ui5_if_ajson
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        io_json TYPE REF TO z2ui5_if_ajson
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_value
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_ref
       IMPORTING
-        iv_data       TYPE any
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_struc
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_table
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS insert_value_with_type
       IMPORTING
-        iv_data       TYPE any
-        iv_type       TYPE z2ui5_if_ajson_types=>ty_node_type
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        iv_type TYPE z2ui5_if_ajson_types=>ty_node_type
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
@@ -27198,7 +27084,7 @@ INTERFACE iUFTszUrcuWxYGvxpUmmtzVIYRIbuu.
     IMPORTING
       it_source_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts
     EXPORTING
-      et_dest_tree   TYPE z2ui5_if_ajson_types=>ty_nodes_ts
+      et_dest_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts
     RAISING
       z2ui5_cx_ajson_error.
 ENDINTERFACE.
@@ -27213,7 +27099,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmlwblMIpVBS DEFINITION FINAL.
     INTERFACES iUFTszUrcuWxYGvxpUmmtzVIYRIbuu.
     CLASS-METHODS new
       IMPORTING
-        ii_filter          TYPE REF TO z2ui5_if_ajson_filter
+        ii_filter TYPE REF TO z2ui5_if_ajson_filter
       RETURNING
         VALUE(ro_instance) TYPE REF TO kHGwlzUrcuWxYGvxpUmmlwblMIpVBS.
     METHODS constructor
@@ -27227,7 +27113,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmlwblMIpVBS DEFINITION FINAL.
 
     METHODS walk
       IMPORTING
-        iv_path   TYPE string
+        iv_path TYPE string
       CHANGING
         cs_parent TYPE z2ui5_if_ajson_types=>ty_node OPTIONAL
       RAISING
@@ -27326,7 +27212,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmhFTcRDbOtm DEFINITION FINAL.
     INTERFACES iUFTszUrcuWxYGvxpUmmtzVIYRIbuu.
     CLASS-METHODS new
       IMPORTING
-        ii_mapper          TYPE REF TO z2ui5_if_ajson_mapping
+        ii_mapper TYPE REF TO z2ui5_if_ajson_mapping
       RETURNING
         VALUE(ro_instance) TYPE REF TO kHGwlzUrcuWxYGvxpUmmhFTcRDbOtm.
     METHODS constructor
@@ -27439,7 +27325,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmucOpllUiAS DEFINITION FINAL.
         VALUE(ro_instance) TYPE REF TO kHGwlzUrcuWxYGvxpUmmucOpllUiAS.
     METHODS add
       IMPORTING
-        ii_mutator     TYPE REF TO iUFTszUrcuWxYGvxpUmmtzVIYRIbuu
+        ii_mutator TYPE REF TO iUFTszUrcuWxYGvxpUmmtzVIYRIbuu
       RETURNING
         VALUE(ro_self) TYPE REF TO kHGwlzUrcuWxYGvxpUmmucOpllUiAS.
 
@@ -27511,8 +27397,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     CREATE OBJECT ro_instance
       EXPORTING
         iv_to_abap_corresponding_only = iv_to_abap_corresponding_only
-        iv_format_datetime            = iv_format_datetime
-        iv_keep_item_order            = iv_keep_item_order.
+        iv_format_datetime = iv_format_datetime
+        iv_keep_item_order = iv_keep_item_order.
     ro_instance->mi_custom_mapping = ii_custom_mapping.
   ENDMETHOD.
   METHOD create_from.
@@ -27526,8 +27412,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     CREATE OBJECT ro_instance
       EXPORTING
         iv_to_abap_corresponding_only = ii_source_json->opts( )-to_abap_corresponding_only
-        iv_format_datetime            = ii_source_json->opts( )-format_datetime
-        iv_keep_item_order            = ii_source_json->opts( )-keep_item_order.
+        iv_format_datetime = ii_source_json->opts( )-format_datetime
+        iv_keep_item_order = ii_source_json->opts( )-keep_item_order.
 
     IF ii_filter IS NOT BOUND AND ii_mapper IS NOT BOUND.
       ro_instance->mt_json_tree = ii_source_json->mt_json_tree.
@@ -27599,8 +27485,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     CREATE OBJECT ro_instance
       EXPORTING
         iv_to_abap_corresponding_only = iv_to_abap_corresponding_only
-        iv_format_datetime            = iv_format_datetime
-        iv_keep_item_order            = iv_keep_item_order.
+        iv_format_datetime = iv_format_datetime
+        iv_keep_item_order = iv_keep_item_order.
   ENDMETHOD.
   METHOD parse.
 
@@ -28248,7 +28134,6 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
         c_container = ev_container ).
 
   ENDMETHOD.
-
   METHOD z2ui5_if_ajson~to_abap_corresponding_only.
     ms_opts-to_abap_corresponding_only = iv_enable.
     ri_json = me.
@@ -28273,7 +28158,9 @@ CLASS zcl_abap2ui5_standalone IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+START-OF-SELECTION.
 
+write `dummy`.
 
 ****************************************************
 INTERFACE lif_abapmerge_marker.
@@ -28281,51 +28168,4 @@ INTERFACE lif_abapmerge_marker.
   CONSTANTS c_merge_timestamp TYPE string VALUE `2025-02-12T14:04:26.932Z`.
   CONSTANTS c_abapmerge_version TYPE string VALUE `0.16.6`.
 ENDINTERFACE.
-
-
-CLASS z2ui5_cl_my_standalone_app DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES z2ui5_if_app.
-
-    DATA name              TYPE string.
-    DATA check_initialized TYPE abap_bool.
-
-  PROTECTED SECTION.
-
-  PRIVATE SECTION.
-ENDCLASS.
-
-
-CLASS z2ui5_cl_my_standalone_app IMPLEMENTATION.
-
-  METHOD z2ui5_if_app~main.
-
-    IF check_initialized = abap_false.
-      check_initialized = abap_true.
-
-      client->view_display( z2ui5_cl_xml_view=>factory(
-        )->shell(
-        )->page( title = 'abap2UI5 - Hello abap2UI5 Standalone World'
-        )->simple_form( editable = abap_true
-            )->content( ns = `form`
-                )->title( 'Make an input here and send it to the server...'
-                )->label( 'Name'
-                )->input( client->_bind_edit( name )
-                )->button( text  = 'post'
-                           press = client->_event( 'BUTTON_POST' )
-        )->stringify( ) ).
-
-    ENDIF.
-
-    CASE client->get( )-event.
-      WHEN 'BUTTON_POST'.
-        client->message_box_display( |Your name is { name }| ).
-      WHEN OTHERS.
-    ENDCASE.
-
-  ENDMETHOD.
-
-ENDCLASS.
 ****************************************************
