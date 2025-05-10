@@ -1,6 +1,6 @@
 REPORT zabap2ui5 LINE-SIZE 100.
 
-CLASS zcl_abap2ui5_standalone DEFINITION FINAL CREATE PUBLIC.
+CLASS zcl_abap2ui5_local DEFINITION FINAL CREATE PUBLIC.
 
   PUBLIC SECTION.
     INTERFACES if_http_extension.
@@ -9,7 +9,7 @@ CLASS zcl_abap2ui5_standalone DEFINITION FINAL CREATE PUBLIC.
   PRIVATE SECTION.
 ENDCLASS.
 
-CLASS zcl_abap2ui5_standalone IMPLEMENTATION.
+CLASS zcl_abap2ui5_local IMPLEMENTATION.
 
   METHOD if_http_extension~handle_request.
 
