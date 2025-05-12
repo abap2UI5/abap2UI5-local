@@ -16,7 +16,7 @@ All abap2UI5 artifacts are combined into a single HTTP handler implementation as
 <img width="500" alt="Screenshot 2025-02-13 at 13 24 18" src="https://github.com/user-attachments/assets/5fcc56a8-8e2c-41b2-84b3-e50242ff648c" />
 
 #### Persistence
-To avoid any side effects with other abap2UI5 installations, this version uses the table z2ui5_t_99 for persistence. You can either pull this repository or manually create the following table in your system:
+To avoid any side effects with other abap2UI5 installations, this version uses the table z2ui5_t_99 for persistence. You can either pull this repository or manually create the following two table in your system:
 ```cds
 @EndUserText.label : 'abap2UI5-local'
 @AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
@@ -31,6 +31,27 @@ define table z2ui5_t_99 {
   id_prev_app_stack : abap.char(32);
   timestampl        : timestampl;
   data              : abap.string(0);
+}
+```
+
+```cds
+@EndUserText.label : 'abap2ui5 local utility'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table z2ui5_t_98 {
+  key mandt : abap.char(3) not null;
+  key id    : abap.char(32) not null;
+  uname     : abap.char(32);
+  handle    : abap.char(32);
+  handle2   : abap.char(32);
+  handle3   : abap.char(32);
+  handle4   : abap.char(32);
+  handle5   : abap.char(32);
+  data      : abap.string(0);
+  data2     : abap.string(0);
+  data3     : abap.string(0);
 }
 ```
 
