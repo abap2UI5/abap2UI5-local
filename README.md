@@ -1,5 +1,4 @@
 [![ABAP_702](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_702.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_702.yaml) 
-<br>
 [![auto_downport](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/auto_downport.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/auto_downport.yaml)
 
 # abap2UI5-local
