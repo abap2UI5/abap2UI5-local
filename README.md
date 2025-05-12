@@ -1,4 +1,6 @@
-[![ABAP_702](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_702.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_702.yaml)
+[![ABAP_702](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_702.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_702.yaml) 
+<br>
+[![auto_downport](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/auto_downport.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/auto_downport.yaml)
 
 # abap2UI5-local
 All abap2UI5 artifacts are combined into a single HTTP handler implementation as local classes. This approach makes your app completely independent of the rest of the system or any other abap2UI5 installation.
