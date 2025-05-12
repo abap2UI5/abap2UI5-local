@@ -22296,7 +22296,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
 
   METHOD delete_by_handle.
 
-    DELETE FROM z2ui5_t_99
+    DELETE FROM z2ui5_t_98
         WHERE
            uname = @uname
             AND handle = @handle
@@ -22313,7 +22313,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
     DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
 
     SELECT data
-      FROM z2ui5_t_99
+      FROM z2ui5_t_98
        WHERE
         uname = @uname
         AND handle = @handle
@@ -22358,7 +22358,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
 
     DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
     SELECT id
-      FROM z2ui5_t_99
+      FROM z2ui5_t_98
        WHERE
         uname = @uname
         AND handle = @handle
@@ -22379,7 +22379,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
         ls_db-id = z2ui5_cl_util=>uuid_get_c32( ).
     ENDTRY.
 
-    MODIFY z2ui5_t_99 FROM @ls_db.
+    MODIFY z2ui5_t_98 FROM @ls_db.
     ASSERT sy-subrc = 0.
 
     IF check_commit = abap_true.
