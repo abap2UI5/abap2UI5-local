@@ -22296,7 +22296,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
 
   METHOD delete_by_handle.
 
-    DELETE FROM z2ui5_t_91
+    DELETE FROM z2ui5_t_99
         WHERE
            uname = @uname
             AND handle = @handle
@@ -22310,10 +22310,10 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
   ENDMETHOD.
   METHOD load_by_handle.
 
-    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
 
     SELECT data
-      FROM z2ui5_t_91
+      FROM z2ui5_t_99
        WHERE
         uname = @uname
         AND handle = @handle
@@ -22337,10 +22337,10 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
   ENDMETHOD.
   METHOD load_by_id.
 
-    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
 
     SELECT data
-      FROM z2ui5_t_91
+      FROM z2ui5_t_99
       WHERE id = @id
       INTO CORRESPONDING FIELDS OF TABLE @lt_db.
     ASSERT sy-subrc = 0.
@@ -22356,9 +22356,9 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
   ENDMETHOD.
   METHOD save.
 
-    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
     SELECT id
-      FROM z2ui5_t_91
+      FROM z2ui5_t_99
        WHERE
         uname = @uname
         AND handle = @handle
@@ -22366,7 +22366,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
         AND handle3 = @handle3
       INTO CORRESPONDING FIELDS OF TABLE @lt_db ##SUBRC_OK.
 
-    DATA(ls_db) = VALUE z2ui5_t_91(
+    DATA(ls_db) = VALUE z2ui5_t_99(
         uname   = uname
         handle  = handle
         handle2 = handle2
@@ -22379,7 +22379,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
         ls_db-id = z2ui5_cl_util=>uuid_get_c32( ).
     ENDTRY.
 
-    MODIFY z2ui5_t_91 FROM @ls_db.
+    MODIFY z2ui5_t_99 FROM @ls_db.
     ASSERT sy-subrc = 0.
 
     IF check_commit = abap_true.
