@@ -1,31 +1,52 @@
 {
-    "name": "abap2ui5-samples",
-    "private": true,
-    "version": "1.0.0",
-    "description": "abap2UI5-local",
-    "scripts": {
-        "syfixes": "find . -type f -name '*.abap' -exec sed -i -e 's/ RAISE EXCEPTION TYPE cx_sy_itab_line_not_found/ ASSERT 1 = 0/g' {} + ",
-        "downport": "abaplint --fix .github/abaplint/abap_702.jsonc && npm run syfixes && cp -f .github/abaplint/abap_702.jsonc abaplint.jsonc",
-        "init_downport": "git clone --branch 702 https://github.com/abap2UI5/abap2UI5 && cp -r abap2UI5/src src",
-        "cleanup_downport": "rm -rf abap2UI5 && rm -rf src/src"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/abap2UI5/samples.git"
-    },
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/abap2UI5/samples.git"
-    },
-    "homepage": "https://github.com/abap2UI5/samples#readme",
-    "devDependencies": {
-        "@abaplint/cli": "^2.113.86",
-        "@abaplint/database-sqlite": "^2.10.20",
-        "@abaplint/runtime": "^2.10.23",
-        "@abaplint/transpiler-cli": "^2.10.23"
-    },
-    "dependencies": {
-        "abapmerge": "^0.16.6",
-        "npm-check-updates": "^17.1.13"
-    }
+  "name": "abapmerge",
+  "version": "0.16.6",
+  "description": "Merge ABAP INCLUDEs into single file",
+  "bin": {
+    "abapmerge": "./abapmerge"
+  },
+  "main": "build/merge.js",
+  "scripts": {
+    "build": "tsc --pretty",
+    "buildw": "tsc -w --pretty",
+    "testw": "ts-mocha test/**/*.ts --watch --watch-files **/*.ts",
+    "test": "npm run build && mocha --recursive --reporter progress build/test && npm run lint",
+    "test:only": "ts-mocha test/**/*.ts",
+    "lint": "eslint --ignore-pattern \"build/*\" --ignore-pattern \"*.mjs\"",
+    "publish:minor": "npm --no-git-tag-version version minor && rm -rf build && npm install && npm run test && npm publish --access public",
+    "publish:patch": "npm --no-git-tag-version version patch && rm -rf build && npm install && npm run test && npm publish --access public",
+    "sample": "node ./abapmerge sample/ztest.prog.abap",
+    "start": "ts-node src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/larshp/abapmerge.git"
+  },
+  "keywords": [
+    "ABAP"
+  ],
+  "author": "Lars Hvam Petersen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/larshp/abapmerge/issues"
+  },
+  "homepage": "https://github.com/larshp/abapmerge#readme",
+  "devDependencies": {
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.9",
+    "@types/node": "^22.13.14",
+    "@typescript-eslint/eslint-plugin": "^8.22.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "@eslint/compat": "^1.2.0",
+    "chai": "^4.5.0",
+    "eslint": "^9.21.0",
+    "mocha": "^10.7.3",
+    "ts-mocha": "^10.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "commander": "^10.0.0",
+    "fast-xml-parser": "^5.0.8"
+  }
 }
