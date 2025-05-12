@@ -1,4 +1,4 @@
-CLASS z2ui5_cl_abap2ui5_standalone DEFINITION
+CLASS z2ui5_cl_abap2ui5_local DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC .
@@ -11,7 +11,7 @@ ENDCLASS.
 
 
 
-CLASS z2ui5_cl_abap2ui5_standalone IMPLEMENTATION.
+CLASS z2ui5_cl_abap2ui5_local IMPLEMENTATION.
 
   METHOD if_http_extension~handle_request.
 
