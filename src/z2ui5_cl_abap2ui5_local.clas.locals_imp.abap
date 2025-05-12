@@ -1,4 +1,5 @@
 
+INTERFACE zif_app DEFERRED.
 INTERFACE z2ui5_if_types DEFERRED.
 INTERFACE z2ui5_if_client DEFERRED.
 INTERFACE z2ui5_if_app DEFERRED.
@@ -7,7 +8,6 @@ INTERFACE z2ui5_if_ajson_types DEFERRED.
 INTERFACE z2ui5_if_ajson_mapping DEFERRED.
 INTERFACE z2ui5_if_ajson_filter DEFERRED.
 INTERFACE z2ui5_if_ajson DEFERRED.
-
 
 INTERFACE z2ui5_if_types LOAD.
 
@@ -58,6 +58,9 @@ CLASS z2ui5_cl_core_app DEFINITION DEFERRED.
 CLASS z2ui5_cl_core_action DEFINITION DEFERRED.
 CLASS z2ui5_cl_core_srv_draft DEFINITION DEFERRED.
 CLASS z2ui5_cx_util_error DEFINITION DEFERRED.
+CLASS z2ui5_cl_util_range DEFINITION DEFERRED.
+CLASS z2ui5_cl_util_msg DEFINITION DEFERRED.
+CLASS z2ui5_cl_util_db DEFINITION DEFERRED.
 CLASS z2ui5_cl_util_abap_http DEFINITION DEFERRED.
 CLASS z2ui5_cl_util_abap DEFINITION DEFERRED.
 CLASS z2ui5_cl_util DEFINITION DEFERRED.
@@ -78,464 +81,80 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson_filter_lib DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson DEFINITION DEFERRED.
 
+CLASS zcx_error DEFINITION
+  inheriting from cx_static_check
+  final
+  create public .
 
+  public section.
+  protected section.
+  private section.
+endclass.
+class zcx_error implementation.
+endclass.
 
 CLASS z2ui5_cx_ajson_error DEFINITION
-  INHERITING FROM cx_static_check
-  FINAL
-  CREATE PUBLIC .
+  inheriting from CX_STATIC_CHECK
+  final
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    INTERFACES if_t100_message .
+  interfaces IF_T100_MESSAGE .
 
-    TYPES:
-      ty_rc TYPE c LENGTH 4 .
+  types:
+    ty_rc type c length 4 .
 
-    CONSTANTS:
-      BEGIN OF zcx_ajson_error,
-        msgid TYPE symsgid VALUE '00',
-        msgno TYPE symsgno VALUE '001',
-        attr1 TYPE scx_attrname VALUE 'A1',
-        attr2 TYPE scx_attrname VALUE 'A2',
-        attr3 TYPE scx_attrname VALUE 'A3',
-        attr4 TYPE scx_attrname VALUE 'A4',
-      END OF zcx_ajson_error .
-    DATA rc TYPE ty_rc READ-ONLY .
-    DATA message TYPE string READ-ONLY .
-    DATA location TYPE string READ-ONLY .
-    DATA a1 TYPE symsgv READ-ONLY .
-    DATA a2 TYPE symsgv READ-ONLY .
-    DATA a3 TYPE symsgv READ-ONLY .
-    DATA a4 TYPE symsgv READ-ONLY .
+  constants:
+    begin of ZCX_AJSON_ERROR,
+      msgid type symsgid value '00',
+      msgno type symsgno value '001',
+      attr1 type scx_attrname value 'A1',
+      attr2 type scx_attrname value 'A2',
+      attr3 type scx_attrname value 'A3',
+      attr4 type scx_attrname value 'A4',
+    end of ZCX_AJSON_ERROR .
+  data RC type TY_RC read-only .
+  data MESSAGE type STRING read-only .
+  data LOCATION type STRING read-only .
+  data A1 type SYMSGV read-only .
+  data A2 type SYMSGV read-only .
+  data A3 type SYMSGV read-only .
+  data A4 type SYMSGV read-only .
 
-    METHODS constructor
-      IMPORTING
-        !textid   LIKE if_t100_message=>t100key OPTIONAL
-        !previous LIKE previous OPTIONAL
-        !rc       TYPE ty_rc OPTIONAL
-        !message  TYPE string OPTIONAL
-        !location TYPE string OPTIONAL
-        !a1       TYPE symsgv OPTIONAL
-        !a2       TYPE symsgv OPTIONAL
-        !a3       TYPE symsgv OPTIONAL
-        !a4       TYPE symsgv OPTIONAL .
-    CLASS-METHODS raise
-      IMPORTING
-        !iv_msg      TYPE string
-        !iv_location TYPE string OPTIONAL
-        !is_node     TYPE any OPTIONAL
-      RAISING
-        z2ui5_cx_ajson_error .
-    METHODS set_location
-      IMPORTING
-        !iv_location TYPE string OPTIONAL
-        !is_node     TYPE any OPTIONAL
-          PREFERRED PARAMETER iv_location .
-  PROTECTED SECTION.
-  PRIVATE SECTION.
-    TYPES:
-      BEGIN OF ty_message_parts,
-        a1 LIKE a1,
-        a2 LIKE a1,
-        a3 LIKE a1,
-        a4 LIKE a1,
-      END OF ty_message_parts.
+  methods CONSTRUCTOR
+    importing
+      !TEXTID like IF_T100_MESSAGE=>T100KEY optional
+      !PREVIOUS like PREVIOUS optional
+      !RC type TY_RC optional
+      !MESSAGE type STRING optional
+      !LOCATION type STRING optional
+      !A1 type SYMSGV optional
+      !A2 type SYMSGV optional
+      !A3 type SYMSGV optional
+      !A4 type SYMSGV optional .
+  class-methods RAISE
+    importing
+      !IV_MSG type STRING
+      !IV_LOCATION type STRING optional
+      !IS_NODE type ANY optional
+    raising
+      z2ui5_cx_ajson_error .
+  methods SET_LOCATION
+    importing
+      !IV_LOCATION type STRING optional
+      !IS_NODE type ANY optional
+    preferred parameter IV_LOCATION .
+protected section.
+private section.
+  types:
+    begin of ty_message_parts,
+      a1 like a1,
+      a2 like a1,
+      a3 like a1,
+      a4 like a1,
+    end of ty_message_parts.
 ENDCLASS.
-"! <p class="shorttext synchronized" lang="en">Serializable RTTI any type</p>
-
-
-
-INTERFACE z2ui5_if_ajson_types.
-
-  TYPES:
-    ty_node_type TYPE string.
-
-  CONSTANTS:
-    BEGIN OF node_type,
-      boolean TYPE ty_node_type VALUE 'bool',
-      string  TYPE ty_node_type VALUE 'str',
-      number  TYPE ty_node_type VALUE 'num',
-      null    TYPE ty_node_type VALUE 'null',
-      array   TYPE ty_node_type VALUE 'array',
-      object  TYPE ty_node_type VALUE 'object',
-    END OF node_type.
-
-  TYPES:
-    BEGIN OF ty_node,
-      path     TYPE string,
-      name     TYPE string,
-      type     TYPE ty_node_type,
-      value    TYPE string,
-      index    TYPE i,
-      order    TYPE i,
-      children TYPE i,
-    END OF ty_node.
-  TYPES:
-    ty_nodes_tt TYPE STANDARD TABLE OF ty_node WITH KEY path name.
-  TYPES:
-    ty_nodes_ts TYPE SORTED TABLE OF ty_node
-      WITH UNIQUE KEY path name
-      WITH NON-UNIQUE SORTED KEY array_index COMPONENTS path index
-      WITH NON-UNIQUE SORTED KEY item_order COMPONENTS path order.
-
-  TYPES:
-    BEGIN OF ty_path_name,
-      path TYPE string,
-      name TYPE string,
-    END OF ty_path_name.
-
-ENDINTERFACE.
-
-
-INTERFACE z2ui5_if_ajson.
-
-  CONSTANTS version TYPE string VALUE 'v1.1.10'.            "#EC NOTEXT
-  CONSTANTS origin TYPE string VALUE 'https://github.com/sbcgua/ajson'. "#EC NOTEXT
-  CONSTANTS license TYPE string VALUE 'MIT'.                "#EC NOTEXT
-
-  TYPES:
-    BEGIN OF ty_opts,
-      read_only                  TYPE abap_bool,
-      keep_item_order            TYPE abap_bool,
-      format_datetime            TYPE abap_bool,
-      to_abap_corresponding_only TYPE abap_bool,
-    END OF ty_opts.
-
-  " DATA
-
-  DATA mt_json_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts READ-ONLY.
-
-  " CLONING
-
-  METHODS clone
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-  METHODS filter
-    IMPORTING
-      ii_filter      TYPE REF TO z2ui5_if_ajson_filter
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-  METHODS map
-    IMPORTING
-      ii_mapper      TYPE REF TO z2ui5_if_ajson_mapping
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  " METHODS
-
-  METHODS freeze.
-  METHODS keep_item_order
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
-  METHODS format_datetime
-    IMPORTING
-      iv_use_iso     TYPE abap_bool DEFAULT abap_true
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
-  METHODS to_abap_corresponding_only
-    IMPORTING
-      iv_enable      TYPE abap_bool DEFAULT abap_true
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
-  METHODS opts
-    RETURNING
-      VALUE(rs_opts) TYPE ty_opts.
-
-  " METHODS ex.reader
-
-  METHODS is_empty
-    RETURNING
-      VALUE(rv_yes) TYPE abap_bool.
-
-  METHODS exists
-    IMPORTING
-      iv_path          TYPE string
-    RETURNING
-      VALUE(rv_exists) TYPE abap_bool.
-
-  METHODS members
-    IMPORTING
-      iv_path           TYPE string
-    RETURNING
-      VALUE(rt_members) TYPE string_table.
-
-  METHODS get
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE string.
-
-  METHODS get_node_type
-    IMPORTING
-      iv_path             TYPE string
-    RETURNING
-      VALUE(rv_node_type) TYPE z2ui5_if_ajson_types=>ty_node_type.
-
-  METHODS get_boolean
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE abap_bool.
-
-  METHODS get_integer
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE i.
-
-  METHODS get_number
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE f.
-
-  METHODS get_date
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE d.
-
-  METHODS get_timestamp
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE timestamp.
-
-  METHODS get_string
-    IMPORTING
-      iv_path         TYPE string
-    RETURNING
-      VALUE(rv_value) TYPE string.
-
-  METHODS slice
-    IMPORTING
-      iv_path        TYPE string
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
-
-  METHODS to_abap
-    IMPORTING
-      iv_corresponding TYPE abap_bool DEFAULT abap_false
-    EXPORTING
-      ev_container     TYPE any
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS array_to_string_table
-    IMPORTING
-      iv_path                TYPE string
-    RETURNING
-      VALUE(rt_string_table) TYPE string_table
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  " METHODS ex.writer
-
-  METHODS clear
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set
-    IMPORTING
-      iv_path         TYPE string
-      iv_val          TYPE any
-      iv_ignore_empty TYPE abap_bool DEFAULT abap_true
-      iv_node_type    TYPE z2ui5_if_ajson_types=>ty_node_type OPTIONAL
-    RETURNING
-      VALUE(ri_json)  TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS setx
-    IMPORTING
-      iv_param       TYPE string
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set_boolean
-    IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE any
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set_string
-    IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE clike
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set_integer
-    IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE i
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set_date
-    IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE d
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set_timestamp
-    IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE timestamp
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS set_null
-    IMPORTING
-      iv_path        TYPE string
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS delete
-    IMPORTING
-      iv_path        TYPE string
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS touch_array
-    IMPORTING
-      iv_path        TYPE string
-      iv_clear       TYPE abap_bool DEFAULT abap_false
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS push
-    IMPORTING
-      iv_path        TYPE string
-      iv_val         TYPE any
-    RETURNING
-      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
-    RAISING
-      z2ui5_cx_ajson_error.
-
-  METHODS stringify
-    IMPORTING
-      iv_indent      TYPE i DEFAULT 0
-    RETURNING
-      VALUE(rv_json) TYPE string
-    RAISING
-      z2ui5_cx_ajson_error.
-
-ENDINTERFACE.
-
-INTERFACE z2ui5_if_ajson_filter.
-
-  TYPES ty_filter_tab TYPE STANDARD TABLE OF REF TO z2ui5_if_ajson_filter WITH KEY table_line.
-  TYPES ty_visit_type TYPE i.
-
-  CONSTANTS:
-    BEGIN OF visit_type,
-      value TYPE ty_visit_type VALUE 0,
-      open  TYPE ty_visit_type VALUE 1,
-      close TYPE ty_visit_type VALUE 2,
-    END OF visit_type.
-
-  METHODS keep_node
-    IMPORTING
-      is_node        TYPE z2ui5_if_ajson_types=>ty_node
-      iv_visit       TYPE ty_visit_type DEFAULT visit_type-value
-    RETURNING
-      VALUE(rv_keep) TYPE abap_bool
-    RAISING
-      z2ui5_cx_ajson_error.
-
-ENDINTERFACE.
-
-INTERFACE z2ui5_if_ajson_mapping.
-
-  TYPES:
-    BEGIN OF ty_mapping_field, " deprecated, will be removed
-      abap TYPE string,
-      json TYPE string,
-    END OF ty_mapping_field,
-    ty_mapping_fields TYPE STANDARD TABLE OF ty_mapping_field
-      WITH UNIQUE SORTED KEY abap COMPONENTS abap
-      WITH UNIQUE SORTED KEY json COMPONENTS json.
-
-  TYPES:
-    BEGIN OF ty_rename,
-      from TYPE string,
-      to   TYPE string,
-    END OF ty_rename,
-    tty_rename_map TYPE STANDARD TABLE OF ty_rename
-      WITH UNIQUE SORTED KEY by_name COMPONENTS from.
-
-  TYPES:
-    ty_table_of TYPE STANDARD TABLE OF REF TO z2ui5_if_ajson_mapping.
-
-  METHODS to_abap " deprecated, will be removed
-    IMPORTING
-      !iv_path         TYPE string
-      !iv_name         TYPE string
-    RETURNING
-      VALUE(rv_result) TYPE string.
-
-  METHODS to_json " deprecated, will be removed
-    IMPORTING
-      !iv_path         TYPE string
-      !iv_name         TYPE string
-    RETURNING
-      VALUE(rv_result) TYPE string.
-
-  METHODS rename_node
-    IMPORTING
-      !is_node TYPE z2ui5_if_ajson_types=>ty_node
-    CHANGING
-      !cv_name TYPE z2ui5_if_ajson_types=>ty_node-name.
-
-ENDINTERFACE.
-
-INTERFACE z2ui5_if_app.
-  INTERFACES if_serializable_object.
-
-  CONSTANTS version TYPE string VALUE '1.138.0'.
-  CONSTANTS origin  TYPE string VALUE 'https://github.com/abap2UI5/abap2UI5'.
-  CONSTANTS author  TYPE string VALUE 'https://github.com/oblomov-dev'.
-  CONSTANTS license TYPE string VALUE 'MIT'.
-
-  DATA id_draft          TYPE string.
-  DATA id_app            TYPE string.
-  DATA check_initialized TYPE abap_bool.
-  DATA check_sticky      TYPE abap_bool.
-
-  METHODS main
-    IMPORTING
-      !client TYPE REF TO z2ui5_if_client.
-
-ENDINTERFACE.
-
 
 
 INTERFACE z2ui5_if_types.
@@ -595,8 +214,375 @@ INTERFACE z2ui5_if_types.
 
 ENDINTERFACE.
 
+INTERFACE z2ui5_if_ajson_types.
 
+  TYPES:
+    ty_node_type TYPE string.
 
+  CONSTANTS:
+    BEGIN OF node_type,
+      boolean TYPE ty_node_type VALUE 'bool',
+      string  TYPE ty_node_type VALUE 'str',
+      number  TYPE ty_node_type VALUE 'num',
+      null    TYPE ty_node_type VALUE 'null',
+      array   TYPE ty_node_type VALUE 'array',
+      object  TYPE ty_node_type VALUE 'object',
+    END OF node_type.
+
+  TYPES:
+    BEGIN OF ty_node,
+      path TYPE string,
+      name TYPE string,
+      type TYPE ty_node_type,
+      value TYPE string,
+      index TYPE i,
+      order TYPE i,
+      children TYPE i,
+    END OF ty_node.
+  TYPES:
+    ty_nodes_tt TYPE STANDARD TABLE OF ty_node WITH KEY path name.
+  TYPES:
+    ty_nodes_ts TYPE SORTED TABLE OF ty_node
+      WITH UNIQUE KEY path name
+      WITH NON-UNIQUE SORTED KEY array_index COMPONENTS path index
+      WITH NON-UNIQUE SORTED KEY item_order COMPONENTS path order.
+
+  TYPES:
+    BEGIN OF ty_path_name,
+      path TYPE string,
+      name TYPE string,
+    END OF ty_path_name.
+
+ENDINTERFACE.
+
+INTERFACE z2ui5_if_ajson.
+
+  CONSTANTS version TYPE string VALUE 'v1.1.11'. "#EC NOTEXT
+  CONSTANTS origin TYPE string VALUE 'https://github.com/sbcgua/ajson'. "#EC NOTEXT
+  CONSTANTS license TYPE string VALUE 'MIT'. "#EC NOTEXT
+
+  TYPES:
+    BEGIN OF ty_opts,
+      read_only TYPE abap_bool,
+      keep_item_order TYPE abap_bool,
+      format_datetime TYPE abap_bool,
+      to_abap_corresponding_only TYPE abap_bool,
+    END OF ty_opts.
+
+  " DATA
+
+  DATA mt_json_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts READ-ONLY.
+
+  " CLONING
+
+  METHODS clone
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+  METHODS filter
+    IMPORTING
+      ii_filter TYPE REF TO z2ui5_if_ajson_filter
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+  METHODS map
+    IMPORTING
+      ii_mapper TYPE REF TO z2ui5_if_ajson_mapping
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  " METHODS
+
+  METHODS freeze.
+  METHODS keep_item_order
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
+  METHODS format_datetime
+    IMPORTING
+      iv_use_iso TYPE abap_bool DEFAULT abap_true
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
+  METHODS to_abap_corresponding_only
+    IMPORTING
+      iv_enable TYPE abap_bool DEFAULT abap_true
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
+  METHODS opts
+    RETURNING
+      VALUE(rs_opts) TYPE ty_opts.
+
+  " METHODS ex.reader
+
+  METHODS is_empty
+    RETURNING
+      VALUE(rv_yes) TYPE abap_bool.
+
+  METHODS exists
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_exists) TYPE abap_bool.
+
+  METHODS members
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rt_members) TYPE string_table.
+
+  METHODS get
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE string.
+
+  METHODS get_node_type
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_node_type) TYPE z2ui5_if_ajson_types=>ty_node_type.
+
+  METHODS get_boolean
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE abap_bool.
+
+  METHODS get_integer
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE i.
+
+  METHODS get_number
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE f.
+
+  METHODS get_date
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE d.
+
+  METHODS get_timestamp
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE timestamp.
+
+  METHODS get_string
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rv_value) TYPE string.
+
+  METHODS slice
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson.
+
+  METHODS to_abap
+    IMPORTING
+      iv_corresponding TYPE abap_bool DEFAULT abap_false
+    EXPORTING
+      ev_container TYPE any
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS array_to_string_table
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(rt_string_table) TYPE string_table
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  " METHODS ex.writer
+
+  METHODS clear
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE any
+      iv_ignore_empty TYPE abap_bool DEFAULT abap_true
+      iv_node_type TYPE z2ui5_if_ajson_types=>ty_node_type OPTIONAL
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS setx
+    IMPORTING
+      iv_param TYPE string
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set_boolean
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE any
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set_string
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE clike
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set_integer
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE i
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set_date
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE d
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set_timestamp
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE timestamp
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS set_null
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS delete
+    IMPORTING
+      iv_path TYPE string
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS touch_array
+    IMPORTING
+      iv_path TYPE string
+      iv_clear TYPE abap_bool DEFAULT abap_false
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS push
+    IMPORTING
+      iv_path TYPE string
+      iv_val TYPE any
+    RETURNING
+      VALUE(ri_json) TYPE REF TO z2ui5_if_ajson
+    RAISING
+      z2ui5_cx_ajson_error.
+
+  METHODS stringify
+    IMPORTING
+      iv_indent TYPE i DEFAULT 0
+    RETURNING
+      VALUE(rv_json) TYPE string
+    RAISING
+      z2ui5_cx_ajson_error.
+
+ENDINTERFACE.
+
+INTERFACE z2ui5_if_ajson_filter.
+
+  TYPES ty_filter_tab TYPE STANDARD TABLE OF REF TO z2ui5_if_ajson_filter WITH KEY table_line.
+  TYPES ty_visit_type TYPE i.
+
+  CONSTANTS:
+    BEGIN OF visit_type,
+      value TYPE ty_visit_type VALUE 0,
+      open  TYPE ty_visit_type VALUE 1,
+      close TYPE ty_visit_type VALUE 2,
+    END OF visit_type.
+
+  METHODS keep_node
+    IMPORTING
+      is_node TYPE z2ui5_if_ajson_types=>ty_node
+      iv_visit TYPE ty_visit_type DEFAULT visit_type-value
+    RETURNING
+      VALUE(rv_keep) TYPE abap_bool
+    RAISING
+      z2ui5_cx_ajson_error.
+
+ENDINTERFACE.
+
+INTERFACE z2ui5_if_ajson_mapping.
+
+  TYPES:
+    BEGIN OF ty_mapping_field, " deprecated, will be removed
+      abap TYPE string,
+      json TYPE string,
+    END OF ty_mapping_field,
+    ty_mapping_fields TYPE STANDARD TABLE OF ty_mapping_field
+      WITH UNIQUE SORTED KEY abap COMPONENTS abap
+      WITH UNIQUE SORTED KEY json COMPONENTS json.
+
+  TYPES:
+    BEGIN OF ty_rename,
+      from TYPE string,
+      to TYPE string,
+    END OF ty_rename,
+    tty_rename_map TYPE STANDARD TABLE OF ty_rename
+      WITH UNIQUE SORTED KEY by_name COMPONENTS from.
+
+  TYPES:
+    ty_table_of TYPE STANDARD TABLE OF REF TO z2ui5_if_ajson_mapping.
+
+  METHODS to_abap " deprecated, will be removed
+    IMPORTING
+      !iv_path         TYPE string
+      !iv_name         TYPE string
+    RETURNING
+      VALUE(rv_result) TYPE string.
+
+  METHODS to_json " deprecated, will be removed
+    IMPORTING
+      !iv_path         TYPE string
+      !iv_name         TYPE string
+    RETURNING
+      VALUE(rv_result) TYPE string.
+
+  METHODS rename_node
+    IMPORTING
+      !is_node TYPE z2ui5_if_ajson_types=>ty_node
+    CHANGING
+      !cv_name TYPE z2ui5_if_ajson_types=>ty_node-name.
+
+ENDINTERFACE.
 
 
 INTERFACE z2ui5_if_core_types.
@@ -668,7 +654,7 @@ INTERFACE z2ui5_if_core_types.
     BEGIN OF ty_s_next_frontend,
       BEGIN OF s_view,
         xml                       TYPE string,
-        switchDefaultModelAnnoURI TYPE string,
+        switchdefaultmodelannouri TYPE string,
         switch_default_model_path TYPE string,
         check_destroy             TYPE abap_bool,
         check_update_model        TYPE abap_bool,
@@ -810,12 +796,26 @@ INTERFACE z2ui5_if_core_types.
       r_data             TYPE REF TO data,
     END OF ty_s_actual.
 
-  TYPES ty_s_db TYPE z2ui5_t_99.
-
 ENDINTERFACE.
 
+INTERFACE z2ui5_if_app.
+  INTERFACES if_serializable_object.
 
+  CONSTANTS version TYPE string VALUE '1.139.0'.
+  CONSTANTS origin  TYPE string VALUE 'https://github.com/abap2UI5/abap2UI5'.
+  CONSTANTS author  TYPE string VALUE 'https://github.com/oblomov-dev'.
+  CONSTANTS license TYPE string VALUE 'MIT'.
 
+  DATA id_draft          TYPE string.
+  DATA id_app            TYPE string.
+  DATA check_initialized TYPE abap_bool.
+  DATA check_sticky      TYPE abap_bool.
+
+  METHODS main
+    IMPORTING
+      !client TYPE REF TO z2ui5_if_client.
+
+ENDINTERFACE.
 
 INTERFACE z2ui5_if_client.
 
@@ -838,6 +838,8 @@ INTERFACE z2ui5_if_client.
       urlhelper                 TYPE string VALUE `URLHELPER`,
       history_back              TYPE string VALUE `HISTORY_BACK`,
       clipboard_app_state       TYPE string VALUE `CLIPBOARD_APP_STATE`,
+      clipboard_copy            TYPE string VALUE `CLIPBOARD_COPY`,
+      store_data                TYPE string VALUE `STORE_DATA`,
     END OF cs_event.
 
   CONSTANTS:
@@ -997,7 +999,7 @@ INTERFACE z2ui5_if_client.
       custom_filter        TYPE REF TO z2ui5_if_ajson_filter  OPTIONAL
       !tab                 TYPE data                          OPTIONAL
       tab_index            TYPE i                             OPTIONAL
-      switch_Default_Model TYPE abap_bool DEFAULT abap_false
+      switch_default_model TYPE abap_bool DEFAULT abap_false
     RETURNING
       VALUE(result)        TYPE string.
 
@@ -1022,7 +1024,7 @@ INTERFACE z2ui5_if_client.
       !path                TYPE abap_bool                     DEFAULT abap_false
       custom_mapper        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
       custom_filter        TYPE REF TO z2ui5_if_ajson_filter  OPTIONAL
-      switch_default_Model TYPE abap_bool DEFAULT abap_false
+      switch_default_model TYPE abap_bool DEFAULT abap_false
     RETURNING
       VALUE(result)        TYPE string.
 
@@ -1048,6 +1050,12 @@ INTERFACE z2ui5_if_client.
 
 ENDINTERFACE.
 
+
+interface zif_app .
+
+  methods run raising zcx_error.
+
+endinterface.
 
 CLASS z2ui5_cl_ajson DEFINITION
   CREATE PUBLIC .
@@ -1105,25 +1113,25 @@ CLASS z2ui5_cl_ajson DEFINITION
         !ii_custom_mapping  TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
         !iv_keep_item_order TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ro_instance)  TYPE REF TO z2ui5_cl_ajson
+        VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson
       RAISING
         z2ui5_cx_ajson_error .
 
     CLASS-METHODS create_empty " Might be deprecated, prefer using new( ) or create object
       IMPORTING
-        !ii_custom_mapping            TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        iv_keep_item_order            TYPE abap_bool DEFAULT abap_false
-        iv_format_datetime            TYPE abap_bool DEFAULT abap_true
+        !ii_custom_mapping TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
+        iv_format_datetime TYPE abap_bool DEFAULT abap_true
         iv_to_abap_corresponding_only TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ro_instance)            TYPE REF TO z2ui5_cl_ajson.
+        VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson.
 
     " Experimental ! May change
     CLASS-METHODS create_from " TODO, rename to 'from' ?
       IMPORTING
-        !ii_source_json    TYPE REF TO z2ui5_if_ajson
-        !ii_filter         TYPE REF TO z2ui5_if_ajson_filter OPTIONAL " Might be deprecated, use filter() instead
-        !ii_mapper         TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL " Might be deprecated, use map() instead
+        !ii_source_json TYPE REF TO z2ui5_if_ajson
+        !ii_filter TYPE REF TO z2ui5_if_ajson_filter OPTIONAL " Might be deprecated, use filter() instead
+        !ii_mapper TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL " Might be deprecated, use map() instead
       RETURNING
         VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson
       RAISING
@@ -1131,16 +1139,16 @@ CLASS z2ui5_cl_ajson DEFINITION
 
     METHODS constructor
       IMPORTING
-        iv_keep_item_order            TYPE abap_bool DEFAULT abap_false
-        iv_format_datetime            TYPE abap_bool DEFAULT abap_true
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
+        iv_format_datetime TYPE abap_bool DEFAULT abap_true
         iv_to_abap_corresponding_only TYPE abap_bool DEFAULT abap_false.
     CLASS-METHODS new
       IMPORTING
-        iv_keep_item_order            TYPE abap_bool DEFAULT abap_false
-        iv_format_datetime            TYPE abap_bool DEFAULT abap_true
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
+        iv_format_datetime TYPE abap_bool DEFAULT abap_true
         iv_to_abap_corresponding_only TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ro_instance)            TYPE REF TO z2ui5_cl_ajson.
+        VALUE(ro_instance) TYPE REF TO z2ui5_cl_ajson.
 
   PROTECTED SECTION.
 
@@ -1158,16 +1166,16 @@ CLASS z2ui5_cl_ajson DEFINITION
         VALUE(rv_item) TYPE REF TO z2ui5_if_ajson_types=>ty_node.
     METHODS prove_path_exists
       IMPORTING
-        iv_path            TYPE string
+        iv_path              TYPE string
       RETURNING
         VALUE(rr_end_node) TYPE REF TO z2ui5_if_ajson_types=>ty_node
       RAISING
         z2ui5_cx_ajson_error.
     METHODS delete_subtree
       IMPORTING
-        iv_path            TYPE string
-        iv_name            TYPE string
-        ir_parent          TYPE REF TO z2ui5_if_ajson_types=>ty_node OPTIONAL
+        iv_path           TYPE string
+        iv_name           TYPE string
+        ir_parent         TYPE REF TO z2ui5_if_ajson_types=>ty_node OPTIONAL
       RETURNING
         VALUE(rs_top_node) TYPE z2ui5_if_ajson_types=>ty_node.
     METHODS read_only_watchdog
@@ -1187,16 +1195,16 @@ CLASS z2ui5_cl_ajson_filter_lib DEFINITION
         z2ui5_cx_ajson_error .
     CLASS-METHODS create_path_filter
       IMPORTING
-        !it_skip_paths     TYPE string_table OPTIONAL
-        !iv_skip_paths     TYPE string OPTIONAL
+        !it_skip_paths TYPE string_table OPTIONAL
+        !iv_skip_paths TYPE string OPTIONAL
         !iv_pattern_search TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ri_filter)   TYPE REF TO z2ui5_if_ajson_filter
+        VALUE(ri_filter) TYPE REF TO z2ui5_if_ajson_filter
       RAISING
         z2ui5_cx_ajson_error .
     CLASS-METHODS create_and_filter
       IMPORTING
-        !it_filters      TYPE z2ui5_if_ajson_filter=>ty_filter_tab
+        !it_filters TYPE z2ui5_if_ajson_filter=>ty_filter_tab
       RETURNING
         VALUE(ri_filter) TYPE REF TO z2ui5_if_ajson_filter
       RAISING
@@ -1239,7 +1247,7 @@ CLASS kHGwlQWxBzogSXFKnfTxcwrelrEIET DEFINITION.
     METHODS constructor
       IMPORTING
         it_rename_map TYPE z2ui5_if_ajson_mapping~tty_rename_map
-        iv_rename_by  TYPE i.
+        iv_rename_by TYPE i.
 
   PROTECTED SECTION.
 
@@ -1344,7 +1352,7 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION
       BEGIN OF rename_by,
         attr_name TYPE i VALUE 0,
         full_path TYPE i VALUE 1,
-        pattern   TYPE i VALUE 2,
+        pattern TYPE i VALUE 2,
         " regex type i value 3, " TODO add if needed in future
       END OF rename_by.
 
@@ -1375,17 +1383,17 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION
 
     CLASS-METHODS create_rename
       IMPORTING
-        it_rename_map     TYPE z2ui5_if_ajson_mapping=>tty_rename_map
-        iv_rename_by      TYPE i DEFAULT rename_by-attr_name
+        it_rename_map TYPE z2ui5_if_ajson_mapping=>tty_rename_map
+        iv_rename_by TYPE i DEFAULT rename_by-attr_name
       RETURNING
         VALUE(ri_mapping) TYPE REF TO z2ui5_if_ajson_mapping.
 
     CLASS-METHODS create_compound_mapper
       IMPORTING
-        ii_mapper1        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        ii_mapper2        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        ii_mapper3        TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        it_more           TYPE z2ui5_if_ajson_mapping=>ty_table_of OPTIONAL
+        ii_mapper1 TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        ii_mapper2 TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        ii_mapper3 TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        it_more TYPE z2ui5_if_ajson_mapping=>ty_table_of OPTIONAL
       RETURNING
         VALUE(ri_mapping) TYPE REF TO z2ui5_if_ajson_mapping.
 
@@ -1397,7 +1405,7 @@ CLASS z2ui5_cl_ajson_mapping DEFINITION
       IMPORTING
         iv_first_json_upper TYPE abap_bool DEFAULT abap_false
       RETURNING
-        VALUE(ri_mapping)   TYPE REF TO z2ui5_if_ajson_mapping.
+        VALUE(ri_mapping) TYPE REF TO z2ui5_if_ajson_mapping.
 
   PROTECTED SECTION.
 
@@ -1446,10 +1454,10 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION
         z2ui5_cx_ajson_error .
     METHODS is_equal
       IMPORTING
-        !iv_json_a    TYPE string OPTIONAL
-        !iv_json_b    TYPE string OPTIONAL
-        !ii_json_a    TYPE REF TO z2ui5_if_ajson OPTIONAL
-        !ii_json_b    TYPE REF TO z2ui5_if_ajson OPTIONAL
+        !iv_json_a            TYPE string OPTIONAL
+        !iv_json_b            TYPE string OPTIONAL
+        !ii_json_a            TYPE REF TO z2ui5_if_ajson OPTIONAL
+        !ii_json_b            TYPE REF TO z2ui5_if_ajson OPTIONAL
       RETURNING
         VALUE(rv_yes) TYPE abap_bool
       RAISING
@@ -1492,6 +1500,7 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION
         z2ui5_cx_ajson_error .
 ENDCLASS.
 
+"! <p class="shorttext synchronized" lang="en">Serializable RTTI any type</p>
 CLASS z2ui5_cl_srt_typedescr DEFINITION
   CREATE PUBLIC.
 
@@ -1518,7 +1527,7 @@ CLASS z2ui5_cl_srt_typedescr DEFINITION
         VALUE(rtti) TYPE REF TO cl_abap_typedescr.
     CLASS-METHODS create_by_rtti
       IMPORTING
-        !rtti        TYPE REF TO cl_abap_typedescr
+        !rtti TYPE REF TO cl_abap_typedescr
       RETURNING
         VALUE(srtti) TYPE REF TO z2ui5_cl_srt_typedescr.
     CLASS-METHODS create_by_data_object
@@ -1564,7 +1573,7 @@ CLASS z2ui5_cl_srt_elemdescr DEFINITION
         !rtti TYPE REF TO cl_abap_elemdescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
     METHODS get_rtti_by_type_kind
       IMPORTING
@@ -1575,20 +1584,20 @@ CLASS z2ui5_cl_srt_elemdescr DEFINITION
 ENDCLASS.
 "! <p class="shorttext synchronized" lang="en">Serializable RTTI object type</p>
 CLASS z2ui5_cl_srt_objectdescr DEFINITION
-  INHERITING FROM z2ui5_cl_srt_typedescr
-  CREATE PUBLIC .
+  inheriting from z2ui5_cl_srt_typedescr
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    DATA interfaces LIKE cl_abap_objectdescr=>interfaces .
-    DATA types LIKE cl_abap_objectdescr=>types .
-    DATA attributes LIKE cl_abap_objectdescr=>attributes .
-    DATA methods LIKE cl_abap_objectdescr=>methods .
-    DATA events LIKE cl_abap_objectdescr=>events .
+  data INTERFACES like CL_ABAP_OBJECTDESCR=>INTERFACES .
+  data TYPES like CL_ABAP_OBJECTDESCR=>TYPES .
+  data ATTRIBUTES like CL_ABAP_OBJECTDESCR=>ATTRIBUTES .
+  data METHODS like CL_ABAP_OBJECTDESCR=>METHODS .
+  data EVENTS like CL_ABAP_OBJECTDESCR=>EVENTS .
 
-    METHODS constructor
-      IMPORTING
-        !rtti TYPE REF TO cl_abap_objectdescr .
+  methods CONSTRUCTOR
+    importing
+      !RTTI type ref to CL_ABAP_OBJECTDESCR .
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1637,7 +1646,7 @@ CLASS z2ui5_cl_srt_refdescr DEFINITION
         !rtti TYPE REF TO cl_abap_refdescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1666,7 +1675,7 @@ CLASS z2ui5_cl_srt_structdescr DEFINITION
         !rtti TYPE REF TO cl_abap_structdescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1689,23 +1698,23 @@ CLASS z2ui5_cl_srt_tabledescr DEFINITION
         !rtti TYPE REF TO cl_abap_tabledescr.
 
     METHODS get_rtti
-        REDEFINITION.
+      REDEFINITION.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
 CLASS z2ui5_cx_srt DEFINITION
-  INHERITING FROM cx_no_check
-  FINAL
-  CREATE PUBLIC .
+  inheriting from CX_NO_CHECK
+  final
+  create public .
 
-  PUBLIC SECTION.
+public section.
 
-    INTERFACES if_t100_message .
+  interfaces IF_T100_MESSAGE .
 
-    METHODS constructor
-      IMPORTING
-        !textid   LIKE if_t100_message=>t100key OPTIONAL
-        !previous LIKE previous OPTIONAL .
+  methods CONSTRUCTOR
+    importing
+      !TEXTID like IF_T100_MESSAGE=>T100KEY optional
+      !PREVIOUS like PREVIOUS optional .
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -1713,13 +1722,6 @@ CLASS z2ui5_cl_util_abap DEFINITION
   CREATE PUBLIC.
 
   PUBLIC SECTION.
-
-    " abap-api - Serving a Release & Version Independent ABAP Layer
-    " version: '0.0.1'.
-    " origin: https://github.com/oblomov-dev/abap-api
-    " author: https://github.com/oblomov-dev
-    " license: MIT.
-
     TYPES:
       BEGIN OF ty_s_fix_val,
         low   TYPE string,
@@ -1865,8 +1867,14 @@ CLASS z2ui5_cl_util_abap DEFINITION
       RETURNING
         VALUE(result) TYPE ty_t_fix_val.
 
-  PROTECTED SECTION.
+    CLASS-METHODS rtti_get_table_desrc
+      IMPORTING
+        tabname       TYPE clike
+        langu         TYPE clike OPTIONAL
+      RETURNING
+        VALUE(result) TYPE string ##NEEDED.
 
+  PROTECTED SECTION.
     CLASS-METHODS rtti_get_class_descr_on_cloud
       IMPORTING
         i_classname   TYPE clike
@@ -1968,11 +1976,17 @@ CLASS z2ui5_cl_util DEFINITION
       RETURNING
         VALUE(result) TYPE string.
 
-    CLASS-METHODS msg_get
+    CLASS-METHODS msg_get_t
       IMPORTING
-        val           TYPE any
+        VALUE(val)    TYPE any
       RETURNING
         VALUE(result) TYPE ty_t_msg.
+
+    CLASS-METHODS msg_get
+      IMPORTING
+        VALUE(val)    TYPE any
+      RETURNING
+        VALUE(result) TYPE ty_s_msg.
 
     CLASS-METHODS rtti_get_t_attri_by_include
       IMPORTING
@@ -2240,6 +2254,12 @@ CLASS z2ui5_cl_util DEFINITION
       RETURNING
         VALUE(result) TYPE abap_bool.
 
+    CLASS-METHODS rtti_create_tab_by_name
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE REF TO data.
+
     CLASS-METHODS rtti_check_type_kind_dref
       IMPORTING
         val           TYPE any
@@ -2417,6 +2437,100 @@ CLASS z2ui5_cl_util_abap_http DEFINITION.
 
   PRIVATE SECTION.
 ENDCLASS.
+CLASS z2ui5_cl_util_db DEFINITION
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS delete_by_handle
+      IMPORTING
+        uname        TYPE clike OPTIONAL
+        handle       TYPE clike OPTIONAL
+        handle2      TYPE clike OPTIONAL
+        handle3      TYPE clike OPTIONAL
+        check_commit TYPE abap_bool DEFAULT abap_true.
+
+    CLASS-METHODS save
+      IMPORTING
+        uname         TYPE clike OPTIONAL
+        handle        TYPE clike OPTIONAL
+        handle2       TYPE clike OPTIONAL
+        handle3       TYPE clike OPTIONAL
+        data          TYPE any
+        check_commit  TYPE abap_bool DEFAULT abap_true
+      RETURNING
+        VALUE(result) TYPE string.
+
+    CLASS-METHODS load_by_id
+      IMPORTING
+        id            TYPE clike OPTIONAL
+      EXPORTING
+        VALUE(result) TYPE any.
+
+    CLASS-METHODS load_by_handle
+      IMPORTING
+        uname         TYPE clike OPTIONAL
+        handle        TYPE clike OPTIONAL
+        handle2       TYPE clike OPTIONAL
+        handle3       TYPE clike OPTIONAL
+      EXPORTING
+        VALUE(result) TYPE any.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+CLASS z2ui5_cl_util_msg DEFINITION
+  FINAL CREATE PUBLIC.
+  PUBLIC SECTION.
+    CLASS-METHODS msg_map
+      IMPORTING
+        name          TYPE clike
+        val           TYPE data
+        is_msg        TYPE z2ui5_cl_util=>ty_s_msg
+      RETURNING
+        VALUE(result) TYPE z2ui5_cl_util=>ty_s_msg.
+    CLASS-METHODS msg_get
+      IMPORTING
+        val           TYPE any
+      RETURNING
+        VALUE(result) TYPE z2ui5_cl_util=>ty_t_msg.
+ENDCLASS.
+CLASS z2ui5_cl_util_range DEFINITION
+  FINAL CREATE PUBLIC.
+  PUBLIC SECTION.
+    CONSTANTS: BEGIN OF signs,
+                 including TYPE string VALUE 'I',
+                 excluding TYPE string VALUE 'E',
+               END OF signs.
+    CONSTANTS: BEGIN OF options,
+                 equal                TYPE string VALUE 'EQ',
+                 not_equal            TYPE string VALUE 'NE',
+                 between              TYPE string VALUE 'BT',
+                 not_between          TYPE string VALUE 'NB',
+                 contains_pattern     TYPE string VALUE 'CP',
+                 not_contains_pattern TYPE string VALUE 'NP',
+                 greater_than         TYPE string VALUE 'GT',
+                 greater_equal        TYPE string VALUE 'GE',
+                 less_equal           TYPE string VALUE 'LE',
+                 less_than            TYPE string VALUE 'LT',
+               END OF options.
+    METHODS constructor
+      IMPORTING
+        iv_fieldname TYPE clike
+        ir_range     TYPE REF TO data.
+    METHODS get_sql
+      RETURNING
+        VALUE(result) TYPE string.
+  PROTECTED SECTION.
+    DATA mv_fieldname TYPE string.
+    DATA mr_range     TYPE REF TO data.
+    CLASS-METHODS quote
+      IMPORTING
+        val        TYPE clike
+      RETURNING
+        VALUE(out) TYPE string.
+ENDCLASS.
 CLASS z2ui5_cx_util_error DEFINITION
   INHERITING FROM cx_no_check FINAL
   CREATE PUBLIC.
@@ -2446,6 +2560,7 @@ CLASS z2ui5_cl_core_srv_draft DEFINITION FINAL
   CREATE PUBLIC.
 
   PUBLIC SECTION.
+    TYPES ty_s_db TYPE z2ui5_t_01.
 
     METHODS count_entries
       RETURNING
@@ -2458,26 +2573,25 @@ CLASS z2ui5_cl_core_srv_draft DEFINITION FINAL
 
     METHODS read_draft
       IMPORTING
-        !id           TYPE clike
+        id            TYPE clike
       RETURNING
-        VALUE(result) TYPE z2ui5_if_core_types=>ty_s_db.
+        VALUE(result) TYPE ty_s_db.
 
     METHODS read_info
       IMPORTING
-        !id           TYPE clike
+        id            TYPE clike
       RETURNING
         VALUE(result) TYPE z2ui5_if_types=>ty_s_draft.
 
     METHODS cleanup.
 
   PROTECTED SECTION.
-
     METHODS read
       IMPORTING
-        !id            TYPE clike
+        id             TYPE clike
         check_load_app TYPE abap_bool DEFAULT abap_true
       RETURNING
-        VALUE(result)  TYPE z2ui5_if_core_types=>ty_s_db.
+        VALUE(result)  TYPE ty_s_db.
 
   PRIVATE SECTION.
 ENDCLASS.
@@ -2659,7 +2773,6 @@ CLASS z2ui5_cl_core_srv_attri DEFINITION FINAL
 
   PRIVATE SECTION.
 ENDCLASS.
-
 CLASS z2ui5_cl_core_srv_bind DEFINITION FINAL
   CREATE PUBLIC.
 
@@ -3557,7 +3670,7 @@ CLASS z2ui5_cl_pop_to_confirm DEFINITION FINAL
     INTERFACES z2ui5_if_app.
 
     CONSTANTS:
-      BEGIN OF CS_event,
+      BEGIN OF cs_event,
         confirmed TYPE string VALUE 'z2ui5_cl_pop_to_confirm_confirmed',
         canceled  TYPE string VALUE 'z2ui5_cl_pop_to_confirm_canceled',
       END OF cs_event.
@@ -3569,8 +3682,8 @@ CLASS z2ui5_cl_pop_to_confirm DEFINITION FINAL
         i_icon                TYPE string DEFAULT 'sap-icon://question-mark'
         i_button_text_confirm TYPE string DEFAULT `OK`
         i_button_text_cancel  TYPE string DEFAULT `Cancel`
-        i_event_confirm       TYPE string DEFAULT  CS_event-confirmed
-        i_event_cancel        TYPE string DEFAULT  CS_event-canceled
+        i_event_confirm       TYPE string DEFAULT  cs_event-confirmed
+        i_event_cancel        TYPE string DEFAULT  cs_event-canceled
       RETURNING
         VALUE(r_result)       TYPE REF TO z2ui5_cl_pop_to_confirm.
 
@@ -3687,12 +3800,9 @@ CLASS z2ui5_cl_app_hello_world DEFINITION
 
   PUBLIC SECTION.
     INTERFACES z2ui5_if_app.
-
-    DATA name              TYPE string.
-    DATA check_initialized TYPE abap_bool.
+    DATA name TYPE string.
 
   PROTECTED SECTION.
-
   PRIVATE SECTION.
 ENDCLASS.
 CLASS z2ui5_cl_app_startup DEFINITION FINAL
@@ -3714,9 +3824,7 @@ CLASS z2ui5_cl_app_startup DEFINITION FINAL
       END OF ms_home.
 
     DATA mv_ui5_version       TYPE string.
-
     DATA client               TYPE REF TO z2ui5_if_client.
-    DATA mv_check_initialized TYPE abap_bool.
 
     CLASS-METHODS factory
       RETURNING
@@ -3987,6 +4095,14 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
         textdirection  TYPE clike OPTIONAL
       RETURNING
         VALUE(result)  TYPE REF TO z2ui5_cl_xml_view.
+
+    METHODS overflow_toolbar_layout_data
+      IMPORTING
+        priority                   TYPE clike OPTIONAL
+        group                      TYPE clike OPTIONAL
+        closeoverflowoninteraction TYPE clike OPTIONAL
+      RETURNING
+        VALUE(result)              TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS table
       IMPORTING
@@ -4346,15 +4462,15 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
 
     METHODS avatar_group
       IMPORTING !id                     TYPE clike     OPTIONAL
-                avatarCustomDisplaySize TYPE clike     OPTIONAL
-                avatarCustomFontSize    TYPE clike     OPTIONAL
-                avatarDisplaySize       TYPE clike     OPTIONAL
+                avatarcustomdisplaysize TYPE clike     OPTIONAL
+                avatarcustomfontsize    TYPE clike     OPTIONAL
+                avatardisplaysize       TYPE clike     OPTIONAL
                 !blocked                TYPE abap_bool OPTIONAL
                 busy                    TYPE abap_bool OPTIONAL
-                busyIndicatorDelay      TYPE clike     OPTIONAL
-                busyIndicatorSize       TYPE clike     OPTIONAL
-                fieldGroupIds           TYPE clike     OPTIONAL
-                groupType               TYPE clike     OPTIONAL
+                busyindicatordelay      TYPE clike     OPTIONAL
+                busyindicatorsize       TYPE clike     OPTIONAL
+                fieldgroupids           TYPE clike     OPTIONAL
+                grouptype               TYPE clike     OPTIONAL
                 !visible                TYPE abap_bool DEFAULT abap_true
                 tooltip                 TYPE clike     OPTIONAL
                 items                   TYPE clike     OPTIONAL
@@ -4364,10 +4480,10 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
     METHODS avatar_group_item
       IMPORTING !id                TYPE clike OPTIONAL
                 busy               TYPE clike DEFAULT `false`
-                busyIndicatorDelay TYPE clike OPTIONAL
-                busyIndicatorSize  TYPE clike OPTIONAL
-                fallbackIcon       TYPE clike OPTIONAL
-                fieldGroupIds      TYPE clike OPTIONAL
+                busyindicatordelay TYPE clike OPTIONAL
+                busyindicatorsize  TYPE clike OPTIONAL
+                fallbackicon       TYPE clike OPTIONAL
+                fieldgroupids      TYPE clike OPTIONAL
                 initials           TYPE clike OPTIONAL
                 src                TYPE clike OPTIONAL
                 !visible           TYPE clike DEFAULT `true`
@@ -4976,11 +5092,11 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
                 scanfail                  TYPE clike OPTIONAL
                 inputliveupdate           TYPE clike OPTIONAL
                 dialogtitle               TYPE clike OPTIONAL
-                disableBarcodeInputDialog TYPE clike OPTIONAL
-                frameRate                 TYPE clike OPTIONAL
-                keepCameraScan            TYPE clike OPTIONAL
-                preferFrontCamera         TYPE clike OPTIONAL
-                provideFallback           TYPE clike OPTIONAL
+                disablebarcodeinputdialog TYPE clike OPTIONAL
+                framerate                 TYPE clike OPTIONAL
+                keepcamerascan            TYPE clike OPTIONAL
+                preferfrontcamera         TYPE clike OPTIONAL
+                providefallback           TYPE clike OPTIONAL
                 !width                    TYPE clike OPTIONAL
                 zoom                      TYPE clike OPTIONAL
       RETURNING VALUE(result)             TYPE REF TO z2ui5_cl_xml_view.
@@ -5567,8 +5683,8 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
 
     METHODS grid_box_layout
       IMPORTING boxesperrowconfig TYPE clike OPTIONAL
-                boxMinWidth       TYPE clike OPTIONAL
-                boxWidth          TYPE clike OPTIONAL
+                boxminwidth       TYPE clike OPTIONAL
+                boxwidth          TYPE clike OPTIONAL
       RETURNING VALUE(result)     TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS grid_data
@@ -5582,42 +5698,42 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
         VALUE(result) TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS grid_drop_info
-      IMPORTING targetAggregation TYPE clike OPTIONAL
-                dropPosition      TYPE clike OPTIONAL
-                dropLayout        TYPE clike OPTIONAL
+      IMPORTING targetaggregation TYPE clike OPTIONAL
+                dropposition      TYPE clike OPTIONAL
+                droplayout        TYPE clike OPTIONAL
                 drop              TYPE clike OPTIONAL
-                dragEnter         TYPE clike OPTIONAL
-                dragOver          TYPE clike OPTIONAL
+                dragenter         TYPE clike OPTIONAL
+                dragover          TYPE clike OPTIONAL
       RETURNING VALUE(result)     TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS grid_list
       IMPORTING !id                    TYPE clike     OPTIONAL
                 busy                   TYPE abap_bool OPTIONAL
-                busyIndicatorDelay     TYPE clike     OPTIONAL
-                busyIndicatorSize      TYPE clike     OPTIONAL
-                enableBusyIndicator    TYPE abap_bool OPTIONAL
-                fieldGroupIds          TYPE clike     OPTIONAL
-                footerText             TYPE clike     OPTIONAL
+                busyindicatordelay     TYPE clike     OPTIONAL
+                busyindicatorsize      TYPE clike     OPTIONAL
+                enablebusyindicator    TYPE abap_bool OPTIONAL
+                fieldgroupids          TYPE clike     OPTIONAL
+                footertext             TYPE clike     OPTIONAL
                 growing                TYPE abap_bool OPTIONAL
-                growingDirection       TYPE clike     OPTIONAL
-                growingScrollToLoad    TYPE abap_bool OPTIONAL
-                growingThreshold       TYPE clike     OPTIONAL
-                growingTriggerText     TYPE clike     OPTIONAL
-                headerLevel            TYPE clike     OPTIONAL
-                headerText             TYPE clike     OPTIONAL
-                includeItemInSelection TYPE abap_bool OPTIONAL
+                growingdirection       TYPE clike     OPTIONAL
+                growingscrolltoload    TYPE abap_bool OPTIONAL
+                growingthreshold       TYPE clike     OPTIONAL
+                growingtriggertext     TYPE clike     OPTIONAL
+                headerlevel            TYPE clike     OPTIONAL
+                headertext             TYPE clike     OPTIONAL
+                includeiteminselection TYPE abap_bool OPTIONAL
                 inset                  TYPE abap_bool OPTIONAL
-                keyboardMode           TYPE clike     OPTIONAL
+                keyboardmode           TYPE clike     OPTIONAL
                 !mode                  TYPE clike     OPTIONAL
-                modeAnimationOn        TYPE abap_bool OPTIONAL
-                multiSelectMode        TYPE clike     OPTIONAL
-                noDataText             TYPE clike     OPTIONAL
-                rememberSelections     TYPE abap_bool OPTIONAL
-                showNoData             TYPE abap_bool OPTIONAL
-                showSeparators         TYPE clike     OPTIONAL
-                showUnread             TYPE abap_bool OPTIONAL
+                modeanimationon        TYPE abap_bool OPTIONAL
+                multiselectmode        TYPE clike     OPTIONAL
+                nodatatext             TYPE clike     OPTIONAL
+                rememberselections     TYPE abap_bool OPTIONAL
+                shownodata             TYPE abap_bool OPTIONAL
+                showseparators         TYPE clike     OPTIONAL
+                showunread             TYPE abap_bool OPTIONAL
                 sticky                 TYPE clike     OPTIONAL
-                swipeDirection         TYPE clike     OPTIONAL
+                swipedirection         TYPE clike     OPTIONAL
                 !visible               TYPE abap_bool DEFAULT abap_true
                 !width                 TYPE clike     OPTIONAL
                 items                  TYPE clike     OPTIONAL
@@ -5625,19 +5741,19 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
 
     METHODS grid_list_item
       IMPORTING busy               TYPE clike OPTIONAL
-                busyIndicatorDelay TYPE clike OPTIONAL
-                busyIndicatorSize  TYPE clike OPTIONAL
+                busyindicatordelay TYPE clike OPTIONAL
+                busyindicatorsize  TYPE clike OPTIONAL
                 counter            TYPE clike OPTIONAL
-                fieldGroupIds      TYPE clike OPTIONAL
+                fieldgroupids      TYPE clike OPTIONAL
                 highlight          TYPE clike OPTIONAL
-                highlightText      TYPE clike OPTIONAL
+                highlighttext      TYPE clike OPTIONAL
                 navigated          TYPE clike OPTIONAL
                 selected           TYPE clike OPTIONAL
                 !type              TYPE clike OPTIONAL
                 unread             TYPE clike OPTIONAL
                 !visible           TYPE clike DEFAULT `true`
-                detailPress        TYPE clike OPTIONAL
-                detailTap          TYPE clike OPTIONAL
+                detailpress        TYPE clike OPTIONAL
+                detailtap          TYPE clike OPTIONAL
                 press              TYPE clike OPTIONAL
                 tap                TYPE clike OPTIONAL
       RETURNING VALUE(result)      TYPE REF TO z2ui5_cl_xml_view.
@@ -5747,7 +5863,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
         id            TYPE clike OPTIONAL
         color         TYPE clike OPTIONAL
         fraction      TYPE clike OPTIONAL
-        fractionScale TYPE clike OPTIONAL
+        fractionscale TYPE clike OPTIONAL
         class         TYPE clike OPTIONAL
       RETURNING
         VALUE(result) TYPE REF TO z2ui5_cl_xml_view.
@@ -6096,7 +6212,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
         width                 TYPE clike OPTIONAL
         showsortmenuentry     TYPE clike OPTIONAL
         sortproperty          TYPE clike OPTIONAL
-        autoResizable         TYPE clike OPTIONAL
+        autoresizable         TYPE clike OPTIONAL
         filterproperty        TYPE clike OPTIONAL
         showfiltermenuentry   TYPE clike OPTIONAL
         defaultfilteroperator TYPE clike OPTIONAL
@@ -7412,7 +7528,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
       RETURNING
         VALUE(result) TYPE REF TO z2ui5_cl_xml_view.
 
-    METHODS comparison_micro_chart_Data
+    METHODS comparison_micro_chart_data
       IMPORTING !color        TYPE clike OPTIONAL
                 press         TYPE clike OPTIONAL
                 displayvalue  TYPE clike OPTIONAL
@@ -7551,7 +7667,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
         inputsastooltips    TYPE clike OPTIONAL
         showadvancedtooltip TYPE clike OPTIONAL
         showhandletooltip   TYPE clike OPTIONAL
-        liveChange          TYPE clike OPTIONAL
+        livechange          TYPE clike OPTIONAL
       RETURNING
         VALUE(result)       TYPE REF TO z2ui5_cl_xml_view.
 
@@ -7783,23 +7899,23 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
       IMPORTING
         id                     TYPE clike OPTIONAL
         showexecuteonselection TYPE clike OPTIONAL
-        persistencyKey         TYPE clike OPTIONAL
+        persistencykey         TYPE clike OPTIONAL
       RETURNING
         VALUE(result)          TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS smart_filter_bar
       IMPORTING
         id             TYPE clike OPTIONAL
-        persistencyKey TYPE clike OPTIONAL
-        entitySet      TYPE clike OPTIONAL
+        persistencykey TYPE clike OPTIONAL
+        entityset      TYPE clike OPTIONAL
       RETURNING
         VALUE(result)  TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS control_configuration
       IMPORTING
         id                            TYPE clike OPTIONAL
-        prevInitDataFetchInValHelpDia TYPE clike OPTIONAL
-        visibleInAdvancedArea         TYPE clike OPTIONAL
+        previnitdatafetchinvalhelpdia TYPE clike OPTIONAL
+        visibleinadvancedarea         TYPE clike OPTIONAL
         key                           TYPE clike OPTIONAL
       RETURNING
         VALUE(result)                 TYPE REF TO z2ui5_cl_xml_view.
@@ -7811,18 +7927,18 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
     METHODS smart_table
       IMPORTING
         id                      TYPE clike OPTIONAL
-        smartFilterId           TYPE clike OPTIONAL
-        tableType               TYPE clike OPTIONAL
+        smartfilterid           TYPE clike OPTIONAL
+        tabletype               TYPE clike OPTIONAL
         editable                TYPE clike OPTIONAL
-        initiallyVisibleFields  TYPE clike OPTIONAL
-        entitySet               TYPE clike OPTIONAL
-        useVariantManagement    TYPE clike OPTIONAL
-        useExportToExcel        TYPE clike OPTIONAL
-        useTablePersonalisation TYPE clike OPTIONAL
+        initiallyvisiblefields  TYPE clike OPTIONAL
+        entityset               TYPE clike OPTIONAL
+        usevariantmanagement    TYPE clike OPTIONAL
+        useexporttoexcel        TYPE clike OPTIONAL
+        usetablepersonalisation TYPE clike OPTIONAL
         header                  TYPE clike OPTIONAL
-        showRowCount            TYPE clike OPTIONAL
-        enableExport            TYPE clike OPTIONAL
-        enableAutoBinding       TYPE clike OPTIONAL
+        showrowcount            TYPE clike OPTIONAL
+        enableexport            TYPE clike OPTIONAL
+        enableautobinding       TYPE clike OPTIONAL
       RETURNING
         VALUE(result)           TYPE REF TO z2ui5_cl_xml_view.
 
@@ -7946,7 +8062,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
       IMPORTING
         id               TYPE clike OPTIONAL
         autoadjustheight TYPE clike OPTIONAL
-        showHome         TYPE clike OPTIONAL
+        showhome         TYPE clike OPTIONAL
       RETURNING
         VALUE(result)    TYPE REF TO z2ui5_cl_xml_view.
 
@@ -7969,7 +8085,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
       IMPORTING !id             TYPE clike OPTIONAL
                 initialposition TYPE clike OPTIONAL
                 height          TYPE clike OPTIONAL
-                lassoSelection  TYPE clike OPTIONAL
+                lassoselection  TYPE clike OPTIONAL
                 visible         TYPE clike OPTIONAL
                 width           TYPE clike OPTIONAL
                 initialzoom     TYPE clike OPTIONAL
@@ -8304,14 +8420,14 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
         VALUE(result)  TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS drag_info
-      IMPORTING sourceAggregation TYPE clike OPTIONAL
+      IMPORTING sourceaggregation TYPE clike OPTIONAL
       RETURNING VALUE(result)     TYPE REF TO z2ui5_cl_xml_view.
 
-    METHODS Drag_Drop_Info
+    METHODS drag_drop_info
       IMPORTING
-        sourceAggregation TYPE clike OPTIONAL
-        targetAggregation TYPE clike OPTIONAL
-        dragStart         TYPE clike OPTIONAL
+        sourceaggregation TYPE clike OPTIONAL
+        targetaggregation TYPE clike OPTIONAL
+        dragstart         TYPE clike OPTIONAL
         drop              TYPE clike OPTIONAL
       RETURNING
         VALUE(result)     TYPE REF TO z2ui5_cl_xml_view.
@@ -9074,7 +9190,7 @@ CLASS z2ui5_cl_xml_view DEFINITION FINAL
     METHODS smart_multi_input
       IMPORTING
         id                   TYPE clike OPTIONAL
-        entitySet            TYPE clike OPTIONAL
+        entityset            TYPE clike OPTIONAL
         value                TYPE clike OPTIONAL
         supportranges        TYPE clike DEFAULT 'false'
         enableodataselect    TYPE clike DEFAULT 'false'
@@ -9110,7 +9226,7 @@ CLASS z2ui5_cl_xml_view_cc DEFINITION FINAL
       IMPORTING
         multiinputid  TYPE clike OPTIONAL
         change        TYPE clike OPTIONAL
-        rangeData     TYPE clike OPTIONAL
+        rangedata     TYPE clike OPTIONAL
         addedtokens   TYPE clike OPTIONAL
         removedtokens TYPE clike OPTIONAL
       RETURNING
@@ -9256,10 +9372,18 @@ CLASS z2ui5_cl_xml_view_cc DEFINITION FINAL
     METHODS lp_title
       IMPORTING
         title                TYPE clike OPTIONAL
-        ApplicationFullWidth TYPE clike OPTIONAL
-          PREFERRED PARAMETER title
+        applicationfullwidth TYPE clike OPTIONAL
+        PREFERRED PARAMETER title
       RETURNING
         VALUE(result)        TYPE REF TO z2ui5_cl_xml_view.
+
+    METHODS storage
+      IMPORTING finished      TYPE clike OPTIONAL
+                !type         TYPE clike OPTIONAL
+                prefix        TYPE clike OPTIONAL
+                !key          TYPE clike OPTIONAL
+                value         TYPE any   OPTIONAL
+      RETURNING VALUE(result) TYPE REF TO z2ui5_cl_xml_view.
 
     METHODS history
       IMPORTING
@@ -9347,6 +9471,8 @@ CLASS z2ui5_cl_xml_view_cc DEFINITION FINAL
 
   PRIVATE SECTION.
 ENDCLASS.
+
+
 CLASS z2ui5_cl_xml_view_cc IMPLEMENTATION.
 
   METHOD approve_popover.
@@ -9489,6 +9615,17 @@ CLASS z2ui5_cl_xml_view_cc IMPLEMENTATION.
                            ( n = `timeout`  v = timeout )
                 ) ).
 
+  ENDMETHOD.
+
+  METHOD storage.
+    result = mo_view.
+    mo_view->_generic( name   = `Storage`
+                       ns     = `z2ui5`
+                       t_prop = VALUE #( ( n = `finished`  v = finished )
+                                         ( n = `type`  v = type )
+                                         ( n = `prefix`  v = prefix )
+                                         ( n = `key`  v = key )
+                                         ( n = `value`  v = value ) ) ).
   ENDMETHOD.
 
   METHOD history.
@@ -9640,7 +9777,7 @@ CLASS z2ui5_cl_xml_view_cc IMPLEMENTATION.
                        ns     = `z2ui5`
                        t_prop = VALUE #(
                         ( n = `title`  v = title )
-                        ( n = `ApplicationFullWidth`  v = z2ui5_cl_util=>boolean_abap_2_json( ApplicationFullWidth )  ) )
+                        ( n = `ApplicationFullWidth`  v = z2ui5_cl_util=>boolean_abap_2_json( applicationfullwidth ) ) )
                          ).
 
   ENDMETHOD.
@@ -9677,11 +9814,11 @@ CLASS z2ui5_cl_xml_view_cc IMPLEMENTATION.
     result = mo_view.
     mo_view->_generic( name   = `SmartMultiInputExt`
                        ns     = `z2ui5`
-                       t_prop = VALUE #( ( n = `multiInputId`  v = multiInputId )
-                                         ( n = `rangeData`     v = rangeData )
+                       t_prop = VALUE #( ( n = `multiInputId`  v = multiinputid )
+                                         ( n = `rangeData`     v = rangedata )
                                          ( n = `change`        v = change )
-                                         ( n = `addedTokens`   v = addedTokens )
-                                         ( n = `removedTokens` v = removedTokens ) ) ).
+                                         ( n = `addedTokens`   v = addedtokens )
+                                         ( n = `removedTokens` v = removedtokens ) ) ).
 
   ENDMETHOD.
 
@@ -9742,7 +9879,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                        ns     = `vbm`
                        t_prop = VALUE #( ( n = `id`  v = id )
                                          ( n = `initialPosition`  v = initialposition )
-                                         ( n = `lassoSelection`  v = lassoSelection )
+                                         ( n = `lassoSelection`  v = lassoselection )
                                          ( n = `height`  v = height )
                                          ( n = `visible`  v = visible )
                                          ( n = `width`  v = width )
@@ -9810,35 +9947,35 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     result = _generic( name   = `AvatarGroup`
                        ns     = `f`
                        t_prop = VALUE #( ( n = `id` v = id )
-                                         ( n = `avatarCustomDisplaySize` v = avatarCustomDisplaySize )
-                                         ( n = `avatarCustomDispavatarCustomFontSizelaySize` v = avatarCustomFontSize )
-                                         ( n = `avatarDisplaySize` v = avatarDisplaySize )
+                                         ( n = `avatarCustomDisplaySize` v = avatarcustomdisplaysize )
+                                         ( n = `avatarCustomDispavatarCustomFontSizelaySize` v = avatarcustomfontsize )
+                                         ( n = `avatarDisplaySize` v = avatardisplaysize )
                                          ( n = `blocked` v = z2ui5_cl_util=>boolean_abap_2_json( blocked ) )
                                          ( n = `busy` v = z2ui5_cl_util=>boolean_abap_2_json( busy ) )
-                                         ( n = `busyIndicatorDelay` v = busyIndicatorDelay )
-                                         ( n = `busyIndicatorSize` v = busyIndicatorSize )
-                                         ( n = `fieldGroupIds` v = fieldGroupIds )
-                                         ( n = `groupType` v = groupType )
+                                         ( n = `busyIndicatorDelay` v = busyindicatordelay )
+                                         ( n = `busyIndicatorSize` v = busyindicatorsize )
+                                         ( n = `fieldGroupIds` v = fieldgroupids )
+                                         ( n = `groupType` v = grouptype )
                                          ( n = `visible` v = z2ui5_cl_util=>boolean_abap_2_json( visible ) )
-                                         ( n = `tooltip` v =  tooltip )
+                                         ( n = `tooltip` v = tooltip )
                                          ( n = `items` v = items )
                                          ( n = `press` v = press ) ) ).
   ENDMETHOD.
 
   METHOD avatar_group_item.
     result = me.
-    _generic( name   = `AvatarGroupItem`
+    _generic( name            = `AvatarGroupItem`
                        ns     = `f`
                        t_prop = VALUE #( ( n = `id` v = id )
                                          ( n = `busy` v = busy )
-                                         ( n = `busyIndicatorDelay` v = busyIndicatorDelay )
-                                         ( n = `busyIndicatorSize` v = busyIndicatorSize )
-                                         ( n = `fallbackIcon` v = fallbackIcon )
-                                         ( n = `fieldGroupIds` v = fieldGroupIds )
+                                         ( n = `busyIndicatorDelay` v = busyindicatordelay )
+                                         ( n = `busyIndicatorSize` v = busyindicatorsize )
+                                         ( n = `fallbackIcon` v = fallbackicon )
+                                         ( n = `fieldGroupIds` v = fieldgroupids )
                                          ( n = `initials` v = initials )
                                          ( n = `src` v = src )
-                                         ( n = `visible` v =  visible )
-                                         ( n = `tooltip` v =  tooltip ) ) ).
+                                         ( n = `visible` v = visible )
+                                         ( n = `tooltip` v = tooltip ) ) ).
   ENDMETHOD.
 
   METHOD axis_time_strategy.
@@ -9870,11 +10007,11 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                          ( n = `scanFail`                  v = scanfail )
                                          ( n = `inputLiveUpdate`           v = inputliveupdate )
                                          ( n = `dialogTitle`               v = dialogtitle )
-                                         ( n = `disableBarcodeInputDialog` v = disableBarcodeInputDialog )
-                                         ( n = `frameRate`                 v = frameRate )
-                                         ( n = `keepCameraScan`            v = keepCameraScan )
-                                         ( n = `preferFrontCamera`         v = preferFrontCamera )
-                                         ( n = `provideFallback`           v = provideFallback )
+                                         ( n = `disableBarcodeInputDialog` v = disablebarcodeinputdialog )
+                                         ( n = `frameRate`                 v = framerate )
+                                         ( n = `keepCameraScan`            v = keepcamerascan )
+                                         ( n = `preferFrontCamera`         v = preferfrontcamera )
+                                         ( n = `provideFallback`           v = providefallback )
                                          ( n = `width`                     v = width )
                                          ( n = `zoom`                      v = zoom ) ) ).
   ENDMETHOD.
@@ -10396,7 +10533,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD comparison_micro_chart.
-    result = _generic( name   = `ComparisonMicroChart`
+    result = _generic( name  = `ComparisonMicroChart`
                       ns     = `mchart`
                       t_prop = VALUE #( ( n = `colorPalette`  v = colorpalette )
                                         ( n = `press`       v = press )
@@ -10417,9 +10554,9 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                        ns     = `mchart`
                        t_prop = VALUE #( ( n = `color`  v = color )
                                          ( n = `press`       v = press )
-                                         ( n = `displayValue`        v = displayValue )
+                                         ( n = `displayValue`        v = displayvalue )
                                          ( n = `title`      v = title )
-                                         ( n = `value`      v = value )  ) ).
+                                         ( n = `value`      v = value ) ) ).
   ENDMETHOD.
 
   METHOD constructor.
@@ -10513,7 +10650,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
 
   METHOD custom_layout.
     result = _generic( name = `customLayout`
-                       ns   = ns  ).
+                       ns   = ns ).
   ENDMETHOD.
 
   METHOD custom_list_item.
@@ -10634,14 +10771,14 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                          ( n = `visible` v = z2ui5_cl_util=>boolean_abap_2_json( visible ) ) ) ).
   ENDMETHOD.
 
-  METHOD Drag_Drop_Info.
+  METHOD drag_drop_info.
     result = me.
     _generic( name   = `DragDropInfo`
               ns     = `dnd`
               t_prop = VALUE #(
-                ( n = `sourceAggregation`  v = sourceAggregation )
-                ( n = `targetAggregation`  v = targetAggregation )
-                ( n = `dragStart`          v = dragStart )
+                ( n = `sourceAggregation`  v = sourceaggregation )
+                ( n = `targetAggregation`  v = targetaggregation )
+                ( n = `dragStart`          v = dragstart )
                 ( n = `drop`               v = drop )
                  ) ).
   ENDMETHOD.
@@ -10650,12 +10787,12 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     result = me.
     _generic( name   = `DragInfo`
               ns     = `dnd`
-              t_prop = VALUE #( ( n = `sourceAggregation`  v = sourceAggregation ) ) ).
+              t_prop = VALUE #( ( n = `sourceAggregation`  v = sourceaggregation ) ) ).
   ENDMETHOD.
 
   METHOD drag_drop_config.
-    result = _generic( name = `dragDropConfig`
-                          ns   = ns
+    result = _generic( name  = `dragDropConfig`
+                          ns = ns
                        ).
   ENDMETHOD.
 
@@ -11271,9 +11408,9 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     result = me.
     _generic( name   = `GridBoxLayout`
               ns     = `grid`
-              t_prop = VALUE #( ( n = `boxesPerRowConfig`   v = boxesPerRowConfig )
-                                ( n = `boxMinWidth`   v = boxMinWidth )
-                                ( n = `boxWidth`   v = boxWidth ) ) ).
+              t_prop = VALUE #( ( n = `boxesPerRowConfig`   v = boxesperrowconfig )
+                                ( n = `boxMinWidth`   v = boxminwidth )
+                                ( n = `boxWidth`   v = boxwidth ) ) ).
   ENDMETHOD.
 
   METHOD grid_data.
@@ -11290,12 +11427,12 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     result = me.
     _generic( name   = `GridDropInfo`
               ns     = `dnd-grid`
-              t_prop = VALUE #( ( n = `targetAggregation`      v = targetAggregation )
-                                ( n = `dropPosition` v = dropPosition )
-                                ( n = `dropLayout` v = dropLayout )
+              t_prop = VALUE #( ( n = `targetAggregation`      v = targetaggregation )
+                                ( n = `dropPosition` v = dropposition )
+                                ( n = `dropLayout` v = droplayout )
                                 ( n = `drop`   v = drop )
-                                ( n = `dragEnter`   v = dragEnter )
-                                ( n = `dragOver`   v = dragOver ) ) ).
+                                ( n = `dragEnter`   v = dragenter )
+                                ( n = `dragOver`   v = dragover ) ) ).
   ENDMETHOD.
 
   METHOD grid_list.
@@ -11305,31 +11442,31 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                  t_prop = VALUE #(
                      ( n = `id`      v = id )
                      ( n = `busy` v = z2ui5_cl_util=>boolean_abap_2_json( busy ) )
-                     ( n = `busyIndicatorDelay` v = busyIndicatorDelay )
-                     ( n = `busyIndicatorSize` v = busyIndicatorSize )
-                     ( n = `enableBusyIndicator` v = z2ui5_cl_util=>boolean_abap_2_json( enableBusyIndicator ) )
-                     ( n = `fieldGroupIds` v = fieldGroupIds )
-                     ( n = `footerText` v = footerText )
+                     ( n = `busyIndicatorDelay` v = busyindicatordelay )
+                     ( n = `busyIndicatorSize` v = busyindicatorsize )
+                     ( n = `enableBusyIndicator` v = z2ui5_cl_util=>boolean_abap_2_json( enablebusyindicator ) )
+                     ( n = `fieldGroupIds` v = fieldgroupids )
+                     ( n = `footerText` v = footertext )
                      ( n = `growing` v = z2ui5_cl_util=>boolean_abap_2_json( growing ) )
-                     ( n = `growingDirection` v = growingDirection )
-                     ( n = `growingScrollToLoad` v = z2ui5_cl_util=>boolean_abap_2_json( growingScrollToLoad ) )
-                     ( n = `growingThreshold` v = growingThreshold )
-                     ( n = `growingTriggerText` v = growingTriggerText )
-                     ( n = `headerLevel` v = headerLevel )
-                     ( n = `headerText` v = headerText )
-                     ( n = `includeItemInSelection` v = z2ui5_cl_util=>boolean_abap_2_json( includeItemInSelection ) )
+                     ( n = `growingDirection` v = growingdirection )
+                     ( n = `growingScrollToLoad` v = z2ui5_cl_util=>boolean_abap_2_json( growingscrolltoload ) )
+                     ( n = `growingThreshold` v = growingthreshold )
+                     ( n = `growingTriggerText` v = growingtriggertext )
+                     ( n = `headerLevel` v = headerlevel )
+                     ( n = `headerText` v = headertext )
+                     ( n = `includeItemInSelection` v = z2ui5_cl_util=>boolean_abap_2_json( includeiteminselection ) )
                      ( n = `inset` v = z2ui5_cl_util=>boolean_abap_2_json( inset ) )
-                     ( n = `keyboardMode` v = keyboardMode )
+                     ( n = `keyboardMode` v = keyboardmode )
                      ( n = `mode` v = mode )
-                     ( n = `modeAnimationOn` v = modeAnimationOn )
-                     ( n = `multiSelectMode` v = multiSelectMode )
-                     ( n = `noDataText` v = noDataText )
-                     ( n = `rememberSelections` v = z2ui5_cl_util=>boolean_abap_2_json( rememberSelections ) )
-                     ( n = `showNoData` v = z2ui5_cl_util=>boolean_abap_2_json( showNoData ) )
-                     ( n = `showSeparators` v = showSeparators )
-                     ( n = `showUnread` v = z2ui5_cl_util=>boolean_abap_2_json( showUnread ) )
+                     ( n = `modeAnimationOn` v = modeanimationon )
+                     ( n = `multiSelectMode` v = multiselectmode )
+                     ( n = `noDataText` v = nodatatext )
+                     ( n = `rememberSelections` v = z2ui5_cl_util=>boolean_abap_2_json( rememberselections ) )
+                     ( n = `showNoData` v = z2ui5_cl_util=>boolean_abap_2_json( shownodata ) )
+                     ( n = `showSeparators` v = showseparators )
+                     ( n = `showUnread` v = z2ui5_cl_util=>boolean_abap_2_json( showunread ) )
                      ( n = `sticky` v = sticky )
-                     ( n = `swipeDirection` v = swipeDirection )
+                     ( n = `swipeDirection` v = swipedirection )
                      ( n = `visible` v = z2ui5_cl_util=>boolean_abap_2_json( visible ) )
                      ( n = `width` v = width )
                      ( n = `items`   v = items ) ) ).
@@ -11339,19 +11476,19 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     result = _generic( name   = `GridListItem`
                        ns     = `f`
                        t_prop = VALUE #( ( n = `busy`      v = busy )
-                                         ( n = `busyIndicatorDelay` v = busyIndicatorDelay )
-                                         ( n = `busyIndicatorSize` v = busyIndicatorSize )
+                                         ( n = `busyIndicatorDelay` v = busyindicatordelay )
+                                         ( n = `busyIndicatorSize` v = busyindicatorsize )
                                          ( n = `counter` v = counter )
-                                         ( n = `fieldGroupIds` v = fieldGroupIds )
+                                         ( n = `fieldGroupIds` v = fieldgroupids )
                                          ( n = `highlight` v = highlight )
-                                         ( n = `highlightText` v = highlightText )
+                                         ( n = `highlightText` v = highlighttext )
                                          ( n = `navigated` v = navigated )
                                          ( n = `selected` v = selected )
                                          ( n = `type` v = type )
                                          ( n = `unread` v = unread )
                                          ( n = `visible`   v = visible )
-                                         ( n = `detailPress` v = detailPress )
-                                         ( n = `detailTap` v = detailTap )
+                                         ( n = `detailPress` v = detailpress )
+                                         ( n = `detailTap` v = detailtap )
                                          ( n = `press` v = press )
                                          ( n = `tap` v = tap ) ) ).
   ENDMETHOD.
@@ -11387,9 +11524,9 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
 
   METHOD harvey_ball_micro_chart.
 
-    result = _generic( name   = `HarveyBallMicroChart`
-              ns     = `mchart`
-              t_prop = VALUE #( ( n = `colorPalette`  v = colorpalette )
+    result = _generic( name = `HarveyBallMicroChart`
+              ns            = `mchart`
+              t_prop        = VALUE #( ( n = `colorPalette`  v = colorpalette )
                                 ( n = `press`       v = press )
                                 ( n = `size`        v = size )
                                 ( n = `height`      v = height )
@@ -12149,7 +12286,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                        t_prop = VALUE #(
                            ( n = `id`  v = id )
                            ( n = `autoAdjustHeight`  v = z2ui5_cl_util=>boolean_abap_2_json( autoadjustheight ) )
-                           ( n = `showHome`  v = z2ui5_cl_util=>boolean_abap_2_json( showHome )  )  ) ).
+                           ( n = `showHome`  v = z2ui5_cl_util=>boolean_abap_2_json( showhome ) ) ) ).
 
   ENDMETHOD.
 
@@ -13687,7 +13824,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                 ( n = `inputsAsTooltips`   v = inputsastooltips )
                                 ( n = `showAdvancedTooltip`   v = showadvancedtooltip )
                                 ( n = `showHandleTooltip`   v = showhandletooltip )
-                                ( n = `liveChange` v = liveChange ) ) ).
+                                ( n = `liveChange` v = livechange ) ) ).
   ENDMETHOD.
 
   METHOD slide_tile.
@@ -13712,7 +13849,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
         t_prop = VALUE #(
             ( n = `id`      v = id )
             ( n = `showExecuteOnSelection`  v = z2ui5_cl_util=>boolean_abap_2_json( showexecuteonselection ) )
-            ( n = `persistencyKey`  v = persistencyKey )
+            ( n = `persistencyKey`  v = persistencykey )
              ) ).
 
   ENDMETHOD.
@@ -14356,7 +14493,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     DATA(lv_name) = COND #(
         WHEN ns = 'table' THEN 'toolbar'
         WHEN ns = 'form'  THEN 'toolbar'
-        ELSE                   `Toolbar` ).
+        ELSE `Toolbar` ).
     result = _generic( name   = lv_name
                        ns     = ns
                        t_prop = VALUE #( ( n = `active`  v = z2ui5_cl_util=>boolean_abap_2_json( active ) )
@@ -15008,7 +15145,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
           ( n = `trm`               v = `sap.ui.table.rowmodes` )
           ( n = `smi`               v = `sap.ui.comp.smartmultiinput` ) ).
 
-      LOOP AT mt_ns REFERENCE INTO DATA(lr_ns) WHERE     table_line IS NOT INITIAL
+      LOOP AT mt_ns REFERENCE INTO DATA(lr_ns) WHERE table_line IS NOT INITIAL
                                                      AND table_line <> `mvc`
                                                      AND table_line <> `core`.
         TRY.
@@ -15016,7 +15153,9 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
             INSERT VALUE #( n = |xmlns:{ ls_prop-n }|
                             v = ls_prop-v ) INTO TABLE mt_prop.
           CATCH cx_root.
-            z2ui5_cl_util=>x_raise( |XML_VIEW_ERROR_NO_NAMESPACE_FOUND_FOR:  { lr_ns->* }| ).
+            RAISE EXCEPTION TYPE z2ui5_cx_util_error
+              EXPORTING
+                val = |XML_VIEW_ERROR_NO_NAMESPACE_FOUND_FOR:  { lr_ns->* }|.
         ENDTRY.
       ENDLOOP.
 
@@ -15304,7 +15443,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                          ( n = `id`                      v = id )
                                          ( n = `class`                   v = class )
                                          ( n = `currentLocationText`     v = currentlocationtext )
-                                         ( n = `separatorStyle`          v = separatorStyle )
+                                         ( n = `separatorStyle`          v = separatorstyle )
                                          ( n = `visible`                 v = z2ui5_cl_util=>boolean_abap_2_json( visible ) ) ) ).
   ENDMETHOD.
 
@@ -15320,7 +15459,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                        t_prop = VALUE #( ( n = `colorSelect`           v = colorselect ) ) ).
   ENDMETHOD.
 
-  METHOD HarveyBallMicroChartItem.
+  METHOD harveyballmicrochartitem.
 
     result = _generic( name   = `HarveyBallMicroChartItem`
                        ns     = `mchart`
@@ -15328,7 +15467,7 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                          ( n = `class`  v = class )
                                          ( n = `fraction`  v = fraction )
                                          ( n = `color`  v = color )
-                                         ( n = `fractionScale` v = fractionScale ) ) ).
+                                         ( n = `fractionScale` v = fractionscale ) ) ).
   ENDMETHOD.
 
   METHOD smart_filter_bar.
@@ -15336,66 +15475,66 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
     result = _generic( name   = `SmartFilterBar`
                        ns     = `smartFilterBar`
                        t_prop = VALUE #( ( n = `id`  v = id )
-                                         ( n = `entitySet`  v = entitySet )
-                                         ( n = `persistencyKey`  v = persistencyKey ) ) ).
+                                         ( n = `entitySet`  v = entityset )
+                                         ( n = `persistencyKey`  v = persistencykey ) ) ).
 
   ENDMETHOD.
 
   METHOD control_configuration.
 
     result = me.
-    _generic( name   = `ControlConfiguration`
+    _generic( name             = `ControlConfiguration`
                         ns     = `smartFilterBar`
                         t_prop = VALUE #( ( n = `id`  v = id )
                                           ( n = `key`  v = key )
-                                          ( n = `visibleInAdvancedArea`  v = z2ui5_cl_util=>boolean_abap_2_json( visibleInAdvancedArea ) )
-                                          ( n = `preventInitialDataFetchInValueHelpDialog`  v = z2ui5_cl_util=>boolean_abap_2_json( prevInitDataFetchInValHelpDia ) )
+                                          ( n = `visibleInAdvancedArea`  v = z2ui5_cl_util=>boolean_abap_2_json( visibleinadvancedarea ) )
+                                          ( n = `preventInitialDataFetchInValueHelpDialog`  v = z2ui5_cl_util=>boolean_abap_2_json( previnitdatafetchinvalhelpdia ) )
                                           ) ).
 
   ENDMETHOD.
 
   METHOD smart_table.
 
-    result = _generic( name   = `SmartTable`
+    result = _generic( name    = `SmartTable`
                         ns     = `smartTable`
                         t_prop = VALUE #(
                         ( n = `id`  v = id )
-                        ( n = `smartFilterId`  v = smartFilterId )
-                                          ( n = `tableType`  v = tableType )
+                        ( n = `smartFilterId`  v = smartfilterid )
+                                          ( n = `tableType`  v = tabletype )
                                           ( n = `editable`  v = z2ui5_cl_util=>boolean_abap_2_json( editable ) )
-                                          ( n = `initiallyVisibleFields`  v = initiallyVisibleFields )
-                                          ( n = `entitySet`  v = entitySet )
-                                          ( n = `useVariantManagement`  v = z2ui5_cl_util=>boolean_abap_2_json( useVariantManagement ) )
-                                          ( n = `useExportToExcel`  v = z2ui5_cl_util=>boolean_abap_2_json( useExportToExcel ) )
-                                          ( n = `useTablePersonalisation`  v = z2ui5_cl_util=>boolean_abap_2_json( useTablePersonalisation ) )
+                                          ( n = `initiallyVisibleFields`  v = initiallyvisiblefields )
+                                          ( n = `entitySet`  v = entityset )
+                                          ( n = `useVariantManagement`  v = z2ui5_cl_util=>boolean_abap_2_json( usevariantmanagement ) )
+                                          ( n = `useExportToExcel`  v = z2ui5_cl_util=>boolean_abap_2_json( useexporttoexcel ) )
+                                          ( n = `useTablePersonalisation`  v = z2ui5_cl_util=>boolean_abap_2_json( usetablepersonalisation ) )
                                           ( n = `header`  v = header )
-                                          ( n = `showRowCount`  v =  z2ui5_cl_util=>boolean_abap_2_json( showRowCount ) )
-                                          ( n = `enableExport`  v =  z2ui5_cl_util=>boolean_abap_2_json( enableExport ) )
-                                          ( n = `enableAutoBinding`  v =  z2ui5_cl_util=>boolean_abap_2_json( enableAutoBinding ) )
+                                          ( n = `showRowCount`  v = z2ui5_cl_util=>boolean_abap_2_json( showrowcount ) )
+                                          ( n = `enableExport`  v = z2ui5_cl_util=>boolean_abap_2_json( enableexport ) )
+                                          ( n = `enableAutoBinding`  v = z2ui5_cl_util=>boolean_abap_2_json( enableautobinding ) )
                                           ) ).
 
   ENDMETHOD.
 
   METHOD _control_configuration.
 
-    result = _generic( name   = `controlConfiguration`
-                        ns     = `smartFilterBar`
+    result = _generic( name = `controlConfiguration`
+                        ns  = `smartFilterBar`
                       ).
 
   ENDMETHOD.
 
   METHOD viz_dataset.
-    result = _generic( name   = 'dataset'
-                       ns     = 'viz' ).
+    result = _generic( name = 'dataset'
+                       ns   = 'viz' ).
   ENDMETHOD.
   METHOD viz_dimensions.
-    result = _generic( name   = 'dimensions'
-                       ns     = 'viz.data' ).
+    result = _generic( name = 'dimensions'
+                       ns   = 'viz.data' ).
   ENDMETHOD.
   METHOD viz_dimension_definition.
     result = _generic( name   = 'DimensionDefinition'
                        ns     = 'viz.data'
-                       t_prop = VALUE #(  ( n = `axis`          v = axis )
+                       t_prop = VALUE #( ( n = `axis`          v = axis )
                                           ( n = `dataType`      v = datatype )
                                           ( n = `displayValue`  v = displayvalue )
                                           ( n = `identity`      v = identity )
@@ -15404,13 +15543,13 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                           ( n = `value`         v = value ) ) ).
   ENDMETHOD.
   METHOD viz_feeds.
-    result = _generic( name   = 'feeds'
-                       ns     = 'viz' ).
+    result = _generic( name = 'feeds'
+                       ns   = 'viz' ).
   ENDMETHOD.
   METHOD viz_feed_item.
     result = _generic( name   = 'FeedItem'
                        ns     = 'viz.feeds'
-                       t_prop = VALUE #(  ( n = `id`      v = id )
+                       t_prop = VALUE #( ( n = `id`      v = id )
                                           ( n = `uid`     v = uid )
                                           ( n = `type`    v = type )
                                           ( n = `values ` v = values ) ) ).
@@ -15423,36 +15562,36 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
   METHOD viz_frame.
     DATA(lv_vizproperties) = ``.
     IF vizproperties IS INITIAL.
-      lv_vizproperties = `{` && |\n|  &&
-      `"plotArea": {` && |\n|  &&
-          `"dataLabel": {` && |\n|  &&
-              `"formatString": "",` && |\n|  &&
-              `"visible": false` && |\n|  &&
-          `}` && |\n|  &&
-      `},` && |\n|  &&
-      `"valueAxis": {` && |\n|  &&
-          `"label": {` && |\n|  &&
-              `"formatString": ""` && |\n|  &&
-          `},` && |\n|  &&
-          `"title": {` && |\n|  &&
-              `"visible": false` && |\n|  &&
-          `}` && |\n|  &&
-      `},` && |\n|  &&
-      `"categoryAxis": {` && |\n|  &&
-          `"title": {` && |\n|  &&
-              `"visible": false` && |\n|  &&
-          `}` && |\n|  &&
-      `},` && |\n|  &&
-      `"title": {` && |\n|  &&
-          `"visible": false,` && |\n|  &&
-          `"text": ""` && |\n|  &&
-      `}` && |\n|  &&
-  `}`.
+      lv_vizproperties = `{` && |\n| &&
+        `"plotArea": {` && |\n| &&
+          `"dataLabel": {` && |\n| &&
+              `"formatString": "",` && |\n| &&
+              `"visible": false` && |\n| &&
+          `}` && |\n| &&
+        `},` && |\n| &&
+        `"valueAxis": {` && |\n| &&
+          `"label": {` && |\n| &&
+              `"formatString": ""` && |\n| &&
+          `},` && |\n| &&
+          `"title": {` && |\n| &&
+              `"visible": false` && |\n| &&
+          `}` && |\n| &&
+        `},` && |\n| &&
+        `"categoryAxis": {` && |\n| &&
+          `"title": {` && |\n| &&
+              `"visible": false` && |\n| &&
+          `}` && |\n| &&
+        `},` && |\n| &&
+        `"title": {` && |\n| &&
+          `"visible": false,` && |\n| &&
+          `"text": ""` && |\n| &&
+        `}` && |\n| &&
+        `}`.
     ELSE.
       lv_vizproperties = vizproperties.
     ENDIF.
 
-    result = _generic(  name   = 'VizFrame'
+    result = _generic( name    = 'VizFrame'
                         ns     = 'viz'
                         t_prop = VALUE #( ( n = `id`                v = id )
                                           ( n = `legendVisible`     v = legendvisible )
@@ -15468,14 +15607,14 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
 
   ENDMETHOD.
   METHOD viz_measures.
-    result = _generic( name   = 'measures'
-                       ns     = 'viz.data' ).
+    result = _generic( name = 'measures'
+                       ns   = 'viz.data' ).
   ENDMETHOD.
 
   METHOD viz_measure_definition.
     result = _generic( name   = 'MeasureDefinition'
                        ns     = 'viz.data'
-                       t_prop = VALUE #(  ( n = `format`    v = format )
+                       t_prop = VALUE #( ( n = `format`    v = format )
                                           ( n = `group`     v = group )
                                           ( n = `identity`  v = identity )
                                           ( n = `name`      v = name )
@@ -15502,6 +15641,17 @@ CLASS z2ui5_cl_xml_view IMPLEMENTATION.
                                          ( n = 'textInEditModeSource' v = textineditmodesource )
                                          ( n = 'mandatory'         v = mandatory )
                                          ( n = 'maxLength'         v = maxlength ) ) ).
+
+  ENDMETHOD.
+
+  METHOD overflow_toolbar_layout_data.
+
+    result = _generic(
+        name   = `OverflowToolbarLayoutData`
+        t_prop = VALUE #(
+            ( n = `closeOverflowOnInteraction` v = z2ui5_cl_util=>boolean_abap_2_json( closeoverflowoninteraction ) )
+            ( n = `group`                      v = group )
+            ( n = `priority`                   v = priority ) ) ).
 
   ENDMETHOD.
 
@@ -15547,7 +15697,7 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
 
     result = NEW #( ).
     result->mo_server = z2ui5_cl_util_abap_http=>factory_cloud( req = req
-                                                               res = res ).
+                                                               res  = res ).
 
   ENDMETHOD.
 
@@ -15569,8 +15719,8 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
 
     IF is_config-content_security_policy IS INITIAL.
       is_config-content_security_policy = |<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: | &&
-     |ui5.sap.com *.ui5.sap.com sapui5.hana.ondemand.com *.sapui5.hana.ondemand.com openui5.hana.ondemand.com *.openui5.hana.ondemand.com | &&
-     |sdk.openui5.org *.sdk.openui5.org cdn.jsdelivr.net *.cdn.jsdelivr.net cdnjs.cloudflare.com *.cdnjs.cloudflare.com schemas *.schemas; worker-src 'self' blob:; "/>|.
+        |ui5.sap.com *.ui5.sap.com sapui5.hana.ondemand.com *.sapui5.hana.ondemand.com openui5.hana.ondemand.com *.openui5.hana.ondemand.com | &&
+        |sdk.openui5.org *.sdk.openui5.org cdn.jsdelivr.net *.cdn.jsdelivr.net cdnjs.cloudflare.com *.cdnjs.cloudflare.com schemas *.schemas; worker-src 'self' blob:; "/>|.
     ENDIF.
 
     IF is_config-styles_css IS INITIAL.
@@ -15596,7 +15746,7 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
              |      "z2ui5/css/style.css": '{ lv_style_css }',| && |\n| &&
              |      "z2ui5/manifest.json": '{ z2ui5_cl_app_manifest_json=>get( ) }',| && |\n| &&
              |      "z2ui5/Component.js": function()\{{ z2ui5_cl_app_component_js=>get( ) }{ is_config-custom_js }\},| && |\n| &&
-             |      "z2ui5/model/models.js": function()\{{  z2ui5_cl_app_models_js=>get( ) }\},| && |\n| &&
+             |      "z2ui5/model/models.js": function()\{{ z2ui5_cl_app_models_js=>get( ) }\},| && |\n| &&
              |      "z2ui5/view/App.view.xml": '{ z2ui5_cl_app_app_xml=>get( ) }',| && |\n| &&
              |      "z2ui5/controller/App.controller.js": function()\{{ z2ui5_cl_app_app_js=>get( ) }\},| && |\n| &&
              |      "z2ui5/view/View1.view.xml": '{ z2ui5_cl_app_view1_xml=>get( ) }',| && |\n| &&
@@ -15654,7 +15804,7 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
 
     " transform cookie to header based contextid handling
     IF ms_res-s_stateful-switched = abap_true.
-      mo_server->set_session_stateful( ms_res-s_stateful-active  ).
+      mo_server->set_session_stateful( ms_res-s_stateful-active ).
       IF mo_server->get_header_field( 'sap-contextid-accept' ) = 'header'.
         DATA(lv_contextid) = mo_server->get_response_cookie( 'sap-contextid' ).
         IF lv_contextid IS NOT INITIAL.
@@ -15714,7 +15864,7 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
     DATA(lo_handler) = factory( server = server
                                 req    = req
                                 res    = res
-     ).
+      ).
 
     result-body   = lo_handler->mo_server->get_cdata( ).
     result-method = lo_handler->mo_server->get_method( ).
@@ -15726,7 +15876,7 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
     DATA(lo_handler) = factory( server = server
                                 req    = req
                                 res    = res
-     ).
+      ).
 
     lo_handler->mo_server->set_cdata( is_res-body ).
     lo_handler->mo_server->set_header_field( n = `cache-control`
@@ -15736,7 +15886,7 @@ CLASS z2ui5_cl_http_handler IMPLEMENTATION.
 
     " transform cookie to header based contextid handling
     IF is_res-s_stateful-switched = abap_true.
-      lo_handler->mo_server->set_session_stateful( is_res-s_stateful-active  ).
+      lo_handler->mo_server->set_session_stateful( is_res-s_stateful-active ).
       IF lo_handler->mo_server->get_header_field( 'sap-contextid-accept' ) = 'header'.
         DATA(lv_contextid) = lo_handler->mo_server->get_response_cookie( 'sap-contextid' ).
         IF lv_contextid IS NOT INITIAL.
@@ -15766,10 +15916,9 @@ CLASS z2ui5_cl_app_startup IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD on_event_check.
-    " TODO: variable is assigned but never used (ABAP cleaner)
-    DATA li_app_test TYPE REF TO z2ui5_if_app.
 
     TRY.
+        DATA li_app_test TYPE REF TO z2ui5_if_app.
         ms_home-classname = z2ui5_cl_util=>c_trim_upper( ms_home-classname ).
         CREATE OBJECT li_app_test TYPE (ms_home-classname).
 
@@ -15892,7 +16041,7 @@ CLASS z2ui5_cl_app_startup IMPLEMENTATION.
     simple_form->link( text   = `You added a new feature or fixed a bug?`
                        target = `_blank`
                        href   = `https://github.com/abap2UI5/abap2UI5/pulls` ).
-    simple_form->toolbar( )->title( `More` ).
+    simple_form->toolbar( )->title( `Documentation` ).
     simple_form->label( ).
     simple_form->link( text   = `www.abap2UI5.org`
                        target = `_blank`
@@ -15906,8 +16055,7 @@ CLASS z2ui5_cl_app_startup IMPLEMENTATION.
 
     me->client = client.
 
-    IF mv_check_initialized = abap_false.
-      mv_check_initialized = abap_true.
+    IF client->check_on_init( ).
       z2ui5_on_init( ).
       view_display_start( ).
       RETURN.
@@ -16043,8 +16191,7 @@ CLASS z2ui5_cl_app_hello_world IMPLEMENTATION.
 
   METHOD z2ui5_if_app~main.
 
-    IF check_initialized = abap_false.
-      check_initialized = abap_true.
+    IF client->check_on_init( ).
 
       client->view_display( z2ui5_cl_xml_view=>factory(
         )->shell(
@@ -16686,7 +16833,7 @@ CLASS z2ui5_cl_pop_messages IMPLEMENTATION.
   METHOD factory.
 
     r_result = NEW #( ).
-    DATA(lt_msg) = z2ui5_cl_util=>msg_get( i_messages ).
+    DATA(lt_msg) = z2ui5_cl_util=>msg_get_t( i_messages ).
 
     LOOP AT lt_msg REFERENCE INTO DATA(lr_row).
 
@@ -16711,11 +16858,11 @@ CLASS z2ui5_cl_pop_messages IMPLEMENTATION.
     popup = popup->dialog( title             = `Messages`
                            contentheight     = '50%'
                            contentwidth      = '50%'
-                           verticalScrolling = abap_false
+                           verticalscrolling = abap_false
                            afterclose        = client->_event( 'BUTTON_CONTINUE' )
          ).
 
-    popup->message_view( items = client->_bind( mt_msg  )
+    popup->message_view( items = client->_bind( mt_msg )
 *                         groupitems = abap_true
         )->message_item( type     = `{TYPE}`
                          title    = `{TITLE}`
@@ -16780,7 +16927,7 @@ CLASS z2ui5_cl_pop_js_loader IMPLEMENTATION.
 
     IF js IS NOT INITIAL.
       popup->_z2ui5( )->timer( client->_event( 'TIMER_FINISHED' )
-      )->_generic( ns   = `html`
+        )->_generic( ns = `html`
                    name = `script` )->_cc_plain_xml( js ).
     ENDIF.
 
@@ -16860,10 +17007,8 @@ CLASS z2ui5_cl_pop_itab_json_dl IMPLEMENTATION.
 
           DATA(lv_classname) = `Z2UI5_DBT_CL_APP_03`.
           CALL METHOD (lv_classname)=>('FACTORY_POPUP_BY_ITAB')
-            EXPORTING
-              itab   = mr_itab
-            RECEIVING
-              result = app.
+            EXPORTING itab   = mr_itab
+            RECEIVING result = app.
 
           client->nav_app_leave( CAST #( app ) ).
 
@@ -17123,7 +17268,7 @@ CLASS z2ui5_cl_pop_get_range IMPLEMENTATION.
 
     z2ui5_cl_util=>itab_corresponding( EXPORTING val = t_range
                                        CHANGING  tab = r_result->ms_result-t_range
-    ).
+      ).
 
     INSERT VALUE #( ) INTO TABLE r_result->ms_result-t_range.
 
@@ -17478,17 +17623,22 @@ CLASS z2ui5_cl_pop_bal IMPLEMENTATION.
     "..
 
     "read messages..
-    DATA(lt_msg) = z2ui5_cl_util=>msg_get( i_messages ).
+    DATA(lt_msg) = z2ui5_cl_util=>msg_get_t( i_messages ).
     LOOP AT lt_msg REFERENCE INTO DATA(lr_row).
 
       DATA(ls_row) = VALUE ty_s_msg( ).
-      ls_row-type     = z2ui5_cl_util=>ui5_get_msg_type( lr_row->type ).
-      ls_row-title    = lr_row->text.
-*      lr_row->title = `title`.
-*      lr_row->message = `message`.
-      ls_row-subtitle = |{ lr_row->id } { lr_row->no }|.
-      ls_row-date = z2ui5_cl_util=>time_get_date_by_stampl( lr_row->timestampl ).
-      ls_row-time = z2ui5_cl_util=>time_get_time_by_stampl( lr_row->timestampl ).
+      ls_row-type       = z2ui5_cl_util=>ui5_get_msg_type( lr_row->type ).
+      ls_row-title      = lr_row->text.
+      ls_row-id         = lr_row->id.
+      ls_row-number     = lr_row->no.
+      ls_row-message_v1 = lr_row->v1.
+      ls_row-message_v2 = lr_row->v2.
+      ls_row-message_v3 = lr_row->v3.
+      ls_row-message_v4 = lr_row->v4.
+      ls_row-message    = lr_row->text.
+      ls_row-subtitle   = |{ lr_row->id } { lr_row->no }|.
+      ls_row-date       = z2ui5_cl_util=>time_get_date_by_stampl( lr_row->timestampl ).
+      ls_row-time       = z2ui5_cl_util=>time_get_time_by_stampl( lr_row->timestampl ).
 *      lr_row->group = `001`.
 
       INSERT ls_row INTO TABLE r_result->mt_msg.
@@ -17504,7 +17654,7 @@ CLASS z2ui5_cl_pop_bal IMPLEMENTATION.
     popup = popup->dialog( title             = `Business Application Log`
                            contentheight     = '50%'
                            contentwidth      = '50%'
-                           verticalScrolling = abap_false
+                           verticalscrolling = abap_false
                            afterclose        = client->_event( 'BUTTON_CONTINUE' ) ).
 
     DATA(table) = popup->table( client->_bind( mt_msg ) ).
@@ -17558,7 +17708,7 @@ CLASS z2ui5_cl_app_view1_xml IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `<mvc:View controllerName="z2ui5.controller.View1"` &&
+    result = `<mvc:View controllerName="z2ui5.controller.View1"` &&
              `    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"` &&
              `    xmlns="sap.m">` &&
              `</mvc:View>` &&
@@ -17573,587 +17723,609 @@ CLASS z2ui5_cl_app_view1_js IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/mvc/XMLView", "sap/ui/model/json/JSONModel",` && |\n|  &&
-             `    "sap/ui/core/BusyIndicator", "sap/m/MessageBox", "sap/m/MessageToast", "sap/ui/core/Fragment", "sap/m/BusyDialog",` && |\n|  &&
-             `    "sap/ui/VersionInfo", "z2ui5/cc/Server", "sap/ui/model/odata/v2/ODataModel", "sap/m/library",   "sap/ui/core/routing/HashChanger"` && |\n|  &&
-             `],` && |\n|  &&
-             `    function (Controller, XMLView, JSONModel, BusyIndicator, MessageBox, MessageToast, Fragment, mBusyDialog, VersionInfo,` && |\n|  &&
-             `        Server, ODataModel, mobileLibrary, HashChanger) {` && |\n|  &&
-             `        "use strict";` && |\n|  &&
-             `        return Controller.extend("z2ui5.controller.View1", {` && |\n|  &&
-             `` && |\n|  &&
-             `            onInit() {` && |\n|  &&
-             `` && |\n|  &&
-             `                z2ui5.oRouter.attachRouteMatched(function (oEvent) {` && |\n|  &&
-             `                    z2ui5.checkInit = true;` && |\n|  &&
-             `                    Server.Roundtrip();` && |\n|  &&
-             `                }, this);` && |\n|  &&
-             `` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async onAfterRendering() {` && |\n|  &&
-             `` && |\n|  &&
-             `                if (!z2ui5.oResponse) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `` && |\n|  &&
-             `                try {` && |\n|  &&
-             `                    if (!z2ui5.oResponse.PARAMS) {` && |\n|  &&
-             `                        BusyIndicator.hide();` && |\n|  &&
-             `                        z2ui5.isBusy = false;` && |\n|  &&
-             `                        return;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    const { S_POPUP, S_VIEW_NEST, S_VIEW_NEST2, S_POPOVER, SET_APP_STATE_ACTIVE, SET_PUSH_STATE , SET_NAV_BACK } = z2ui5.oResponse.PARAMS;` && |\n|  &&
-             `                    if (S_POPUP?.CHECK_DESTROY) {` && |\n|  &&
-             `                        z2ui5.oController.PopupDestroy();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    if (S_POPOVER?.CHECK_DESTROY) {` && |\n|  &&
-             `                        z2ui5.oController.PopoverDestroy();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    if (S_POPUP?.XML) {` && |\n|  &&
-             `                        z2ui5.oController.PopupDestroy();` && |\n|  &&
-             `                        await this.displayFragment(S_POPUP.XML, 'oViewPopup');` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    if (!z2ui5.checkNestAfter) {` && |\n|  &&
-             `                        if (S_VIEW_NEST?.XML) {` && |\n|  &&
-             `                            z2ui5.oController.NestViewDestroy();` && |\n|  &&
-             `                            await this.displayNestedView(S_VIEW_NEST.XML, 'oViewNest', 'S_VIEW_NEST');` && |\n|  &&
-             `                            z2ui5.checkNestAfter = true;` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    if (!z2ui5.checkNestAfter2) {` && |\n|  &&
-             `                        if (S_VIEW_NEST2?.XML) {` && |\n|  &&
-             `                            z2ui5.oController.NestViewDestroy2();` && |\n|  &&
-             `                            await this.displayNestedView2(S_VIEW_NEST2.XML, 'oViewNest2', 'S_VIEW_NEST2');` && |\n|  &&
-             `                            z2ui5.checkNestAfter2 = true;` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    if (S_POPOVER?.XML) {` && |\n|  &&
-             `                        await this.displayPopover(S_POPOVER.XML, 'oViewPopover', S_POPOVER.OPEN_BY_ID);` && |\n|  &&
-             `                    }` && |\n|  &&
-             `` && |\n|  &&
-             `                    let oState = JSON.parse(JSON.stringify({ view: z2ui5.oView.mProperties.viewContent, model: z2ui5.oView.getModel().getData(), response: z2ui5.oResponse }));` && |\n|  &&
-             `                   if (SET_PUSH_STATE) {` && |\n|  &&
-             `                     // sap.ui.core.routing.HashChanger.getInstance().setHash("423143124");` && |\n|  &&
-             `                     // sap.ui.core.routing.HashChanger.getInstance().replaceHash("423143124");` && |\n|  &&
-             `                      //history.go(-1);` && |\n|  &&
-             `                        let urlObj = new URL(window.location.href);` && |\n|  &&
-             `                        let hash = HashChanger.getInstance().getHash();` && |\n|  &&
-             `                        if (!hash){` && |\n|  &&
-             `                        hash = '#';` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                        history.pushState(oState, "", urlObj.pathname + urlObj.search + hash + SET_PUSH_STATE);` && |\n|  &&
-             `                     }else{` && |\n|  &&
-             `                     //  debugger;` && |\n|  &&
-             `                        history.replaceState(oState, "", window.location.href );` && |\n|  &&
-             `                    }` && |\n|  &&
-             `` && |\n|  &&
-             `                    if (SET_APP_STATE_ACTIVE) {` && |\n|  &&
-             `                      HashChanger.getInstance().replaceHash("z2ui5-xapp-state=" + z2ui5.oResponse.ID );` && |\n|  &&
-             `                      //  let urlObj = new URL(window.location.href);` && |\n|  &&
-             `                      //  urlObj.searchParams.set("z2ui5-xapp-state", z2ui5.oResponse.ID);` && |\n|  &&
-             `                      //  history.replaceState(oState, null, urlObj.pathname + urlObj.search + urlObj.hash);` && |\n|  &&
-             `                    } else {` && |\n|  &&
-             `                       HashChanger.getInstance().replaceHash("");` && |\n|  &&
-             `                      //  let urlObj = new URL(window.location.href);` && |\n|  &&
-             `                      //  urlObj.searchParams.delete("z2ui5-xapp-state");` && |\n|  &&
-             `                      //  history.replaceState(oState, null, urlObj.pathname + urlObj.search + urlObj.hash);` && |\n|  &&
-             `                    }` && |\n|  &&
-             `` && |\n|  &&
-             `` && |\n|  &&
-             `` && |\n|  &&
-             `                    if (SET_NAV_BACK) {` && |\n|  &&
-             `                        history.back();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `` && |\n|  &&
-             `                    z2ui5.onAfterRendering.forEach(item => {` && |\n|  &&
-             `                        if (item !== undefined) {` && |\n|  &&
-             `                            item();` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    )` && |\n|  &&
-             `` && |\n|  &&
-             `                    BusyIndicator.hide();` && |\n|  &&
-             `                    z2ui5.isBusy = false;` && |\n|  &&
-             `                } catch (e) {` && |\n|  &&
-             `                    BusyIndicator.hide();` && |\n|  &&
-             `                    z2ui5.isBusy = false;` && |\n|  &&
-             `                    MessageBox.error(e.toLocaleString(), {` && |\n|  &&
-             `                        title: "Unexpected Error Occured - App Terminated",` && |\n|  &&
-             `                        actions: [],` && |\n|  &&
-             `                        onClose: () => {` && |\n|  &&
-             `                            new mBusyDialog({` && |\n|  &&
-             `                                text: "Please Restart the App"` && |\n|  &&
-             `                            }).open();` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    })` && |\n|  &&
-             `                }` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async displayFragment(xml, viewProp) {` && |\n|  &&
-             `                let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n|  &&
-             `                const oFragment = await Fragment.load({` && |\n|  &&
-             `                    definition: xml,` && |\n|  &&
-             `                    controller: z2ui5.oControllerPopup,` && |\n|  &&
-             `                    id: "popupId"` && |\n|  &&
-             `                });` && |\n|  &&
-             `                oFragment.setModel(oview_model);` && |\n|  &&
-             `                z2ui5[viewProp] = oFragment;` && |\n|  &&
-             `                z2ui5[viewProp].Fragment = Fragment;` && |\n|  &&
-             `                oFragment.open();` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async displayPopover(xml, viewProp, openById) {` && |\n|  &&
-             `                sap.ui.require(["sap/ui/core/Element"], async function (Element) {` && |\n|  &&
-             `                    const oFragment = await Fragment.load({` && |\n|  &&
-             `                        definition: xml,` && |\n|  &&
-             `                        controller: z2ui5.oControllerPopover,` && |\n|  &&
-             `                        id: "popoverId"` && |\n|  &&
-             `                    });` && |\n|  &&
-             `                    let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n|  &&
-             `                    oFragment.setModel(oview_model);` && |\n|  &&
-             `                    z2ui5[viewProp] = oFragment;` && |\n|  &&
-             `                    z2ui5[viewProp].Fragment = Fragment;` && |\n|  &&
-             `                    let oControl = {};` && |\n|  &&
-             `                    if (z2ui5.oView?.byId(openById)) {` && |\n|  &&
-             `                        oControl = z2ui5.oView.byId(openById);` && |\n|  &&
-             `                    } else if (z2ui5.oViewPopup?.Fragment.byId('popupId', openById)) {` && |\n|  &&
-             `                        oControl = z2ui5.oViewPopup.Fragment.byId('popupId', openById);` && |\n|  &&
-             `                    } else if (z2ui5.oViewNest?.byId(openById)) {` && |\n|  &&
-             `                        oControl = z2ui5.oViewNest.byId(openById);` && |\n|  &&
-             `                    } else if (z2ui5.oViewNest2?.byId(openById)) {` && |\n|  &&
-             `                        oControl = z2ui5.oViewNest2.byId(openById);` && |\n|  &&
-             `                    } else {` && |\n|  &&
-             `                        if (Element.getElementById(openById)) {` && |\n|  &&
-             `                            oControl = Element.getElementById(openById);` && |\n|  &&
-             `                        } else {` && |\n|  &&
-             `                            oControl = null;` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                        ;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    oFragment.openBy(oControl);` && |\n|  &&
-             `                });` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async displayNestedView(xml, viewProp, viewNestId) {` && |\n|  &&
-             `                let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n|  &&
-             `                const oView = await XMLView.create({` && |\n|  &&
-             `                    definition: xml,` && |\n|  &&
-             `                    controller: z2ui5.oControllerNest,` && |\n|  &&
-             `                    preprocessors: {` && |\n|  &&
-             `                        xml: {` && |\n|  &&
-             `                            models: {` && |\n|  &&
-             `                                template: oview_model` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                });` && |\n|  &&
-             `                oView.setModel(oview_model);` && |\n|  &&
-             `                let oParent = z2ui5.oView.byId(z2ui5.oResponse.PARAMS[viewNestId].ID);` && |\n|  &&
-             `                if (oParent) {` && |\n|  &&
-             `                    try {` && |\n|  &&
-             `                        oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_DESTROY]();` && |\n|  &&
-             `                    } catch { }` && |\n|  &&
-             `                    oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_INSERT](oView);` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5[viewProp] = oView;` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async displayNestedView2(xml, viewProp, viewNestId) {` && |\n|  &&
-             `                let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n|  &&
-             `                const oView = await XMLView.create({` && |\n|  &&
-             `                    definition: xml,` && |\n|  &&
-             `                    controller: z2ui5.oControllerNest2,` && |\n|  &&
-             `                    preprocessors: {` && |\n|  &&
-             `                        xml: {` && |\n|  &&
-             `                            models: {` && |\n|  &&
-             `                                template: oview_model` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                });` && |\n|  &&
-             `                oView.setModel(oview_model);` && |\n|  &&
-             `                let oParent = z2ui5.oView.byId(z2ui5.oResponse.PARAMS[viewNestId].ID);` && |\n|  &&
-             `                if (oParent) {` && |\n|  &&
-             `                    try {` && |\n|  &&
-             `                        oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_DESTROY]();` && |\n|  &&
-             `                    } catch { }` && |\n|  &&
-             `                    oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_INSERT](oView);` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5[viewProp] = oView;` && |\n|  &&
-             `            },` && |\n|  &&
-             `            PopupDestroy() {` && |\n|  &&
-             `                if (!z2ui5.oViewPopup) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.oViewPopup.close) {` && |\n|  &&
-             `                    try {` && |\n|  &&
-             `                        z2ui5.oViewPopup.close();` && |\n|  &&
-             `                    } catch { }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oViewPopup.destroy();` && |\n|  &&
-             `            },` && |\n|  &&
-             `            PopoverDestroy() {` && |\n|  &&
-             `                if (!z2ui5.oViewPopover) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.oViewPopover.close) {` && |\n|  &&
-             `                    try {` && |\n|  &&
-             `                        z2ui5.oViewPopover.close();` && |\n|  &&
-             `                    } catch { }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oViewPopover.destroy();` && |\n|  &&
-             `            },` && |\n|  &&
-             `            NestViewDestroy() {` && |\n|  &&
-             `                if (!z2ui5.oViewNest) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oViewNest.destroy();` && |\n|  &&
-             `            },` && |\n|  &&
-             `            NestViewDestroy2() {` && |\n|  &&
-             `                if (!z2ui5.oViewNest2) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oViewNest2.destroy();` && |\n|  &&
-             `            },` && |\n|  &&
-             `            ViewDestroy() {` && |\n|  &&
-             `                if (!z2ui5.oView) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oView.destroy();` && |\n|  &&
-             `            },` && |\n|  &&
-             `            eF(...args) {` && |\n|  &&
-             `` && |\n|  &&
-             `                z2ui5.onBeforeEventFrontend.forEach(item => {` && |\n|  &&
-             `                    if (item !== undefined) {` && |\n|  &&
-             `                        item(args);` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                )` && |\n|  &&
-             `                let oCrossAppNavigator;` && |\n|  &&
-             `                switch (args[0]) {` && |\n|  &&
-             `                    case 'SET_SIZE_LIMIT':` && |\n|  &&
-             `                        switch (args[2]) {` && |\n|  &&
-             `                            case 'MAIN':` && |\n|  &&
-             `                                z2ui5.oView.getModel().setSizeLimit(parseInt(args[1]));` && |\n|  &&
-             `                                z2ui5.oView.getModel().refresh(true);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'NEST':` && |\n|  &&
-             `                                z2ui5.oViewNest.getModel().setSizeLimit(parseInt(args[1]));` && |\n|  &&
-             `                                z2ui5.oViewNest.getModel().refresh(true);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'NEST2':` && |\n|  &&
-             `                                z2ui5.oViewNest2.getModel().setSizeLimit(parseInt(args[1]));` && |\n|  &&
-             `                                z2ui5.oViewNest2.getModel().refresh(true);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'POPUP':` && |\n|  &&
-             `                                z2ui5.oPopup.getModel().setSizeLimit(parseInt(args[1]));` && |\n|  &&
-             `                                z2ui5.oPopup.getModel().refresh(true);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'POPOVER':` && |\n|  &&
-             `                                z2ui5.oPopover.getModel().setSizeLimit(parseInt(args[1]));` && |\n|  &&
-             `                                z2ui5.oPopover.getModel().refresh(true);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'HISTORY_BACK':` && |\n|  &&
-             `                        history.back();` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'CLIPBOARD_APP_STATE':` && |\n|  &&
-             `                            function copyToClipboard(textToCopy) {` && |\n|  &&
-             `                                if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {` && |\n|  &&
-             `                                    navigator.clipboard.writeText(textToCopy)` && |\n|  &&
-             `                                        .then(() => {` && |\n|  &&
-             `` && |\n|  &&
-             `                                        })` && |\n|  &&
-             `                                        .catch(err => {` && |\n|  &&
-             `` && |\n|  &&
-             `                                        });` && |\n|  &&
-             `                                } else {` && |\n|  &&
-             `                                    const tempTextArea = document.createElement("textarea");` && |\n|  &&
-             `                                    tempTextArea.value = textToCopy;` && |\n|  &&
-             `                                    document.body.appendChild(tempTextArea);` && |\n|  &&
-             `` && |\n|  &&
-             `                                    tempTextArea.select();` && |\n|  &&
-             `                                    try {` && |\n|  &&
-             `                                        document.execCommand("copy");` && |\n|  &&
-             `` && |\n|  &&
-             `                                    } catch (err) {` && |\n|  &&
-             `` && |\n|  &&
-             `                                    }` && |\n|  &&
-             `                                    document.body.removeChild(tempTextArea);` && |\n|  &&
-             `                                }` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                                                    copyToClipboard(window.location.href + '#/z2ui5-xapp-state=' + z2ui5.oResponse.ID );` && |\n|  &&
-             `                                                    break;` && |\n|  &&
-             `                    case 'SET_ODATA_MODEL':` && |\n|  &&
-             `                        var oModel = new ODataModel({ serviceUrl: args[1], annotationURI: (args.length > 3 ? args[3] : '') });` && |\n|  &&
-             `                        z2ui5.oView.setModel(oModel, args[2] ? args[2] : undefined);` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'DOWNLOAD_B64_FILE':` && |\n|  &&
-             `                        var a = document.createElement("a");` && |\n|  &&
-             `                        a.href = args[1];` && |\n|  &&
-             `                        a.download = args[2];` && |\n|  &&
-             `                        a.click();` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'CROSS_APP_NAV_TO_PREV_APP':` && |\n|  &&
-             `                        sap.ui.require([` && |\n|  &&
-             `                            "sap/ushell/Container"` && |\n|  &&
-             `                        ], async (ushellContainer) => {` && |\n|  &&
-             `                            // z2ui5.oCrossAppNavigator = await ushellContainer.getServiceAsync("CrossApplicationNavigation");` && |\n|  &&
-             `                            if (ushellContainer){` && |\n|  &&
-             `                                z2ui5.oCrossAppNavigator = ushellContainer.getService("CrossApplicationNavigation");` && |\n|  &&
-             `                            } else {` && |\n|  &&
-             `                                // fallback needed for UI5 version < 1.120` && |\n|  &&
-             `                                z2ui5.oCrossAppNavigator = sap.ushell.Container.getService("CrossApplicationNavigation");` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                            z2ui5.oCrossAppNavigator.backToPreviousApp();` && |\n|  &&
-             `                        });` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'CROSS_APP_NAV_TO_EXT':` && |\n|  &&
-             `                        z2ui5.args = args;` && |\n|  &&
-             `                        sap.ui.require([` && |\n|  &&
-             `                            "sap/ushell/Container"` && |\n|  &&
-             `                        ], async (ushellContainer) => {` && |\n|  &&
-             `                            // z2ui5.oCrossAppNavigator = await ushellContainer.getServiceAsync("CrossApplicationNavigation");` && |\n|  &&
-             `                            if (ushellContainer){` && |\n|  &&
-             `                                z2ui5.oCrossAppNavigator = ushellContainer.getService("CrossApplicationNavigation");` && |\n|  &&
-             `                            } else {` && |\n|  &&
-             `                                // fallback needed for UI5 version < 1.120` && |\n|  &&
-             `                                z2ui5.oCrossAppNavigator = sap.ushell.Container.getService("CrossApplicationNavigation");` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                            const hash = (z2ui5.oCrossAppNavigator.hrefForExternal({` && |\n|  &&
-             `                                target: z2ui5.args[1],` && |\n|  &&
-             `                                params: z2ui5.args[2]` && |\n|  &&
-             `                            })) || "";` && |\n|  &&
-             `                            if (z2ui5.args[3] === 'EXT') {` && |\n|  &&
-             `                                let url = window.location.href.split('#')[0] + hash;` && |\n|  &&
-             `                                //todo` && |\n|  &&
-             `                                //URLHelper.redirect(url, true);` && |\n|  &&
-             `                            } else {` && |\n|  &&
-             `                                z2ui5.oCrossAppNavigator.toExternal({` && |\n|  &&
-             `                                    target: {` && |\n|  &&
-             `                                        shellHash: hash` && |\n|  &&
-             `                                    }` && |\n|  &&
-             `                                });` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                        });` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'LOCATION_RELOAD':` && |\n|  &&
-             `                        window.location = args[1];` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'OPEN_NEW_TAB':` && |\n|  &&
-             `                        window.open(args[1], '_blank');` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'POPUP_CLOSE':` && |\n|  &&
-             `                        z2ui5.oController.PopupDestroy();` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'POPOVER_CLOSE':` && |\n|  &&
-             `                        z2ui5.oController.PopoverDestroy();` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'NAV_CONTAINER_TO':` && |\n|  &&
-             `                        var navCon = z2ui5.oView.byId(args[1]);` && |\n|  &&
-             `                        var navConTo = z2ui5.oView.byId(args[2]);` && |\n|  &&
-             `                        navCon.to(navConTo);` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'NEST_NAV_CONTAINER_TO':` && |\n|  &&
-             `                        navCon = z2ui5.oViewNest.byId(args[1]);` && |\n|  &&
-             `                        navConTo = z2ui5.oViewNest.byId(args[2]);` && |\n|  &&
-             `                        navCon.to(navConTo);` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'NEST2_NAV_CONTAINER_TO':` && |\n|  &&
-             `                        navCon = z2ui5.oViewNest2.byId(args[1]);` && |\n|  &&
-             `                        navConTo = z2ui5.oViewNest2.byId(args[2]);` && |\n|  &&
-             `                        navCon.to(navConTo);` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'POPUP_NAV_CONTAINER_TO':` && |\n|  &&
-             `                        navCon = Fragment.byId("popupId", args[1]);` && |\n|  &&
-             `                        navConTo = Fragment.byId("popupId", args[2]);` && |\n|  &&
-             `                        navCon.to(navConTo);` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'POPOVER_NAV_CONTAINER_TO':` && |\n|  &&
-             `                        navCon = Fragment.byId("popoverId", args[1]);` && |\n|  &&
-             `                        navConTo = Fragment.byId("popoverId", args[2]);` && |\n|  &&
-             `                        navCon.to(navConTo);` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                    case 'URLHELPER':` && |\n|  &&
-             `                        var URLHelper = mobileLibrary.URLHelper;` && |\n|  &&
+    result = `sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/mvc/XMLView", "sap/ui/model/json/JSONModel",` && |\n| &&
+             `    "sap/ui/core/BusyIndicator", "sap/m/MessageBox", "sap/m/MessageToast", "sap/ui/core/Fragment", "sap/m/BusyDialog",` && |\n| &&
+             `    "sap/ui/VersionInfo", "z2ui5/cc/Server", "sap/ui/model/odata/v2/ODataModel", "sap/m/library", "sap/ui/core/routing/HashChanger", "sap/ui/util/Storage"` && |\n| &&
+             `],` && |\n| &&
+             `    function (Controller, XMLView, JSONModel, BusyIndicator, MessageBox, MessageToast, Fragment, mBusyDialog, VersionInfo,` && |\n| &&
+             `        Server, ODataModel, mobileLibrary, HashChanger, Storage) {` && |\n| &&
+             `        "use strict";` && |\n| &&
+             `        return Controller.extend("z2ui5.controller.View1", {` && |\n| &&
+             `` && |\n| &&
+             `            onInit() {` && |\n| &&
+             `` && |\n| &&
+             `                z2ui5.oRouter.attachRouteMatched(function (oEvent) {` && |\n| &&
+             `                    z2ui5.checkInit = true;` && |\n| &&
+             `                    Server.Roundtrip();` && |\n| &&
+             `                }, this);` && |\n| &&
+             `` && |\n| &&
+             `            },` && |\n| &&
+             `            async onAfterRendering() {` && |\n| &&
+             `` && |\n| &&
+             `                if (!z2ui5.oResponse) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `` && |\n| &&
+             `                try {` && |\n| &&
+             `                    if (!z2ui5.oResponse.PARAMS) {` && |\n| &&
+             `                        BusyIndicator.hide();` && |\n| &&
+             `                        z2ui5.isBusy = false;` && |\n| &&
+             `                        return;` && |\n| &&
+             `                    }` && |\n| &&
+             `                    const { S_POPUP, S_VIEW_NEST, S_VIEW_NEST2, S_POPOVER, SET_APP_STATE_ACTIVE, SET_PUSH_STATE , SET_NAV_BACK } = z2ui5.oResponse.PARAMS;` && |\n| &&
+             `                    if (S_POPUP?.CHECK_DESTROY) {` && |\n| &&
+             `                        z2ui5.oController.PopupDestroy();` && |\n| &&
+             `                    }` && |\n| &&
+             `                    if (S_POPOVER?.CHECK_DESTROY) {` && |\n| &&
+             `                        z2ui5.oController.PopoverDestroy();` && |\n| &&
+             `                    }` && |\n| &&
+             `                    if (S_POPUP?.XML) {` && |\n| &&
+             `                        z2ui5.oController.PopupDestroy();` && |\n| &&
+             `                        await this.displayFragment(S_POPUP.XML, 'oViewPopup');` && |\n| &&
+             `                    }` && |\n| &&
+             `                    if (!z2ui5.checkNestAfter) {` && |\n| &&
+             `                        if (S_VIEW_NEST?.XML) {` && |\n| &&
+             `                            z2ui5.oController.NestViewDestroy();` && |\n| &&
+             `                            await this.displayNestedView(S_VIEW_NEST.XML, 'oViewNest', 'S_VIEW_NEST');` && |\n| &&
+             `                            z2ui5.checkNestAfter = true;` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                    if (!z2ui5.checkNestAfter2) {` && |\n| &&
+             `                        if (S_VIEW_NEST2?.XML) {` && |\n| &&
+             `                            z2ui5.oController.NestViewDestroy2();` && |\n| &&
+             `                            await this.displayNestedView2(S_VIEW_NEST2.XML, 'oViewNest2', 'S_VIEW_NEST2');` && |\n| &&
+             `                            z2ui5.checkNestAfter2 = true;` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                    if (S_POPOVER?.XML) {` && |\n| &&
+             `                        await this.displayPopover(S_POPOVER.XML, 'oViewPopover', S_POPOVER.OPEN_BY_ID);` && |\n| &&
+             `                    }` && |\n| &&
+             `` && |\n| &&
+             `                   if (z2ui5.oView) {    var oState = JSON.parse(JSON.stringify({ view: z2ui5.oView.mProperties.viewContent, model: z2ui5.oView.getModel().getData(), response: z2ui5.oResponse })); }else{ oState = {}; }` && |\n| &&
+             `                   if (SET_PUSH_STATE) {` && |\n| &&
+             `                     // sap.ui.core.routing.HashChanger.getInstance().setHash("423143124");` && |\n| &&
+             `                     // sap.ui.core.routing.HashChanger.getInstance().replaceHash("423143124");` && |\n| &&
+             `                      //history.go(-1);` && |\n| &&
+             `                        let urlObj = new URL(window.location.href);` && |\n| &&
+             `                        let hash = HashChanger.getInstance().getHash();` && |\n| &&
+             `                        if (!hash){` && |\n| &&
+             `                        hash = '#';` && |\n| &&
+             `                        }` && |\n| &&
+             `                        history.pushState(oState, "", urlObj.pathname + urlObj.search + hash + SET_PUSH_STATE);` && |\n| &&
+             `                     }else{` && |\n| &&
+             `                     //  debugger;` && |\n| &&
+             `                        history.replaceState(oState, "", window.location.href );` && |\n| &&
+             `                    }` && |\n| &&
+             `` && |\n| &&
+             `                    if (SET_APP_STATE_ACTIVE) {` && |\n| &&
+             `                      HashChanger.getInstance().replaceHash("z2ui5-xapp-state=" + z2ui5.oResponse.ID );` && |\n| &&
+             `                      //  let urlObj = new URL(window.location.href);` && |\n| &&
+             `                      //  urlObj.searchParams.set("z2ui5-xapp-state", z2ui5.oResponse.ID);` && |\n| &&
+             `                      //  history.replaceState(oState, null, urlObj.pathname + urlObj.search + urlObj.hash);` && |\n| &&
+             `                    } else {` && |\n| &&
+             `                       HashChanger.getInstance().replaceHash("");` && |\n| &&
+             `                      //  let urlObj = new URL(window.location.href);` && |\n| &&
+             `                      //  urlObj.searchParams.delete("z2ui5-xapp-state");` && |\n| &&
+             `                      //  history.replaceState(oState, null, urlObj.pathname + urlObj.search + urlObj.hash);` && |\n| &&
+             `                    }` && |\n| &&
+             `` && |\n| &&
+             `` && |\n| &&
+             `` && |\n| &&
+             `                    if (SET_NAV_BACK) {` && |\n| &&
+             `                        history.back();` && |\n| &&
+             `                    }` && |\n| &&
+             `` && |\n| &&
+             `                    z2ui5.onAfterRendering.forEach(item => {` && |\n| &&
+             `                        if (item !== undefined) {` && |\n| &&
+             `                            item();` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                    )` && |\n| &&
+             `` && |\n| &&
+             `                    BusyIndicator.hide();` && |\n| &&
+             `                    z2ui5.isBusy = false;` && |\n| &&
+             `                } catch (e) {` && |\n| &&
+             `                    BusyIndicator.hide();` && |\n| &&
+             `                    z2ui5.isBusy = false;` && |\n| &&
+             `                    MessageBox.error(e.toLocaleString(), {` && |\n| &&
+             `                        title: "Unexpected Error Occured - App Terminated",` && |\n| &&
+             `                        actions: [],` && |\n| &&
+             `                        onClose: () => {` && |\n| &&
+             `                            new mBusyDialog({` && |\n| &&
+             `                                text: "Please Restart the App"` && |\n| &&
+             `                            }).open();` && |\n| &&
+             `                        }` && |\n| &&
+             `                    })` && |\n| &&
+             `                }` && |\n| &&
+             `            },` && |\n| &&
+             `            async displayFragment(xml, viewProp) {` && |\n| &&
+             `                let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n| &&
+             `                const oFragment = await Fragment.load({` && |\n| &&
+             `                    definition: xml,` && |\n| &&
+             `                    controller: z2ui5.oControllerPopup,` && |\n| &&
+             `                    id: "popupId"` && |\n| &&
+             `                });` && |\n| &&
+             `                oFragment.setModel(oview_model);` && |\n| &&
+             `                z2ui5[viewProp] = oFragment;` && |\n| &&
+             `                z2ui5[viewProp].Fragment = Fragment;` && |\n| &&
+             `                oFragment.open();` && |\n| &&
+             `            },` && |\n| &&
+             `            async displayPopover(xml, viewProp, openById) {` && |\n| &&
+             `                sap.ui.require(["sap/ui/core/Element"], async function (Element) {` && |\n| &&
+             `                    const oFragment = await Fragment.load({` && |\n| &&
+             `                        definition: xml,` && |\n| &&
+             `                        controller: z2ui5.oControllerPopover,` && |\n| &&
+             `                        id: "popoverId"` && |\n| &&
+             `                    });` && |\n| &&
+             `                    let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n| &&
+             `                    oFragment.setModel(oview_model);` && |\n| &&
+             `                    z2ui5[viewProp] = oFragment;` && |\n| &&
+             `                    z2ui5[viewProp].Fragment = Fragment;` && |\n| &&
+             `                    let oControl = {};` && |\n| &&
+             `                    if (z2ui5.oView?.byId(openById)) {` && |\n| &&
+             `                        oControl = z2ui5.oView.byId(openById);` && |\n| &&
+             `                    } else if (z2ui5.oViewPopup?.Fragment.byId('popupId', openById)) {` && |\n| &&
+             `                        oControl = z2ui5.oViewPopup.Fragment.byId('popupId', openById);` && |\n| &&
+             `                    } else if (z2ui5.oViewNest?.byId(openById)) {` && |\n| &&
+             `                        oControl = z2ui5.oViewNest.byId(openById);` && |\n| &&
+             `                    } else if (z2ui5.oViewNest2?.byId(openById)) {` && |\n| &&
+             `                        oControl = z2ui5.oViewNest2.byId(openById);` && |\n| &&
+             `                    } else {` && |\n| &&
+             `                        if (Element.getElementById(openById)) {` && |\n| &&
+             `                            oControl = Element.getElementById(openById);` && |\n| &&
+             `                        } else {` && |\n| &&
+             `                            oControl = null;` && |\n| &&
+             `                        }` && |\n| &&
+             `                        ;` && |\n| &&
+             `                    }` && |\n| &&
+             `                    oFragment.openBy(oControl);` && |\n| &&
+             `                });` && |\n| &&
+             `            },` && |\n| &&
+             `            async displayNestedView(xml, viewProp, viewNestId) {` && |\n| &&
+             `                let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n| &&
+             `                const oView = await XMLView.create({` && |\n| &&
+             `                    definition: xml,` && |\n| &&
+             `                    controller: z2ui5.oControllerNest,` && |\n| &&
+             `                    preprocessors: {` && |\n| &&
+             `                        xml: {` && |\n| &&
+             `                            models: {` && |\n| &&
+             `                                template: oview_model` && |\n| &&
+             `                            }` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                });` && |\n| &&
+             `                oView.setModel(oview_model);` && |\n| &&
+             `                let oParent = z2ui5.oView.byId(z2ui5.oResponse.PARAMS[viewNestId].ID);` && |\n| &&
+             `                if (oParent) {` && |\n| &&
+             `                    try {` && |\n| &&
+             `                        oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_DESTROY]();` && |\n| &&
+             `                    } catch { }` && |\n| &&
+             `                    oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_INSERT](oView);` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5[viewProp] = oView;` && |\n| &&
+             `            },` && |\n| &&
+             `            async displayNestedView2(xml, viewProp, viewNestId) {` && |\n| &&
+             `                let oview_model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n| &&
+             `                const oView = await XMLView.create({` && |\n| &&
+             `                    definition: xml,` && |\n| &&
+             `                    controller: z2ui5.oControllerNest2,` && |\n| &&
+             `                    preprocessors: {` && |\n| &&
+             `                        xml: {` && |\n| &&
+             `                            models: {` && |\n| &&
+             `                                template: oview_model` && |\n| &&
+             `                            }` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                });` && |\n| &&
+             `                oView.setModel(oview_model);` && |\n| &&
+             `                let oParent = z2ui5.oView.byId(z2ui5.oResponse.PARAMS[viewNestId].ID);` && |\n| &&
+             `                if (oParent) {` && |\n| &&
+             `                    try {` && |\n| &&
+             `                        oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_DESTROY]();` && |\n| &&
+             `                    } catch { }` && |\n| &&
+             `                    oParent[z2ui5.oResponse.PARAMS[viewNestId].METHOD_INSERT](oView);` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5[viewProp] = oView;` && |\n| &&
+             `            },` && |\n| &&
+             `            PopupDestroy() {` && |\n| &&
+             `                if (!z2ui5.oViewPopup) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.oViewPopup.close) {` && |\n| &&
+             `                    try {` && |\n| &&
+             `                        z2ui5.oViewPopup.close();` && |\n| &&
+             `                    } catch { }` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oViewPopup.destroy();` && |\n| &&
+             `            },` && |\n| &&
+             `            PopoverDestroy() {` && |\n| &&
+             `                if (!z2ui5.oViewPopover) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.oViewPopover.close) {` && |\n| &&
+             `                    try {` && |\n| &&
+             `                        z2ui5.oViewPopover.close();` && |\n| &&
+             `                    } catch { }` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oViewPopover.destroy();` && |\n| &&
+             `            },` && |\n| &&
+             `            NestViewDestroy() {` && |\n| &&
+             `                if (!z2ui5.oViewNest) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oViewNest.destroy();` && |\n| &&
+             `            },` && |\n| &&
+             `            NestViewDestroy2() {` && |\n| &&
+             `                if (!z2ui5.oViewNest2) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oViewNest2.destroy();` && |\n| &&
+             `            },` && |\n| &&
+             `            ViewDestroy() {` && |\n| &&
+             `                if (!z2ui5.oView) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oView.destroy();` && |\n| &&
+             `            },` && |\n| &&
+             `            eF(...args) {` && |\n| &&
+             `` && |\n| &&
+             `                z2ui5.onBeforeEventFrontend.forEach(item => {` && |\n| &&
+             `                    if (item !== undefined) {` && |\n| &&
+             `                        item(args);` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `                )` && |\n| &&
+             `                let oCrossAppNavigator;` && |\n| &&
+             `                switch (args[0]) {` && |\n| &&
+             `                    case 'SET_SIZE_LIMIT':` && |\n| &&
+             `                        switch (args[2]) {` && |\n| &&
+             `                            case 'MAIN':` && |\n| &&
+             `                                z2ui5.oView.getModel().setSizeLimit(parseInt(args[1]));` && |\n| &&
+             `                                z2ui5.oView.getModel().refresh(true);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'NEST':` && |\n| &&
+             `                                z2ui5.oViewNest.getModel().setSizeLimit(parseInt(args[1]));` && |\n| &&
+             `                                z2ui5.oViewNest.getModel().refresh(true);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'NEST2':` && |\n| &&
+             `                                z2ui5.oViewNest2.getModel().setSizeLimit(parseInt(args[1]));` && |\n| &&
+             `                                z2ui5.oViewNest2.getModel().refresh(true);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'POPUP':` && |\n| &&
+             `                                z2ui5.oPopup.getModel().setSizeLimit(parseInt(args[1]));` && |\n| &&
+             `                                z2ui5.oPopup.getModel().refresh(true);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'POPOVER':` && |\n| &&
+             `                                z2ui5.oPopover.getModel().setSizeLimit(parseInt(args[1]));` && |\n| &&
+             `                                z2ui5.oPopover.getModel().refresh(true);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                        }` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'HISTORY_BACK':` && |\n| &&
+             `                        history.back();` && |\n| &&
+             `                        break;` && |\n| &&
+             `                   case 'CLIPBOARD_COPY':` && |\n| &&
+             `                        copyToClipboard( args[1] );` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'CLIPBOARD_APP_STATE':` && |\n| &&
+             `                            function copyToClipboard(textToCopy) {` && |\n| &&
+             `                                if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {` && |\n| &&
+             `                                    navigator.clipboard.writeText(textToCopy)` && |\n| &&
+             `                                        .then(() => {` && |\n| &&
+             `` && |\n| &&
+             `                                        })` && |\n| &&
+             `                                        .catch(err => {` && |\n| &&
+             `` && |\n| &&
+             `                                        });` && |\n| &&
+             `                                } else {` && |\n| &&
+             `                                    const tempTextArea = document.createElement("textarea");` && |\n| &&
+             `                                    tempTextArea.value = textToCopy;` && |\n| &&
+             `                                    document.body.appendChild(tempTextArea);` && |\n| &&
+             `` && |\n| &&
+             `                                    tempTextArea.select();` && |\n| &&
+             `                                    try {` && |\n| &&
+             `                                        document.execCommand("copy");` && |\n| &&
+             `` && |\n| &&
+             `                                    } catch (err) {` && |\n| &&
+             `` && |\n| &&
+             `                                    }` && |\n| &&
+             `                                    document.body.removeChild(tempTextArea);` && |\n| &&
+             `                                }` && |\n| &&
+             `                            }` && |\n| &&
+             `                                                    copyToClipboard(window.location.href + '#/z2ui5-xapp-state=' + z2ui5.oResponse.ID );` && |\n| &&
+             `                                                    break;` && |\n| &&
+             `                    case 'SET_ODATA_MODEL':` && |\n| &&
+             `                        var oModel = new ODataModel({ serviceUrl: args[1], annotationURI: (args.length > 3 ? args[3] : '') });` && |\n| &&
+             `                        z2ui5.oView.setModel(oModel, args[2] ? args[2] : undefined);` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'STORE_DATA':` && |\n| &&
+             `                        let storageParams = args[1];` && |\n| &&
+             `                        let storageType = Storage.Type.session;` && |\n| &&
+             `                        switch (storageParams.TYPE) {` && |\n| &&
+             `                            case 'session':` && |\n| &&
+             `                                storageType = Storage.Type.session;` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'local':` && |\n| &&
+             `                                storageType = Storage.Type.local;` && |\n| &&
+             `                                break;` && |\n| &&
+             `                        }` && |\n| &&
+             `                        let oStorage = new Storage(storageType, storageParams.PREFIX);` && |\n| &&
+             `                        if (storageParams.VALUE == "" || storageParams.VALUE == null) {` && |\n| &&
+             `                            oStorage.remove(storageParams.KEY);` && |\n| &&
+             `                        } else {` && |\n| &&
+             `                            oStorage.put(storageParams.KEY, storageParams.VALUE);` && |\n| &&
+             `                        }` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'DOWNLOAD_B64_FILE':` && |\n| &&
+             `                        var a = document.createElement("a");` && |\n| &&
+             `                        a.href = args[1];` && |\n| &&
+             `                        a.download = args[2];` && |\n| &&
+             `                        a.click();` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'CROSS_APP_NAV_TO_PREV_APP':` && |\n| &&
+             `                        sap.ui.require([` && |\n| &&
+             `                            "sap/ushell/Container"` && |\n| &&
+             `                        ], async (ushellContainer) => {` && |\n| &&
+             `                            // z2ui5.oCrossAppNavigator = await ushellContainer.getServiceAsync("CrossApplicationNavigation");` && |\n| &&
+             `                            if (ushellContainer){` && |\n| &&
+             `                                z2ui5.oCrossAppNavigator = ushellContainer.getService("CrossApplicationNavigation");` && |\n| &&
+             `                            } else {` && |\n| &&
+             `                                // fallback needed for UI5 version < 1.120` && |\n| &&
+             `                                z2ui5.oCrossAppNavigator = sap.ushell.Container.getService("CrossApplicationNavigation");` && |\n| &&
+             `                            }` && |\n| &&
+             `                            z2ui5.oCrossAppNavigator.backToPreviousApp();` && |\n| &&
+             `                        });` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'CROSS_APP_NAV_TO_EXT':` && |\n| &&
+             `                        z2ui5.args = args;` && |\n| &&
+             `                        sap.ui.require([` && |\n| &&
+             `                            "sap/ushell/Container"` && |\n| &&
+             `                        ], async (ushellContainer) => {` && |\n| &&
+             `                            // z2ui5.oCrossAppNavigator = await ushellContainer.getServiceAsync("CrossApplicationNavigation");` && |\n| &&
+             `                            if (ushellContainer){` && |\n| &&
+             `                                z2ui5.oCrossAppNavigator = ushellContainer.getService("CrossApplicationNavigation");` && |\n| &&
+             `                            } else {` && |\n| &&
+             `                                // fallback needed for UI5 version < 1.120` && |\n| &&
+             `                                z2ui5.oCrossAppNavigator = sap.ushell.Container.getService("CrossApplicationNavigation");` && |\n| &&
+             `                            }` && |\n| &&
+             `                            const hash = (z2ui5.oCrossAppNavigator.hrefForExternal({` && |\n| &&
+             `                                target: z2ui5.args[1],` && |\n| &&
+             `                                params: z2ui5.args[2]` && |\n| &&
+             `                            })) || "";` && |\n| &&
+             `                            if (z2ui5.args[3] === 'EXT') {` && |\n| &&
+             `                                let url = window.location.href.split('#')[0] + hash;` && |\n| &&
+             `                                //todo` && |\n| &&
+             `                                //URLHelper.redirect(url, true);` && |\n| &&
+             `                            } else {` && |\n| &&
+             `                                z2ui5.oCrossAppNavigator.toExternal({` && |\n| &&
+             `                                    target: {` && |\n| &&
+             `                                        shellHash: hash` && |\n| &&
+             `                                    }` && |\n| &&
+             `                                });` && |\n| &&
+             `                            }` && |\n| &&
+             `                        });` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'LOCATION_RELOAD':` && |\n| &&
+             `                        window.location = args[1];` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'OPEN_NEW_TAB':` && |\n| &&
+             `                        window.open(args[1], '_blank');` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'POPUP_CLOSE':` && |\n| &&
+             `                        z2ui5.oController.PopupDestroy();` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'POPOVER_CLOSE':` && |\n| &&
+             `                        z2ui5.oController.PopoverDestroy();` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'NAV_CONTAINER_TO':` && |\n| &&
+             `                        var navCon = z2ui5.oView.byId(args[1]);` && |\n| &&
+             `                        var navConTo = z2ui5.oView.byId(args[2]);` && |\n| &&
+             `                        navCon.to(navConTo);` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'NEST_NAV_CONTAINER_TO':` && |\n| &&
              |\n|.
     result = result &&
-             `                        var params = args[2];` && |\n|  &&
-             `                        switch (args[1]) {` && |\n|  &&
-             `                            case 'REDIRECT':` && |\n|  &&
-             `                                URLHelper.redirect(params.URL, params.NEW_WINDOW);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'TRIGGER_EMAIL':` && |\n|  &&
-             `                                URLHelper.triggerEmail(params.EMAIL, params.SUBJECT, params.BODY, params.CC, params.BCC, params.NEW_WINDOW);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'TRIGGER_SMS':` && |\n|  &&
-             `                                URLHelper.triggerSms(params);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                            case 'TRIGGER_TEL':` && |\n|  &&
-             `                                URLHelper.triggerTel(params);` && |\n|  &&
-             `                                break;` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                        break;` && |\n|  &&
-             `                }` && |\n|  &&
-             `            },` && |\n|  &&
-             `            eB(...args) {` && |\n|  &&
-             `` && |\n|  &&
-             `                if (!window.navigator.onLine) {` && |\n|  &&
-             `                    MessageBox.alert('No internet connection! Please reconnect to the server and try again.');` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.isBusy == true) {` && |\n|  &&
-             `                    if (!args[0][2]) {` && |\n|  &&
-             `                        let oBusyDialog = new mBusyDialog();` && |\n|  &&
-             `                        oBusyDialog.open();` && |\n|  &&
-             `                        setTimeout((oBusyDialog) => {` && |\n|  &&
-             `                            oBusyDialog.close()` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                            , 100, oBusyDialog);` && |\n|  &&
-             `                        return;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.isBusy = true;` && |\n|  &&
-             `                BusyIndicator.show();` && |\n|  &&
-             `                z2ui5.oBody = {};` && |\n|  &&
-             `                if (args[0][3] || z2ui5.oController == this) {` && |\n|  &&
-             `                    if (z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH) {` && |\n|  &&
-             `                        var oModel = z2ui5.oView.getModel("http");` && |\n|  &&
-             `                    } else {` && |\n|  &&
-             `                        oModel = z2ui5.oView.getModel();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    z2ui5.oBody.XX = oModel.getData().XX;` && |\n|  &&
-             `                    z2ui5.oBody.VIEWNAME = 'MAIN';` && |\n|  &&
-             `                } else if (z2ui5.oControllerPopup == this) {` && |\n|  &&
-             `                    if (z2ui5.oViewPopup) {` && |\n|  &&
-             `                        z2ui5.oBody.XX = z2ui5.oViewPopup.getModel().getData().XX;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    z2ui5.oBody.VIEWNAME = 'MAIN';` && |\n|  &&
-             `                } else if (z2ui5.oControllerPopover == this) {` && |\n|  &&
-             `                    z2ui5.oBody.XX = z2ui5.oViewPopover.getModel().getData().XX;` && |\n|  &&
-             `                    z2ui5.oBody.VIEWNAME = 'MAIN';` && |\n|  &&
-             `                } else if (z2ui5.oControllerNest == this) {` && |\n|  &&
-             `                    z2ui5.oBody.XX = z2ui5.oViewNest.getModel().getData().XX;` && |\n|  &&
-             `                    z2ui5.oBody.VIEWNAME = 'NEST';` && |\n|  &&
-             `                } else if (z2ui5.oControllerNest2 == this) {` && |\n|  &&
-             `                    z2ui5.oBody.XX = z2ui5.oViewNest2.getModel().getData().XX;` && |\n|  &&
-             `                    z2ui5.oBody.VIEWNAME = 'NEST2';` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.onBeforeRoundtrip.forEach(item => {` && |\n|  &&
-             `                    if (item !== undefined) {` && |\n|  &&
-             `                        item();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                )` && |\n|  &&
-             `                z2ui5.oBody.ID = z2ui5.oResponse.ID;` && |\n|  &&
-             `                z2ui5.oBody.ARGUMENTS = args;` && |\n|  &&
-             `                z2ui5.oBody.ARGUMENTS.forEach((item, i) => {` && |\n|  &&
-             `                    if (i == 0) {` && |\n|  &&
-             `                        return;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    if (typeof item === 'object') {` && |\n|  &&
-             `                        z2ui5.oBody.ARGUMENTS[i] = JSON.stringify(item);` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                );` && |\n|  &&
-             `                z2ui5.oResponseOld = z2ui5.oResponse;` && |\n|  &&
-             `                Server.Roundtrip();` && |\n|  &&
-             `` && |\n|  &&
-             `            },` && |\n|  &&
-             `` && |\n|  &&
-             `            updateModelIfRequired(paramKey, oView) {` && |\n|  &&
-             `                if (z2ui5.oResponse.PARAMS == undefined) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.oResponse.PARAMS[paramKey]?.CHECK_UPDATE_MODEL) {` && |\n|  &&
-             `                    let model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n|  &&
-             `                    if (oView) {` && |\n|  &&
-             `                        oView.setModel(model);` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async checkSDKcompatibility(err) {` && |\n|  &&
-             `                let oCurrentVersionInfo = await VersionInfo.load();` && |\n|  &&
-             `                var ui5_sdk = oCurrentVersionInfo.gav.includes('com.sap.ui5') ? true : false;` && |\n|  &&
-             `                if (!ui5_sdk) {` && |\n|  &&
-             `                    if (err) {` && |\n|  &&
-             `                        MessageBox.error("openui5 SDK is loaded, module: " + err._modules + " is not availabe in openui5");` && |\n|  &&
-             `                        return;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    ;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                ; MessageBox.error(err.toLocaleString());` && |\n|  &&
-             `            },` && |\n|  &&
-             `            showMessage(msgType, params) {` && |\n|  &&
-             `                if (params == undefined) {` && |\n|  &&
-             `                    return;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (params[msgType]?.TEXT !== undefined) {` && |\n|  &&
-             `                    if (msgType === 'S_MSG_TOAST') {` && |\n|  &&
-             `                        MessageToast.show(params[msgType].TEXT, {` && |\n|  &&
-             `                            duration: params[msgType].DURATION ? parseInt(params[msgType].DURATION) : 3000,` && |\n|  &&
-             `                            width: params[msgType].WIDTH ? params[msgType].WIDTH : '15em',` && |\n|  &&
-             `                            onClose: params[msgType].ONCLOSE ? params[msgType].ONCLOSE : null,` && |\n|  &&
-             `                            autoClose: params[msgType].AUTOCLOSE ? true : false,` && |\n|  &&
-             `                            animationTimingFunction: params[msgType].ANIMATIONTIMINGFUNCTION ? params[msgType].ANIMATIONTIMINGFUNCTION : 'ease',` && |\n|  &&
-             `                            animationDuration: params[msgType].ANIMATIONDURATION ? parseInt(params[msgType].ANIMATIONDURATION) : 1000,` && |\n|  &&
-             `                            closeonBrowserNavigation: params[msgType].CLOSEONBROWSERNAVIGATION ? true : false` && |\n|  &&
-             `                        });` && |\n|  &&
-             `                        if (params[msgType].CLASS) {` && |\n|  &&
-             `                            let mtoast = {};` && |\n|  &&
-             `                            mtoast = document.getElementsByClassName("sapMMessageToast")[0];` && |\n|  &&
-             `                            if (mtoast) {` && |\n|  &&
-             `                                mtoast.classList.add(params[msgType].CLASS);` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                        ;` && |\n|  &&
-             `                    } else if (msgType === 'S_MSG_BOX') {` && |\n|  &&
-             `` && |\n|  &&
-             `                        let oParams = {` && |\n|  &&
-             `                            styleClass: params[msgType].STYLECLASS ? params[msgType].STYLECLASS : '',` && |\n|  &&
-             `                            title: params[msgType].TITLE ? params[msgType].TITLE : '',` && |\n|  &&
-             `                            onClose: params[msgType].ONCLOSE ? Function("sAction", "return " + params[msgType].ONCLOSE) : null,` && |\n|  &&
-             `                            actions: params[msgType].ACTIONS ? params[msgType].ACTIONS : 'OK',` && |\n|  &&
-             `                            emphasizedAction: params[msgType].EMPHASIZEDACTION ? params[msgType].EMPHASIZEDACTION : 'OK',` && |\n|  &&
-             `                            initialFocus: params[msgType].INITIALFOCUS ? params[msgType].INITIALFOCUS : null,` && |\n|  &&
-             `                            textDirection: params[msgType].TEXTDIRECTION ? params[msgType].TEXTDIRECTION : 'Inherit',` && |\n|  &&
-             `                            icon: params[msgType].ICON ? params[msgType].ICON : 'NONE',` && |\n|  &&
-             `                            details: params[msgType].DETAILS ? params[msgType].DETAILS : '',` && |\n|  &&
-             `                            closeOnNavigation: params[msgType].CLOSEONNAVIGATION ? true : false` && |\n|  &&
-             `                        };` && |\n|  &&
-             `                        if (oParams.icon = 'None') { delete oParams.icon };` && |\n|  &&
-             `                        MessageBox[params[msgType].TYPE](params[msgType].TEXT, oParams);` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async displayView(xml, viewModel) {` && |\n|  &&
-             `                let oview_model = new JSONModel(viewModel);` && |\n|  &&
-             `                var oModel = oview_model;` && |\n|  &&
-             `                if (z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH) {` && |\n|  &&
-             `                    oModel = new ODataModel({` && |\n|  &&
-             `                        serviceUrl: z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH,` && |\n|  &&
-             `                        annotationURI: z2ui5.oResponse.PARAMS.S_VIEW?.SWITCHDEFAULTMODELANNOURI` && |\n|  &&
-             `                    });` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oView = await XMLView.create({` && |\n|  &&
-             `                    definition: xml,` && |\n|  &&
-             `                    models: oModel,` && |\n|  &&
-             `                    controller: z2ui5.oController,` && |\n|  &&
-             `                    id: 'mainView',` && |\n|  &&
-             `                    preprocessors: {` && |\n|  &&
-             `                        xml: {` && |\n|  &&
-             `                            models: {` && |\n|  &&
-             `                                template: oview_model` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                });` && |\n|  &&
-             `                z2ui5.oView.setModel(z2ui5.oDeviceModel, "device");` && |\n|  &&
-             `                if (z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH) {` && |\n|  &&
-             `                    z2ui5.oView.setModel(oview_model, "http");` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oApp.removeAllPages();` && |\n|  &&
-             `                z2ui5.oApp.insertPage(z2ui5.oView);` && |\n|  &&
-             `            },` && |\n|  &&
-             `        })` && |\n|  &&
-             `    });` && |\n|  &&
+             `                        navCon = z2ui5.oViewNest.byId(args[1]);` && |\n| &&
+             `                        navConTo = z2ui5.oViewNest.byId(args[2]);` && |\n| &&
+             `                        navCon.to(navConTo);` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'NEST2_NAV_CONTAINER_TO':` && |\n| &&
+             `                        navCon = z2ui5.oViewNest2.byId(args[1]);` && |\n| &&
+             `                        navConTo = z2ui5.oViewNest2.byId(args[2]);` && |\n| &&
+             `                        navCon.to(navConTo);` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'POPUP_NAV_CONTAINER_TO':` && |\n| &&
+             `                        navCon = Fragment.byId("popupId", args[1]);` && |\n| &&
+             `                        navConTo = Fragment.byId("popupId", args[2]);` && |\n| &&
+             `                        navCon.to(navConTo);` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'POPOVER_NAV_CONTAINER_TO':` && |\n| &&
+             `                        navCon = Fragment.byId("popoverId", args[1]);` && |\n| &&
+             `                        navConTo = Fragment.byId("popoverId", args[2]);` && |\n| &&
+             `                        navCon.to(navConTo);` && |\n| &&
+             `                        break;` && |\n| &&
+             `                    case 'URLHELPER':` && |\n| &&
+             `                        var URLHelper = mobileLibrary.URLHelper;` && |\n| &&
+             `                        var params = args[2];` && |\n| &&
+             `                        switch (args[1]) {` && |\n| &&
+             `                            case 'REDIRECT':` && |\n| &&
+             `                                URLHelper.redirect(params.URL, params.NEW_WINDOW);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'TRIGGER_EMAIL':` && |\n| &&
+             `                                URLHelper.triggerEmail(params.EMAIL, params.SUBJECT, params.BODY, params.CC, params.BCC, params.NEW_WINDOW);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'TRIGGER_SMS':` && |\n| &&
+             `                                URLHelper.triggerSms(params);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                            case 'TRIGGER_TEL':` && |\n| &&
+             `                                URLHelper.triggerTel(params);` && |\n| &&
+             `                                break;` && |\n| &&
+             `                        }` && |\n| &&
+             `                        break;` && |\n| &&
+             `                }` && |\n| &&
+             `            },` && |\n| &&
+             `            eB(...args) {` && |\n| &&
+             `` && |\n| &&
+             `                if (!window.navigator.onLine) {` && |\n| &&
+             `                    MessageBox.alert('No internet connection! Please reconnect to the server and try again.');` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.isBusy == true) {` && |\n| &&
+             `                    if (!args[0][2]) {` && |\n| &&
+             `                        let oBusyDialog = new mBusyDialog();` && |\n| &&
+             `                        oBusyDialog.open();` && |\n| &&
+             `                        setTimeout((oBusyDialog) => {` && |\n| &&
+             `                            oBusyDialog.close()` && |\n| &&
+             `                        }` && |\n| &&
+             `                            , 100, oBusyDialog);` && |\n| &&
+             `                        return;` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.isBusy = true;` && |\n| &&
+             `                BusyIndicator.show();` && |\n| &&
+             `                z2ui5.oBody = {};` && |\n| &&
+             `                if (args[0][3] || z2ui5.oController == this) {` && |\n| &&
+             `                    if (z2ui5.oResponse.PARAMS?.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH) {` && |\n| &&
+             `                        var oModel = z2ui5.oView.getModel("http");` && |\n| &&
+             `                    } else {` && |\n| &&
+             `                        oModel = z2ui5.oView.getModel();` && |\n| &&
+             `                    }` && |\n| &&
+             `                    z2ui5.oBody.XX = oModel.getData().XX;` && |\n| &&
+             `                    z2ui5.oBody.VIEWNAME = 'MAIN';` && |\n| &&
+             `                } else if (z2ui5.oControllerPopup == this) {` && |\n| &&
+             `                    if (z2ui5.oViewPopup) {` && |\n| &&
+             `                        z2ui5.oBody.XX = z2ui5.oViewPopup.getModel().getData().XX;` && |\n| &&
+             `                    }` && |\n| &&
+             `                    z2ui5.oBody.VIEWNAME = 'MAIN';` && |\n| &&
+             `                } else if (z2ui5.oControllerPopover == this) {` && |\n| &&
+             `                    z2ui5.oBody.XX = z2ui5.oViewPopover.getModel().getData().XX;` && |\n| &&
+             `                    z2ui5.oBody.VIEWNAME = 'MAIN';` && |\n| &&
+             `                } else if (z2ui5.oControllerNest == this) {` && |\n| &&
+             `                    z2ui5.oBody.XX = z2ui5.oViewNest.getModel().getData().XX;` && |\n| &&
+             `                    z2ui5.oBody.VIEWNAME = 'NEST';` && |\n| &&
+             `                } else if (z2ui5.oControllerNest2 == this) {` && |\n| &&
+             `                    z2ui5.oBody.XX = z2ui5.oViewNest2.getModel().getData().XX;` && |\n| &&
+             `                    z2ui5.oBody.VIEWNAME = 'NEST2';` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.onBeforeRoundtrip.forEach(item => {` && |\n| &&
+             `                    if (item !== undefined) {` && |\n| &&
+             `                        item();` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `                )` && |\n| &&
+             `                z2ui5.oBody.ID = z2ui5.oResponse.ID;` && |\n| &&
+             `                z2ui5.oBody.ARGUMENTS = args;` && |\n| &&
+             `                z2ui5.oBody.ARGUMENTS.forEach((item, i) => {` && |\n| &&
+             `                    if (i == 0) {` && |\n| &&
+             `                        return;` && |\n| &&
+             `                    }` && |\n| &&
+             `                    if (typeof item === 'object') {` && |\n| &&
+             `                        z2ui5.oBody.ARGUMENTS[i] = JSON.stringify(item);` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `                );` && |\n| &&
+             `                z2ui5.oResponseOld = z2ui5.oResponse;` && |\n| &&
+             `                Server.Roundtrip();` && |\n| &&
+             `` && |\n| &&
+             `            },` && |\n| &&
+             `` && |\n| &&
+             `            updateModelIfRequired(paramKey, oView) {` && |\n| &&
+             `                if (z2ui5.oResponse.PARAMS == undefined) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.oResponse.PARAMS[paramKey]?.CHECK_UPDATE_MODEL) {` && |\n| &&
+             `                    let model = new JSONModel(z2ui5.oResponse.OVIEWMODEL);` && |\n| &&
+             `                    if (oView) {` && |\n| &&
+             `                        oView.setModel(model);` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `            },` && |\n| &&
+             `            async checkSDKcompatibility(err) {` && |\n| &&
+             `                let oCurrentVersionInfo = await VersionInfo.load();` && |\n| &&
+             `                var ui5_sdk = oCurrentVersionInfo.gav.includes('com.sap.ui5') ? true : false;` && |\n| &&
+             `                if (!ui5_sdk) {` && |\n| &&
+             `                    if (err) {` && |\n| &&
+             `                        MessageBox.error("openui5 SDK is loaded, module: " + err._modules + " is not availabe in openui5");` && |\n| &&
+             `                        return;` && |\n| &&
+             `                    }` && |\n| &&
+             `                    ;` && |\n| &&
+             `                }` && |\n| &&
+             `                ; MessageBox.error(err.toLocaleString());` && |\n| &&
+             `            },` && |\n| &&
+             `            showMessage(msgType, params) {` && |\n| &&
+             `                if (params == undefined) {` && |\n| &&
+             `                    return;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (params[msgType]?.TEXT !== undefined) {` && |\n| &&
+             `                    if (msgType === 'S_MSG_TOAST') {` && |\n| &&
+             `                        MessageToast.show(params[msgType].TEXT, {` && |\n| &&
+             `                            duration: params[msgType].DURATION ? parseInt(params[msgType].DURATION) : 3000,` && |\n| &&
+             `                            width: params[msgType].WIDTH ? params[msgType].WIDTH : '15em',` && |\n| &&
+             `                            onClose: params[msgType].ONCLOSE ? params[msgType].ONCLOSE : null,` && |\n| &&
+             `                            autoClose: params[msgType].AUTOCLOSE ? true : false,` && |\n| &&
+             `                            animationTimingFunction: params[msgType].ANIMATIONTIMINGFUNCTION ? params[msgType].ANIMATIONTIMINGFUNCTION : 'ease',` && |\n| &&
+             `                            animationDuration: params[msgType].ANIMATIONDURATION ? parseInt(params[msgType].ANIMATIONDURATION) : 1000,` && |\n| &&
+             `                            closeonBrowserNavigation: params[msgType].CLOSEONBROWSERNAVIGATION ? true : false` && |\n| &&
+             `                        });` && |\n| &&
+             `                        if (params[msgType].CLASS) {` && |\n| &&
+             `                            let mtoast = {};` && |\n| &&
+             `                            mtoast = document.getElementsByClassName("sapMMessageToast")[0];` && |\n| &&
+             `                            if (mtoast) {` && |\n| &&
+             `                                mtoast.classList.add(params[msgType].CLASS);` && |\n| &&
+             `                            }` && |\n| &&
+             `                        }` && |\n| &&
+             `                        ;` && |\n| &&
+             `                    } else if (msgType === 'S_MSG_BOX') {` && |\n| &&
+             `` && |\n| &&
+             `                        let oParams = {` && |\n| &&
+             `                            styleClass: params[msgType].STYLECLASS ? params[msgType].STYLECLASS : '',` && |\n| &&
+             `                            title: params[msgType].TITLE ? params[msgType].TITLE : '',` && |\n| &&
+             `                            onClose: params[msgType].ONCLOSE ? Function("sAction", "return " + params[msgType].ONCLOSE) : null,` && |\n| &&
+             `                            actions: params[msgType].ACTIONS ? params[msgType].ACTIONS : 'OK',` && |\n| &&
+             `                            emphasizedAction: params[msgType].EMPHASIZEDACTION ? params[msgType].EMPHASIZEDACTION : 'OK',` && |\n| &&
+             `                            initialFocus: params[msgType].INITIALFOCUS ? params[msgType].INITIALFOCUS : null,` && |\n| &&
+             `                            textDirection: params[msgType].TEXTDIRECTION ? params[msgType].TEXTDIRECTION : 'Inherit',` && |\n| &&
+             `                            icon: params[msgType].ICON ? params[msgType].ICON : 'NONE',` && |\n| &&
+             `                            details: params[msgType].DETAILS ? params[msgType].DETAILS : '',` && |\n| &&
+             `                            closeOnNavigation: params[msgType].CLOSEONNAVIGATION ? true : false` && |\n| &&
+             `                        };` && |\n| &&
+             `                        if (oParams.icon = 'None') { delete oParams.icon };` && |\n| &&
+             `                        MessageBox[params[msgType].TYPE](params[msgType].TEXT, oParams);` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `            },` && |\n| &&
+             `            async displayView(xml, viewModel) {` && |\n| &&
+             `                let oview_model = new JSONModel(viewModel);` && |\n| &&
+             `                var oModel = oview_model;` && |\n| &&
+             `                if (z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH) {` && |\n| &&
+             `                    oModel = new ODataModel({` && |\n| &&
+             `                        serviceUrl: z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH,` && |\n| &&
+             `                        annotationURI: z2ui5.oResponse.PARAMS.S_VIEW?.SWITCHDEFAULTMODELANNOURI` && |\n| &&
+             `                    });` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oView = await XMLView.create({` && |\n| &&
+             `                    definition: xml,` && |\n| &&
+             `                    models: oModel,` && |\n| &&
+             `                    controller: z2ui5.oController,` && |\n| &&
+             `                    id: 'mainView',` && |\n| &&
+             `                    preprocessors: {` && |\n| &&
+             `                        xml: {` && |\n| &&
+             `                            models: {` && |\n| &&
+             `                                template: oview_model` && |\n| &&
+             `                            }` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                });` && |\n| &&
+             `                z2ui5.oView.setModel(z2ui5.oDeviceModel, "device");` && |\n| &&
+             `                if (z2ui5.oResponse.PARAMS.S_VIEW?.SWITCH_DEFAULT_MODEL_PATH) {` && |\n| &&
+             `                    z2ui5.oView.setModel(oview_model, "http");` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oApp.removeAllPages();` && |\n| &&
+             `                z2ui5.oApp.insertPage(z2ui5.oView);` && |\n| &&
+             `            },` && |\n| &&
+             `        })` && |\n| &&
+             `    });` && |\n| &&
+             `` && |\n| &&
               ``.
 
   ENDMETHOD.
@@ -18164,7 +18336,7 @@ CLASS z2ui5_cl_app_style_css IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `/* Enter your custom styles here */` &&
+    result = `/* Enter your custom styles here */` &&
               ``.
 
   ENDMETHOD.
@@ -18175,160 +18347,160 @@ CLASS z2ui5_cl_app_server_js IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `sap.ui.define(["sap/ui/core/BusyIndicator", "sap/m/MessageBox"` && |\n|  &&
-             `],` && |\n|  &&
-             `    function (BusyIndicator, MessageBox) {` && |\n|  &&
-             `        "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `        return {` && |\n|  &&
-             `` && |\n|  &&
-             `            endSession: function () {` && |\n|  &&
-             `` && |\n|  &&
-             `                if (z2ui5.contextId) {` && |\n|  &&
-             `                    fetch(z2ui5.oConfig.pathname, {` && |\n|  &&
-             `                        method: 'HEAD',` && |\n|  &&
-             `                        keepalive: true,` && |\n|  &&
-             `                        headers: {` && |\n|  &&
-             `                            'sap-terminate': 'session',` && |\n|  &&
-             `                            'sap-contextid': z2ui5.contextId,` && |\n|  &&
-             `                            'sap-contextid-accept': 'header'` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    });` && |\n|  &&
-             `                    delete z2ui5.contextId;` && |\n|  &&
-             `                }` && |\n|  &&
-             `` && |\n|  &&
-             `            },` && |\n|  &&
-             `            Roundtrip() {` && |\n|  &&
-             `                z2ui5.checkTimerActive = false;` && |\n|  &&
-             `                z2ui5.checkNestAfter = false;` && |\n|  &&
-             `                z2ui5.checkNestAfter2 = false;` && |\n|  &&
-             `                let event = (args) => {` && |\n|  &&
-             `                    if (args != undefined) {` && |\n|  &&
-             `                        return args[0][0];` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                };` && |\n|  &&
-             `` && |\n|  &&
-             `              //  try{` && |\n|  &&
-             `              //  let oState = JSON.parse(JSON.stringify({ view: z2ui5.oView.mProperties.viewContent, model: z2ui5.oView.getModel().getData(), response: z2ui5.oResponse }));` && |\n|  &&
-             `              //  history.replaceState(oState, "", window.location.href );` && |\n|  &&
-             `              //  }catch(e){}` && |\n|  &&
-             `` && |\n|  &&
-             `                z2ui5.oBody ??= {};` && |\n|  &&
-             `                z2ui5.oBody.S_FRONT = {` && |\n|  &&
-             `                    ID: z2ui5?.oBody?.ID,` && |\n|  &&
-             `                    CONFIG: z2ui5.oConfig,` && |\n|  &&
-             `                    XX: z2ui5?.oBody?.XX,` && |\n|  &&
-             `                    ORIGIN: window.location.origin,` && |\n|  &&
-             `                    PATHNAME: window.location.pathname,` && |\n|  &&
-             `                    SEARCH: (z2ui5.search) ? z2ui5.search : window.location.search,` && |\n|  &&
-             `                    VIEW: z2ui5.oBody?.VIEWNAME,` && |\n|  &&
-             `                    EVENT: event(z2ui5.oBody?.ARGUMENTS),` && |\n|  &&
-             `                    HASH: window.location.hash,` && |\n|  &&
-             `                };` && |\n|  &&
-             `                if (z2ui5.oBody?.ARGUMENTS != undefined) {` && |\n|  &&
-             `                    if (z2ui5.oBody?.ARGUMENTS.length > 0) {` && |\n|  &&
-             `                        z2ui5.oBody?.ARGUMENTS.shift();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                z2ui5.oBody.S_FRONT.T_EVENT_ARG = z2ui5.oBody?.ARGUMENTS;` && |\n|  &&
-             `                delete z2ui5.oBody.ID;` && |\n|  &&
-             `                delete z2ui5.oBody?.VIEWNAME;` && |\n|  &&
-             `                delete z2ui5.oBody?.S_FRONT.XX;` && |\n|  &&
-             `                delete z2ui5.oBody?.ARGUMENTS;` && |\n|  &&
-             `                if (!z2ui5.oBody.S_FRONT.T_EVENT_ARG) {` && |\n|  &&
-             `                    delete z2ui5.oBody.S_FRONT.T_EVENT_ARG;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.oBody.S_FRONT.T_EVENT_ARG) {` && |\n|  &&
-             `                    if (z2ui5.oBody.S_FRONT.T_EVENT_ARG.length == 0) {` && |\n|  &&
-             `                        delete z2ui5.oBody.S_FRONT.T_EVENT_ARG;` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.oBody.S_FRONT.T_STARTUP_PARAMETERS == undefined) {` && |\n|  &&
-             `                    delete z2ui5.oBody.S_FRONT.T_STARTUP_PARAMETERS;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (z2ui5.oBody.S_FRONT.SEARCH == '') {` && |\n|  &&
-             `                    delete z2ui5.oBody.S_FRONT.SEARCH;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                if (!z2ui5.oBody.XX) {` && |\n|  &&
-             `                    delete z2ui5.oBody.XX;` && |\n|  &&
-             `                }` && |\n|  &&
-             `                this.readHttp();` && |\n|  &&
-             `            },` && |\n|  &&
-             `` && |\n|  &&
-             `            async readHttp() {` && |\n|  &&
-             `                const response = await fetch(z2ui5.oConfig.pathname, {` && |\n|  &&
-             `                    method: 'POST',` && |\n|  &&
-             `                    headers: {` && |\n|  &&
-             `                        'Content-Type': 'application/json',` && |\n|  &&
-             `                        'sap-contextid-accept': 'header',` && |\n|  &&
-             `                        'sap-contextid': z2ui5.contextId` && |\n|  &&
-             `                    },` && |\n|  &&
-             `                    body: JSON.stringify(z2ui5.oBody)` && |\n|  &&
-             `                });` && |\n|  &&
-             `                z2ui5.contextId = response.headers.get("sap-contextid");` && |\n|  &&
-             `                if (!response.ok) {` && |\n|  &&
-             `                    const responseText = await response.text();` && |\n|  &&
-             `                    this.responseError(responseText);` && |\n|  &&
-             `                } else {` && |\n|  &&
-             `                    const responseData = await response.json();` && |\n|  &&
-             `                    z2ui5.responseData = responseData;` && |\n|  &&
-             `                    this.responseSuccess({` && |\n|  &&
-             `                        ID: responseData.S_FRONT.ID,` && |\n|  &&
-             `                        PARAMS: responseData.S_FRONT.PARAMS,` && |\n|  &&
-             `                        OVIEWMODEL: responseData.MODEL,` && |\n|  &&
-             `                    });` && |\n|  &&
-             `                }` && |\n|  &&
-             `            },` && |\n|  &&
-             `            async responseSuccess(response) {` && |\n|  &&
-             `                try {` && |\n|  &&
-             `                    z2ui5.oResponse = response;` && |\n|  &&
-             `                    if (z2ui5.oResponse.PARAMS?.S_VIEW?.CHECK_DESTROY) {` && |\n|  &&
-             `                        z2ui5.oController.ViewDestroy();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    ; if (z2ui5.oResponse.PARAMS?.S_FOLLOW_UP_ACTION?.CUSTOM_JS) {` && |\n|  &&
-             `                        setTimeout(() => {` && |\n|  &&
-             `                            for ( let i = 0; i < z2ui5.oResponse?.PARAMS.S_FOLLOW_UP_ACTION.CUSTOM_JS.length ; i++ ){` && |\n|  &&
-             `                            let mParams = z2ui5.oResponse?.PARAMS.S_FOLLOW_UP_ACTION.CUSTOM_JS[i].split("'");` && |\n|  &&
-             `                            let mParamsEF = mParams.filter((val, index) => index % 2)` && |\n|  &&
-             `                            if (mParamsEF.length) {` && |\n|  &&
-             `                                z2ui5.oController.eF.apply(undefined, mParamsEF);` && |\n|  &&
-             `                            } else {` && |\n|  &&
-             `                                Function("return " + mParams[0])();` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                            }` && |\n|  &&
-             `                        }, 100);` && |\n|  &&
-             `                    };` && |\n|  &&
-             `                    z2ui5.oController.showMessage('S_MSG_TOAST', z2ui5.oResponse.PARAMS);` && |\n|  &&
-             `                    z2ui5.oController.showMessage('S_MSG_BOX', z2ui5.oResponse.PARAMS);` && |\n|  &&
-             `                    if (z2ui5.oResponse.PARAMS?.S_VIEW?.XML) {` && |\n|  &&
-             `                        if (z2ui5.oResponse.PARAMS?.S_VIEW?.XML !== '') {` && |\n|  &&
-             `                            z2ui5.oController.ViewDestroy();` && |\n|  &&
-             `                            await z2ui5.oController.displayView(z2ui5.oResponse.PARAMS.S_VIEW.XML, z2ui5.oResponse.OVIEWMODEL);` && |\n|  &&
-             `                            return;` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    z2ui5.oController.updateModelIfRequired('S_VIEW', z2ui5.oView);` && |\n|  &&
-             `                    z2ui5.oController.updateModelIfRequired('S_VIEW_NEST', z2ui5.oViewNest);` && |\n|  &&
-             `                    z2ui5.oController.updateModelIfRequired('S_VIEW_NEST2', z2ui5.oViewNest2);` && |\n|  &&
-             `                    z2ui5.oController.updateModelIfRequired('S_POPUP', z2ui5.oViewPopup);` && |\n|  &&
-             `                    z2ui5.oController.updateModelIfRequired('S_POPOVER', z2ui5.oViewPopover);` && |\n|  &&
-             `                    z2ui5.oController.onAfterRendering();` && |\n|  &&
-             `                } catch (e) {` && |\n|  &&
-             `                    BusyIndicator.hide();` && |\n|  &&
-             `                    if (e.message.includes("openui5")) {` && |\n|  &&
-             `                        if (e.message.includes("script load error")) {` && |\n|  &&
-             `                            z2ui5.oController.checkSDKcompatibility(e)` && |\n|  &&
-             `                        }` && |\n|  &&
-             `                    } else {` && |\n|  &&
-             `                        MessageBox.error(e.toLocaleString());` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                }` && |\n|  &&
-             `            },` && |\n|  &&
-             `            responseError(response) {` && |\n|  &&
-             `                document.write(response);` && |\n|  &&
-             `            },` && |\n|  &&
-             `        };` && |\n|  &&
-             `    });` && |\n|  &&
+    result = `sap.ui.define(["sap/ui/core/BusyIndicator", "sap/m/MessageBox"` && |\n| &&
+             `],` && |\n| &&
+             `    function (BusyIndicator, MessageBox) {` && |\n| &&
+             `        "use strict";` && |\n| &&
+             `` && |\n| &&
+             `        return {` && |\n| &&
+             `` && |\n| &&
+             `            endSession: function () {` && |\n| &&
+             `` && |\n| &&
+             `                if (z2ui5.contextId) {` && |\n| &&
+             `                    fetch(z2ui5.oConfig.pathname, {` && |\n| &&
+             `                        method: 'HEAD',` && |\n| &&
+             `                        keepalive: true,` && |\n| &&
+             `                        headers: {` && |\n| &&
+             `                            'sap-terminate': 'session',` && |\n| &&
+             `                            'sap-contextid': z2ui5.contextId,` && |\n| &&
+             `                            'sap-contextid-accept': 'header'` && |\n| &&
+             `                        }` && |\n| &&
+             `                    });` && |\n| &&
+             `                    delete z2ui5.contextId;` && |\n| &&
+             `                }` && |\n| &&
+             `` && |\n| &&
+             `            },` && |\n| &&
+             `            Roundtrip() {` && |\n| &&
+             `                z2ui5.checkTimerActive = false;` && |\n| &&
+             `                z2ui5.checkNestAfter = false;` && |\n| &&
+             `                z2ui5.checkNestAfter2 = false;` && |\n| &&
+             `                let event = (args) => {` && |\n| &&
+             `                    if (args != undefined) {` && |\n| &&
+             `                        return args[0][0];` && |\n| &&
+             `                    }` && |\n| &&
+             `                };` && |\n| &&
+             `` && |\n| &&
+             `              //  try{` && |\n| &&
+             `              //  let oState = JSON.parse(JSON.stringify({ view: z2ui5.oView.mProperties.viewContent, model: z2ui5.oView.getModel().getData(), response: z2ui5.oResponse }));` && |\n| &&
+             `              //  history.replaceState(oState, "", window.location.href );` && |\n| &&
+             `              //  }catch(e){}` && |\n| &&
+             `` && |\n| &&
+             `                z2ui5.oBody ??= {};` && |\n| &&
+             `                z2ui5.oBody.S_FRONT = {` && |\n| &&
+             `                    ID: z2ui5?.oBody?.ID,` && |\n| &&
+             `                    CONFIG: z2ui5.oConfig,` && |\n| &&
+             `                    XX: z2ui5?.oBody?.XX,` && |\n| &&
+             `                    ORIGIN: window.location.origin,` && |\n| &&
+             `                    PATHNAME: window.location.pathname,` && |\n| &&
+             `                    SEARCH: (z2ui5.search) ? z2ui5.search : window.location.search,` && |\n| &&
+             `                    VIEW: z2ui5.oBody?.VIEWNAME,` && |\n| &&
+             `                    EVENT: event(z2ui5.oBody?.ARGUMENTS),` && |\n| &&
+             `                    HASH: window.location.hash,` && |\n| &&
+             `                };` && |\n| &&
+             `                if (z2ui5.oBody?.ARGUMENTS != undefined) {` && |\n| &&
+             `                    if (z2ui5.oBody?.ARGUMENTS.length > 0) {` && |\n| &&
+             `                        z2ui5.oBody?.ARGUMENTS.shift();` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `                z2ui5.oBody.S_FRONT.T_EVENT_ARG = z2ui5.oBody?.ARGUMENTS;` && |\n| &&
+             `                delete z2ui5.oBody.ID;` && |\n| &&
+             `                delete z2ui5.oBody?.VIEWNAME;` && |\n| &&
+             `                delete z2ui5.oBody?.S_FRONT.XX;` && |\n| &&
+             `                delete z2ui5.oBody?.ARGUMENTS;` && |\n| &&
+             `                if (!z2ui5.oBody.S_FRONT.T_EVENT_ARG) {` && |\n| &&
+             `                    delete z2ui5.oBody.S_FRONT.T_EVENT_ARG;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.oBody.S_FRONT.T_EVENT_ARG) {` && |\n| &&
+             `                    if (z2ui5.oBody.S_FRONT.T_EVENT_ARG.length == 0) {` && |\n| &&
+             `                        delete z2ui5.oBody.S_FRONT.T_EVENT_ARG;` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.oBody.S_FRONT.T_STARTUP_PARAMETERS == undefined) {` && |\n| &&
+             `                    delete z2ui5.oBody.S_FRONT.T_STARTUP_PARAMETERS;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (z2ui5.oBody.S_FRONT.SEARCH == '') {` && |\n| &&
+             `                    delete z2ui5.oBody.S_FRONT.SEARCH;` && |\n| &&
+             `                }` && |\n| &&
+             `                if (!z2ui5.oBody.XX) {` && |\n| &&
+             `                    delete z2ui5.oBody.XX;` && |\n| &&
+             `                }` && |\n| &&
+             `                this.readHttp();` && |\n| &&
+             `            },` && |\n| &&
+             `` && |\n| &&
+             `            async readHttp() {` && |\n| &&
+             `                const response = await fetch(z2ui5.oConfig.pathname, {` && |\n| &&
+             `                    method: 'POST',` && |\n| &&
+             `                    headers: {` && |\n| &&
+             `                        'Content-Type': 'application/json',` && |\n| &&
+             `                        'sap-contextid-accept': 'header',` && |\n| &&
+             `                        'sap-contextid': z2ui5.contextId` && |\n| &&
+             `                    },` && |\n| &&
+             `                    body: JSON.stringify(z2ui5.oBody)` && |\n| &&
+             `                });` && |\n| &&
+             `                z2ui5.contextId = response.headers.get("sap-contextid");` && |\n| &&
+             `                if (!response.ok) {` && |\n| &&
+             `                    const responseText = await response.text();` && |\n| &&
+             `                    this.responseError(responseText);` && |\n| &&
+             `                } else {` && |\n| &&
+             `                    const responseData = await response.json();` && |\n| &&
+             `                    z2ui5.responseData = responseData;` && |\n| &&
+             `                    this.responseSuccess({` && |\n| &&
+             `                        ID: responseData.S_FRONT.ID,` && |\n| &&
+             `                        PARAMS: responseData.S_FRONT.PARAMS,` && |\n| &&
+             `                        OVIEWMODEL: responseData.MODEL,` && |\n| &&
+             `                    });` && |\n| &&
+             `                }` && |\n| &&
+             `            },` && |\n| &&
+             `            async responseSuccess(response) {` && |\n| &&
+             `                try {` && |\n| &&
+             `                    z2ui5.oResponse = response;` && |\n| &&
+             `                    if (z2ui5.oResponse.PARAMS?.S_VIEW?.CHECK_DESTROY) {` && |\n| &&
+             `                        z2ui5.oController.ViewDestroy();` && |\n| &&
+             `                    }` && |\n| &&
+             `                    ; if (z2ui5.oResponse.PARAMS?.S_FOLLOW_UP_ACTION?.CUSTOM_JS) {` && |\n| &&
+             `                        setTimeout(() => {` && |\n| &&
+             `                            for ( let i = 0; i < z2ui5.oResponse?.PARAMS.S_FOLLOW_UP_ACTION.CUSTOM_JS.length ; i++ ){` && |\n| &&
+             `                            let mParams = z2ui5.oResponse?.PARAMS.S_FOLLOW_UP_ACTION.CUSTOM_JS[i].split("'");` && |\n| &&
+             `                            let mParamsEF = mParams.filter((val, index) => index % 2)` && |\n| &&
+             `                            if (mParamsEF.length) {` && |\n| &&
+             `                                z2ui5.oController.eF.apply(undefined, mParamsEF);` && |\n| &&
+             `                            } else {` && |\n| &&
+             `                                Function("return " + mParams[0])();` && |\n| &&
+             `                            }` && |\n| &&
+             `                            }` && |\n| &&
+             `                        }, 100);` && |\n| &&
+             `                    };` && |\n| &&
+             `                    z2ui5.oController.showMessage('S_MSG_TOAST', z2ui5.oResponse.PARAMS);` && |\n| &&
+             `                    z2ui5.oController.showMessage('S_MSG_BOX', z2ui5.oResponse.PARAMS);` && |\n| &&
+             `                    if (z2ui5.oResponse.PARAMS?.S_VIEW?.XML) {` && |\n| &&
+             `                        if (z2ui5.oResponse.PARAMS?.S_VIEW?.XML !== '') {` && |\n| &&
+             `                            z2ui5.oController.ViewDestroy();` && |\n| &&
+             `                            await z2ui5.oController.displayView(z2ui5.oResponse.PARAMS.S_VIEW.XML, z2ui5.oResponse.OVIEWMODEL);` && |\n| &&
+             `                            return;` && |\n| &&
+             `                        }` && |\n| &&
+             `                    }` && |\n| &&
+             `                    z2ui5.oController.updateModelIfRequired('S_VIEW', z2ui5.oView);` && |\n| &&
+             `                    z2ui5.oController.updateModelIfRequired('S_VIEW_NEST', z2ui5.oViewNest);` && |\n| &&
+             `                    z2ui5.oController.updateModelIfRequired('S_VIEW_NEST2', z2ui5.oViewNest2);` && |\n| &&
+             `                    z2ui5.oController.updateModelIfRequired('S_POPUP', z2ui5.oViewPopup);` && |\n| &&
+             `                    z2ui5.oController.updateModelIfRequired('S_POPOVER', z2ui5.oViewPopover);` && |\n| &&
+             `                    z2ui5.oController.onAfterRendering();` && |\n| &&
+             `                } catch (e) {` && |\n| &&
+             `                    BusyIndicator.hide();` && |\n| &&
+             `                    if (e.message.includes("openui5")) {` && |\n| &&
+             `                        if (e.message.includes("script load error")) {` && |\n| &&
+             `                            z2ui5.oController.checkSDKcompatibility(e)` && |\n| &&
+             `                        }` && |\n| &&
+             `                    } else {` && |\n| &&
+             `                        MessageBox.error(e.toLocaleString());` && |\n| &&
+             `                    }` && |\n| &&
+             `                }` && |\n| &&
+             `            },` && |\n| &&
+             `            responseError(response) {` && |\n| &&
+             `                document.write(response);` && |\n| &&
+             `            },` && |\n| &&
+             `        };` && |\n| &&
+             `    });` && |\n| &&
               ``.
 
   ENDMETHOD.
@@ -18339,25 +18511,25 @@ CLASS z2ui5_cl_app_models_js IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `sap.ui.define([` && |\n|  &&
-             `    "sap/ui/model/json/JSONModel",` && |\n|  &&
-             `    "sap/ui/Device"` && |\n|  &&
-             `],` && |\n|  &&
-             `function (JSONModel, Device) {` && |\n|  &&
-             `    "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `    return {` && |\n|  &&
-             `        /**` && |\n|  &&
-             `         * Provides runtime info for the device the UI5 app is running on as JSONModel` && |\n|  &&
-             `         */` && |\n|  &&
-             `        createDeviceModel: function () {` && |\n|  &&
-             `            var oModel = new JSONModel(Device);` && |\n|  &&
-             `            oModel.setDefaultBindingMode("OneWay");` && |\n|  &&
-             `            return oModel;` && |\n|  &&
-             `        }` && |\n|  &&
-             `    };` && |\n|  &&
-             `` && |\n|  &&
-             `});` && |\n|  &&
+    result = `sap.ui.define([` && |\n| &&
+             `    "sap/ui/model/json/JSONModel",` && |\n| &&
+             `    "sap/ui/Device"` && |\n| &&
+             `],` && |\n| &&
+             `function (JSONModel, Device) {` && |\n| &&
+             `    "use strict";` && |\n| &&
+             `` && |\n| &&
+             `    return {` && |\n| &&
+             `        /**` && |\n| &&
+             `         * Provides runtime info for the device the UI5 app is running on as JSONModel` && |\n| &&
+             `         */` && |\n| &&
+             `        createDeviceModel: function () {` && |\n| &&
+             `            var oModel = new JSONModel(Device);` && |\n| &&
+             `            oModel.setDefaultBindingMode("OneWay");` && |\n| &&
+             `            return oModel;` && |\n| &&
+             `        }` && |\n| &&
+             `    };` && |\n| &&
+             `` && |\n| &&
+             `});` && |\n| &&
               ``.
 
   ENDMETHOD.
@@ -18368,7 +18540,7 @@ CLASS z2ui5_cl_app_manifest_json IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `{` &&
+    result = `{` &&
              `  "_version": "1.65.0",` &&
              `  "sap.app": {` &&
              `    "id": "z2ui5",` &&
@@ -18514,7 +18686,7 @@ CLASS z2ui5_cl_app_index_html IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `<!DOCTYPE html>` &&
+    result = `<!DOCTYPE html>` &&
              `<html lang="en">` &&
              `<head>` &&
              `    <meta charset="UTF-8">` &&
@@ -18560,7 +18732,7 @@ CLASS z2ui5_cl_app_debugtool_xml IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `<core:FragmentDefinition` &&
+    result = `<core:FragmentDefinition` &&
              `    xmlns="sap.m"` &&
              `    xmlns:mvc="sap.ui.core.mvc"` &&
              `    xmlns:core="sap.ui.core"` &&
@@ -18573,18 +18745,18 @@ CLASS z2ui5_cl_app_debugtool_xml IMPLEMENTATION.
              `    >` &&
              `        <IconTabHeader` &&
              `            selectedKey="PLAIN"` &&
-             `            select="onItemSelect"` &&
+             `            select=".onItemSelect"` &&
              `        >` &&
              `            <items>` &&
-             `            <IconTabFilter` &&
+             `         <IconTabFilter` &&
              `                    text="Config"` &&
              `                    key="CONFIG"` &&
-             `          enabled="true"` &&
+             ` enabled="true"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Previous Request"` &&
              `                    key="REQUEST"` &&
-             `          enabled="true"` &&
+             ` enabled="true"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Response"` &&
@@ -18605,47 +18777,47 @@ CLASS z2ui5_cl_app_debugtool_xml IMPLEMENTATION.
              `                <IconTabFilter` &&
              `                    text="Popup"` &&
              `                    key="POPUP"` &&
-             `          enabled="{/activePopup}"` &&
+             ` enabled="{/activePopup}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Popup Model"` &&
              `                    key="POPUP_MODEL"` &&
-             `          enabled="{/activePopup}"` &&
+             ` enabled="{/activePopup}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Popover"` &&
              `                    key="POPOVER"` &&
-             `          enabled="{/activePopover}"` &&
+             ` enabled="{/activePopover}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Popover Model"` &&
              `                    key="POPOVER_MODEL"` &&
-             `          enabled="{/activePopover}"` &&
+             ` enabled="{/activePopover}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Nest1"` &&
              `                    key="NEST1"` &&
-             `          enabled="{/activeNest1}"` &&
+             ` enabled="{/activeNest1}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Nest1 Model"` &&
              `                    key="NEST1_MODEL"` &&
-             `          enabled="{/activeNest1}"` &&
+             ` enabled="{/activeNest1}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Nest2"` &&
              `                    key="NEST2"` &&
-             `          enabled="{/activeNest2}"` &&
+             ` enabled="{/activeNest2}"` &&
              `                />` &&
              `                <IconTabFilter` &&
              `                    text="Nest2 Model"` &&
              `                    key="NEST2_MODEL"` &&
-             `          enabled="{/activeNest2}"` &&
+             ` enabled="{/activeNest2}"` &&
              `                />` &&
              `            </items>` &&
              `        </IconTabHeader>` &&
-             `      <VBox>` &&
-             `        <ToggleButton text="Source XML after Templating" visible="{/isTemplating}" pressed="{/templatingSource}" press="onTemplatingPress" />` &&
+             ` <VBox>` &&
+             ` <ToggleButton text="Source XML after Templating" visible="{/isTemplating}" pressed="{/templatingSource}" press=".onTemplatingPress" />` &&
              `        <ce:CodeEditor` &&
              `            type="{/type}"` &&
              `            value="{/value}"` &&
@@ -18653,13 +18825,13 @@ CLASS z2ui5_cl_app_debugtool_xml IMPLEMENTATION.
              `            width="10000px"` &&
              `            visible="{/editor_visible}"` &&
              `        /></VBox>` &&
-             `    <VBox visible="{/source_visible}">` &&
-             `        <core:HTML/>` &&
-             `      </VBox>` &&
+             ` <VBox visible="{/source_visible}">` &&
+             ` <core:HTML/>` &&
+             ` </VBox>` &&
              `        <endButton>` &&
              `            <Button` &&
              `                text="Close"` &&
-             `                press="onClose"` &&
+             `                press=".onClose"` &&
              `            />` &&
              `        </endButton>` &&
              `    </Dialog>` &&
@@ -18675,168 +18847,168 @@ CLASS z2ui5_cl_app_debugtool_js IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `sap.ui.define(["sap/ui/core/Control", "sap/ui/core/Fragment", "sap/ui/model/json/JSONModel"], (Control, Fragment, JSONModel) => {` && |\n|  &&
-             `    "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `    return Control.extend("z2ui5.cc.DebugTool", {` && |\n|  &&
-             `` && |\n|  &&
-             `        //printer XML` && |\n|  &&
-             `        prettifyXml: function (sourceXml) {` && |\n|  &&
-             `            const xmlDoc = new DOMParser().parseFromString(sourceXml, 'application/xml');` && |\n|  &&
-             `            var sParse = ``&lt;xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"&gt;` && |\n|  &&
-             `                &lt;xsl:strip-space elements="*" /&gt;` && |\n|  &&
-             `                &lt;xsl:template match="para[content-style][not(text())]"&gt;` && |\n|  &&
-             `                    &lt;xsl:value-of select="normalize-space(.)" /&gt;` && |\n|  &&
-             `                &lt;/xsl:template&gt;` && |\n|  &&
-             `                &lt;xsl:template match="node()|@*"&gt;` && |\n|  &&
-             `                    &lt;xsl:copy&gt;` && |\n|  &&
-             `                        &lt;xsl:apply-templates select="node()|@*" /&gt;` && |\n|  &&
-             `                    &lt;/xsl:copy&gt;` && |\n|  &&
-             `                &lt;/xsl:template&gt;` && |\n|  &&
-             `                &lt;xsl:output indent="yes" /&gt;` && |\n|  &&
-             `            &lt;/xsl:stylesheet&gt;``;` && |\n|  &&
-             `            sParse = sParse.replace(/&gt;/g, unescape("%3E")).replace(/&lt;/g, unescape("%3C"));` && |\n|  &&
-             `            const xsltDoc = new DOMParser().parseFromString(sParse, 'application/xml');` && |\n|  &&
-             `` && |\n|  &&
-             `            const xsltProcessor = new XSLTProcessor();` && |\n|  &&
-             `            xsltProcessor.importStylesheet(xsltDoc);` && |\n|  &&
-             `            const resultDoc = xsltProcessor.transformToDocument(xmlDoc);` && |\n|  &&
-             `            const resultXml = new XMLSerializer().serializeToString(resultDoc);` && |\n|  &&
-             `            return resultXml.replace(/&gt;/g, ">").replace(/&lt;/g, "<");` && |\n|  &&
-             `        }, onItemSelect: function (oEvent) {` && |\n|  &&
-             `            const selItem = oEvent.getSource().getSelectedKey();` && |\n|  &&
-             `            const oView = z2ui5?.oView;` && |\n|  &&
-             `            const oResponse = z2ui5?.oResponse;` && |\n|  &&
-             `            const displayEditor = this.displayEditor.bind(this);` && |\n|  &&
-             `` && |\n|  &&
-             `            switch (selItem) {` && |\n|  &&
-             `                case 'CONFIG':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5.oConfig, null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'MODEL':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(oView?.getModel()?.getData(), null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'VIEW':` && |\n|  &&
-             `                    const viewContent = oView?.mProperties?.viewContent || z2ui5.responseData.S_FRONT.PARAMS.S_VIEW.XML;` && |\n|  &&
-             `                    displayEditor(oEvent, this.prettifyXml(viewContent), 'xml', this.prettifyXml(oView?._xContent.outerHTML));` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'PLAIN':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5.responseData, null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'REQUEST':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5.oBody, null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'POPUP':` && |\n|  &&
-             `                    displayEditor(oEvent, this.prettifyXml(oResponse?.PARAMS?.S_POPUP?.XML), 'xml');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'POPUP_MODEL':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5.oViewPopup.getModel().getData(), null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'POPOVER':` && |\n|  &&
-             `                    displayEditor(oEvent, this.prettifyXml(oResponse?.PARAMS?.S_POPOVER?.XML), 'xml');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'POPOVER_MODEL':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5?.oViewPopover?.getModel()?.getData(), null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'NEST1':` && |\n|  &&
-             `                    displayEditor(oEvent, this.prettifyXml(z2ui5?.oViewNest?.mProperties?.viewContent), 'xml', this.prettifyXml(z2ui5?.oViewNest?._xContent.outerHTML));` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'NEST1_MODEL':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5?.oViewNest?.getModel()?.getData(), null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'NEST2':` && |\n|  &&
-             `                    displayEditor(oEvent, this.prettifyXml(z2ui5?.oViewNest2?.mProperties?.viewContent), 'xml', this.prettifyXml(z2ui5?.oViewNest2?._xContent.outerHTML));` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'NEST2_MODEL':` && |\n|  &&
-             `                    displayEditor(oEvent, JSON.stringify(z2ui5?.oViewNest2?.getModel()?.getData(), null, 3), 'json');` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `                case 'SOURCE':` && |\n|  &&
-             `                    const parent = oEvent.getSource().getParent();` && |\n|  &&
-             `                    const contentControl = parent.getContent()[2].getItems()[0];` && |\n|  &&
-             `                    const url = ``${window.location.origin}/sap/bc/adt/oo/classes/${z2ui5.responseData.S_FRONT.APP}/source/main``;` && |\n|  &&
-             `                    const content = atob('PGlmcmFtZSBpZD0idGVzdCIgc3JjPSInICsgdXJsICsgJyIgaGVpZ2h0PSI4MDBweCIgd2lkdGg9IjEyMDBweCIgLz4=').replace("' + url + '", url);` && |\n|  &&
-             `                    contentControl.setProperty("content", content);` && |\n|  &&
-             `                    const modelData = oEvent.getSource().getModel().oData;` && |\n|  &&
-             `                    modelData.editor_visible = false;` && |\n|  &&
-             `                    modelData.source_visible = true;` && |\n|  &&
-             `                    oEvent.getSource().getModel().refresh();` && |\n|  &&
-             `                    break;` && |\n|  &&
-             `            }` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        displayEditor: function (oEvent, content, type, xcontent = "") {` && |\n|  &&
-             `            const modelData = oEvent.getSource().getModel().oData;` && |\n|  &&
-             `            modelData.editor_visible = true;` && |\n|  &&
-             `            modelData.source_visible = false;` && |\n|  &&
-             `            modelData.isTemplating = content.includes("xmlns:template");` && |\n|  &&
-             `            modelData.value = content;` && |\n|  &&
-             `            modelData.previousValue = content;` && |\n|  &&
-             `            modelData.xContent = xcontent;` && |\n|  &&
-             `            modelData.type = type;` && |\n|  &&
-             `            oEvent.getSource().getModel().refresh();` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        onTemplatingPress: function (oEvent) {` && |\n|  &&
-             `            const modelData = oEvent.getSource().getModel().oData;` && |\n|  &&
-             `            modelData.value = oEvent.getSource().getPressed() ? modelData.xContent : modelData.previousValue;` && |\n|  &&
-             `            oEvent.getSource().getModel().refresh();` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        onClose: function () {` && |\n|  &&
-             `            this.close();` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        async show() {` && |\n|  &&
-             `            if (!this.oDialog) {` && |\n|  &&
-             `                this.oDialog = await Fragment.load({` && |\n|  &&
-             `                    name: "z2ui5.cc.DebugTool",` && |\n|  &&
-             `                    controller: this,` && |\n|  &&
-             `                });` && |\n|  &&
-             `            }` && |\n|  &&
-             `` && |\n|  &&
-             `            const value = JSON.stringify(z2ui5.responseData, null, 3);` && |\n|  &&
-             `            const oData = {` && |\n|  &&
-             `                type: 'json',` && |\n|  &&
-             `                source_visible: false,` && |\n|  &&
-             `                editor_visible: true,` && |\n|  &&
-             `                value: value,` && |\n|  &&
-             `                xContent: '',` && |\n|  &&
-             `                previousValue: value,` && |\n|  &&
-             `                isTemplating: false,` && |\n|  &&
-             `                templatingSource: false,` && |\n|  &&
-             `                activeNest1: z2ui5?.oViewNest?.mProperties?.viewContent !== undefined,` && |\n|  &&
-             `                activeNest2: z2ui5?.oViewNest2?.mProperties?.viewContent !== undefined,` && |\n|  &&
-             `                activePopup: z2ui5?.oResponse?.PARAMS?.S_POPUP?.XML !== undefined,` && |\n|  &&
-             `                activePopover: z2ui5?.oResponse?.PARAMS?.S_POPOVER?.XML !== undefined,` && |\n|  &&
-             `            };` && |\n|  &&
-             `            const oModel = new JSONModel(oData);` && |\n|  &&
-             `` && |\n|  &&
-             `            this.oDialog.addStyleClass('dbg-ltr');` && |\n|  &&
-             `            this.oDialog.setModel(oModel);` && |\n|  &&
-             `            this.oDialog.open();` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        async close(){` && |\n|  &&
-             `            if (this.oDialog){` && |\n|  &&
-             `                this.oDialog.close();` && |\n|  &&
-             `                this.oDialog.destroy();` && |\n|  &&
-             `                this.oDialog = null;` && |\n|  &&
-             `            }` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        async toggle(){` && |\n|  &&
-             `            if (this.oDialog){` && |\n|  &&
-             `                this.close()` && |\n|  &&
-             `            } else {` && |\n|  &&
-             `                this.show()` && |\n|  &&
-             `            }` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        renderer(){` && |\n|  &&
-             `        }` && |\n|  &&
-             `    });` && |\n|  &&
-             `});` && |\n|  &&
-             `` && |\n|  &&
+    result = `sap.ui.define(["sap/ui/core/Control", "sap/ui/core/Fragment", "sap/ui/model/json/JSONModel"], (Control, Fragment, JSONModel) => {` && |\n| &&
+             `    "use strict";` && |\n| &&
+             `` && |\n| &&
+             `    return Control.extend("z2ui5.cc.DebugTool", {` && |\n| &&
+             `` && |\n| &&
+             `        //printer XML` && |\n| &&
+             `        prettifyXml: function (sourceXml) {` && |\n| &&
+             `            const xmlDoc = new DOMParser().parseFromString(sourceXml, 'application/xml');` && |\n| &&
+             `            var sParse = ``&lt;xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"&gt;` && |\n| &&
+             `                &lt;xsl:strip-space elements="*" /&gt;` && |\n| &&
+             `                &lt;xsl:template match="para[content-style][not(text())]"&gt;` && |\n| &&
+             `                    &lt;xsl:value-of select="normalize-space(.)" /&gt;` && |\n| &&
+             `                &lt;/xsl:template&gt;` && |\n| &&
+             `                &lt;xsl:template match="node()|@*"&gt;` && |\n| &&
+             `                    &lt;xsl:copy&gt;` && |\n| &&
+             `                        &lt;xsl:apply-templates select="node()|@*" /&gt;` && |\n| &&
+             `                    &lt;/xsl:copy&gt;` && |\n| &&
+             `                &lt;/xsl:template&gt;` && |\n| &&
+             `                &lt;xsl:output indent="yes" /&gt;` && |\n| &&
+             `            &lt;/xsl:stylesheet&gt;``;` && |\n| &&
+             `            sParse = sParse.replace(/&gt;/g, unescape("%3E")).replace(/&lt;/g, unescape("%3C"));` && |\n| &&
+             `            const xsltDoc = new DOMParser().parseFromString(sParse, 'application/xml');` && |\n| &&
+             `` && |\n| &&
+             `            const xsltProcessor = new XSLTProcessor();` && |\n| &&
+             `            xsltProcessor.importStylesheet(xsltDoc);` && |\n| &&
+             `            const resultDoc = xsltProcessor.transformToDocument(xmlDoc);` && |\n| &&
+             `            const resultXml = new XMLSerializer().serializeToString(resultDoc);` && |\n| &&
+             `            return resultXml.replace(/&gt;/g, ">").replace(/&lt;/g, "<");` && |\n| &&
+             `        }, onItemSelect: function (oEvent) {` && |\n| &&
+             `            const selItem = oEvent.getSource().getSelectedKey();` && |\n| &&
+             `            const oView = z2ui5?.oView;` && |\n| &&
+             `            const oResponse = z2ui5?.oResponse;` && |\n| &&
+             `            const displayEditor = this.displayEditor.bind(this);` && |\n| &&
+             `` && |\n| &&
+             `            switch (selItem) {` && |\n| &&
+             `                case 'CONFIG':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5.oConfig, null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'MODEL':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(oView?.getModel()?.getData(), null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'VIEW':` && |\n| &&
+             `                    const viewContent = oView?.mProperties?.viewContent || z2ui5.responseData.S_FRONT.PARAMS.S_VIEW.XML;` && |\n| &&
+             `                    displayEditor(oEvent, this.prettifyXml(viewContent), 'xml', this.prettifyXml(oView?._xContent.outerHTML));` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'PLAIN':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5.responseData, null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'REQUEST':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5.oBody, null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'POPUP':` && |\n| &&
+             `                    displayEditor(oEvent, this.prettifyXml(oResponse?.PARAMS?.S_POPUP?.XML), 'xml');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'POPUP_MODEL':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5.oViewPopup.getModel().getData(), null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'POPOVER':` && |\n| &&
+             `                    displayEditor(oEvent, this.prettifyXml(oResponse?.PARAMS?.S_POPOVER?.XML), 'xml');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'POPOVER_MODEL':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5?.oViewPopover?.getModel()?.getData(), null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'NEST1':` && |\n| &&
+             `                    displayEditor(oEvent, this.prettifyXml(z2ui5?.oViewNest?.mProperties?.viewContent), 'xml', this.prettifyXml(z2ui5?.oViewNest?._xContent.outerHTML));` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'NEST1_MODEL':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5?.oViewNest?.getModel()?.getData(), null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'NEST2':` && |\n| &&
+             `                    displayEditor(oEvent, this.prettifyXml(z2ui5?.oViewNest2?.mProperties?.viewContent), 'xml', this.prettifyXml(z2ui5?.oViewNest2?._xContent.outerHTML));` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'NEST2_MODEL':` && |\n| &&
+             `                    displayEditor(oEvent, JSON.stringify(z2ui5?.oViewNest2?.getModel()?.getData(), null, 3), 'json');` && |\n| &&
+             `                    break;` && |\n| &&
+             `                case 'SOURCE':` && |\n| &&
+             `                    const parent = oEvent.getSource().getParent();` && |\n| &&
+             `                    const contentControl = parent.getContent()[2].getItems()[0];` && |\n| &&
+             `                    const url = ``${window.location.origin}/sap/bc/adt/oo/classes/${z2ui5.responseData.S_FRONT.APP}/source/main``;` && |\n| &&
+             `                    const content = atob('PGlmcmFtZSBpZD0idGVzdCIgc3JjPSInICsgdXJsICsgJyIgaGVpZ2h0PSI4MDBweCIgd2lkdGg9IjEyMDBweCIgLz4=').replace("' + url + '", url);` && |\n| &&
+             `                    contentControl.setProperty("content", content);` && |\n| &&
+             `                    const modelData = oEvent.getSource().getModel().oData;` && |\n| &&
+             `                    modelData.editor_visible = false;` && |\n| &&
+             `                    modelData.source_visible = true;` && |\n| &&
+             `                    oEvent.getSource().getModel().refresh();` && |\n| &&
+             `                    break;` && |\n| &&
+             `            }` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        displayEditor: function (oEvent, content, type, xcontent = "") {` && |\n| &&
+             `            const modelData = oEvent.getSource().getModel().oData;` && |\n| &&
+             `            modelData.editor_visible = true;` && |\n| &&
+             `            modelData.source_visible = false;` && |\n| &&
+             `            modelData.isTemplating = content.includes("xmlns:template");` && |\n| &&
+             `            modelData.value = content;` && |\n| &&
+             `            modelData.previousValue = content;` && |\n| &&
+             `            modelData.xContent = xcontent;` && |\n| &&
+             `            modelData.type = type;` && |\n| &&
+             `            oEvent.getSource().getModel().refresh();` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        onTemplatingPress: function (oEvent) {` && |\n| &&
+             `            const modelData = oEvent.getSource().getModel().oData;` && |\n| &&
+             `            modelData.value = oEvent.getSource().getPressed() ? modelData.xContent : modelData.previousValue;` && |\n| &&
+             `            oEvent.getSource().getModel().refresh();` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        onClose: function () {` && |\n| &&
+             `            this.close();` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        async show() {` && |\n| &&
+             `            if (!this.oDialog) {` && |\n| &&
+             `                this.oDialog = await Fragment.load({` && |\n| &&
+             `                    name: "z2ui5.cc.DebugTool",` && |\n| &&
+             `                    controller: this,` && |\n| &&
+             `                });` && |\n| &&
+             `            }` && |\n| &&
+             `` && |\n| &&
+             `            const value = JSON.stringify(z2ui5.responseData, null, 3);` && |\n| &&
+             `            const oData = {` && |\n| &&
+             `                type: 'json',` && |\n| &&
+             `                source_visible: false,` && |\n| &&
+             `                editor_visible: true,` && |\n| &&
+             `                value: value,` && |\n| &&
+             `                xContent: '',` && |\n| &&
+             `                previousValue: value,` && |\n| &&
+             `                isTemplating: false,` && |\n| &&
+             `                templatingSource: false,` && |\n| &&
+             `                activeNest1: z2ui5?.oViewNest?.mProperties?.viewContent !== undefined,` && |\n| &&
+             `                activeNest2: z2ui5?.oViewNest2?.mProperties?.viewContent !== undefined,` && |\n| &&
+             `                activePopup: z2ui5?.oResponse?.PARAMS?.S_POPUP?.XML !== undefined,` && |\n| &&
+             `                activePopover: z2ui5?.oResponse?.PARAMS?.S_POPOVER?.XML !== undefined,` && |\n| &&
+             `            };` && |\n| &&
+             `            const oModel = new JSONModel(oData);` && |\n| &&
+             `` && |\n| &&
+             `            this.oDialog.addStyleClass('dbg-ltr');` && |\n| &&
+             `            this.oDialog.setModel(oModel);` && |\n| &&
+             `            this.oDialog.open();` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        async close(){` && |\n| &&
+             `            if (this.oDialog){` && |\n| &&
+             `                this.oDialog.close();` && |\n| &&
+             `                this.oDialog.destroy();` && |\n| &&
+             `                this.oDialog = null;` && |\n| &&
+             `            }` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        async toggle(){` && |\n| &&
+             `            if (this.oDialog){` && |\n| &&
+             `                this.close()` && |\n| &&
+             `            } else {` && |\n| &&
+             `                this.show()` && |\n| &&
+             `            }` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        renderer(){` && |\n| &&
+             `        }` && |\n| &&
+             `    });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
               ``.
 
   ENDMETHOD.
@@ -18847,88 +19019,97 @@ CLASS z2ui5_cl_app_component_js IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `sap.ui.define(["sap/ui/core/UIComponent", "z2ui5/model/models", "z2ui5/cc/Server", "sap/ui/VersionInfo", "z2ui5/cc/DebugTool"` && |\n|  &&
-             `], function (UIComponent, Models, Server, VersionInfo, DebugTool) {` && |\n|  &&
-             `    return UIComponent.extend("z2ui5.Component", {` && |\n|  &&
-             `        metadata: {` && |\n|  &&
-             `            manifest: "json",` && |\n|  &&
-             `            interfaces: [` && |\n|  &&
-             `                "sap.ui.core.IAsyncContentCreation"` && |\n|  &&
-             `            ]` && |\n|  &&
-             `        },` && |\n|  &&
-             `        async init() {` && |\n|  &&
-             `            UIComponent.prototype.init.apply(this, arguments);` && |\n|  &&
-             `` && |\n|  &&
-             `            if (typeof z2ui5 == 'undefined') {` && |\n|  &&
-             `                z2ui5 = {};` && |\n|  &&
-             `            }` && |\n|  &&
-             `            if (z2ui5?.checkLocal == false) {` && |\n|  &&
-             `            z2ui5 = {};` && |\n|  &&
-             `            }` && |\n|  &&
-             `` && |\n|  &&
-             `            z2ui5.oRouter = this.getRouter();` && |\n|  &&
-             `            z2ui5.oRouter.initialize();` && |\n|  &&
-             `            z2ui5.oRouter.stop();` && |\n|  &&
-             `` && |\n|  &&
-             `            z2ui5.oDeviceModel = Models.createDeviceModel();` && |\n|  &&
-             `            this.setModel(z2ui5.oDeviceModel, "device");` && |\n|  &&
-             `` && |\n|  &&
-             `            z2ui5.oConfig = {};` && |\n|  &&
-             `            z2ui5.oConfig.ComponentData = this.getComponentData();` && |\n|  &&
-             `` && |\n|  &&
-             `            try {` && |\n|  &&
-             `                z2ui5.oLaunchpadService = await this.getService("ShellUIService");` && |\n|  &&
-             `            } catch (e) { }` && |\n|  &&
-             `` && |\n|  &&
-             `            let oVersionInfo = await VersionInfo.load();` && |\n|  &&
-             `            z2ui5.oConfig.UI5VersionInfo = {` && |\n|  &&
-             `                version: oVersionInfo.version,` && |\n|  &&
-             `                buildTimestamp: oVersionInfo.buildTimestamp,` && |\n|  &&
-             `                gav: oVersionInfo.gav,` && |\n|  &&
-             `            }` && |\n|  &&
-             `` && |\n|  &&
-             `            if (/iPad|iPhone/.test(navigator.platform)) {` && |\n|  &&
-             `                window.addEventListener("__pagehide", this.__pagehide.bind(this));` && |\n|  &&
-             `            } else {` && |\n|  &&
-             `                window.addEventListener("__beforeunload", this.__beforeunload.bind(this));` && |\n|  &&
-             `            }` && |\n|  &&
-             `` && |\n|  &&
-             `            document.addEventListener("keydown", function (zEvent) {` && |\n|  &&
-             `                if (zEvent?.ctrlKey && zEvent?.key === "F12") {` && |\n|  &&
-             `                    if (!z2ui5.debugTool) {` && |\n|  &&
-             `                        z2ui5.debugTool = new DebugTool();` && |\n|  &&
-             `                    }` && |\n|  &&
-             `                    z2ui5.debugTool.toggle();` && |\n|  &&
-             `                }` && |\n|  &&
-             `            });` && |\n|  &&
-             `` && |\n|  &&
-             `            window.addEventListener("popstate", (event) => {` && |\n|  &&
-             `                delete event?.state?.response?.PARAMS?.SET_PUSH_STATE;` && |\n|  &&
-             `                delete event?.state?.response?.PARAMS?.SET_APP_STATE_ACTIVE;` && |\n|  &&
-             `                if (event?.state?.view) {` && |\n|  &&
-             `                    z2ui5.oController.ViewDestroy();` && |\n|  &&
-             `                    z2ui5.oResponse = event.state.response;` && |\n|  &&
-             `                    z2ui5.oController.displayView(event.state.view, event.state.model);` && |\n|  &&
-             `                }` && |\n|  &&
-             `            });` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        __beforeunload: function () {` && |\n|  &&
-             `            window.removeEventListener("__beforeunload", this.__beforeunload.bind(this));` && |\n|  &&
-             `            this.destroy();` && |\n|  &&
-             `        },` && |\n|  &&
-             `        __pagehide: function () {` && |\n|  &&
-             `            window.removeEventListener("__pagehide", this.__pagehide.bind(this));` && |\n|  &&
-             `            this.destroy();` && |\n|  &&
-             `        },` && |\n|  &&
-             `` && |\n|  &&
-             `        exit: function () {` && |\n|  &&
-             `            Server.endSession();` && |\n|  &&
-             `            if (UIComponent.prototype.exit)` && |\n|  &&
-             `                UIComponent.prototype.exit.apply(this, arguments);` && |\n|  &&
-             `        },` && |\n|  &&
-             `    });` && |\n|  &&
-             `});` && |\n|  &&
+    result = `sap.ui.define(["sap/ui/core/UIComponent", "z2ui5/model/models", "z2ui5/cc/Server", "sap/ui/VersionInfo", "z2ui5/cc/DebugTool"` && |\n| &&
+             `], function (UIComponent, Models, Server, VersionInfo, DebugTool) {` && |\n| &&
+             `    return UIComponent.extend("z2ui5.Component", {` && |\n| &&
+             `        metadata: {` && |\n| &&
+             `            manifest: "json",` && |\n| &&
+             `            interfaces: [` && |\n| &&
+             `                "sap.ui.core.IAsyncContentCreation"` && |\n| &&
+             `            ]` && |\n| &&
+             `        },` && |\n| &&
+             `        async init() {` && |\n| &&
+             `` && |\n| &&
+             `            if (typeof z2ui5 !== 'undefined') {` && |\n| &&
+             `                z2ui5.oConfig = {};` && |\n| &&
+             `            }` && |\n| &&
+             `` && |\n| &&
+             `            UIComponent.prototype.init.apply(this, arguments);` && |\n| &&
+             `` && |\n| &&
+             `            if (typeof z2ui5 == 'undefined') {` && |\n| &&
+             `                z2ui5 = {};` && |\n| &&
+             `            }` && |\n| &&
+             `            if (z2ui5?.checkLocal == false) {` && |\n| &&
+             `                z2ui5 = {};` && |\n| &&
+             `            }` && |\n| &&
+             `` && |\n| &&
+             `            if (typeof z2ui5.oConfig == 'undefined') {` && |\n| &&
+             `                z2ui5.oConfig = {};` && |\n| &&
+             `            }` && |\n| &&
+             `            z2ui5.oDeviceModel = Models.createDeviceModel();` && |\n| &&
+             `            this.setModel(z2ui5.oDeviceModel, "device");` && |\n| &&
+             `` && |\n| &&
+             `            z2ui5.oConfig.ComponentData = this.getComponentData();` && |\n| &&
+             `` && |\n| &&
+             `            try {` && |\n| &&
+             `                z2ui5.oLaunchpadService = await this.getService("ShellUIService");` && |\n| &&
+             `            } catch (e) { }` && |\n| &&
+             `` && |\n| &&
+             `            let oVersionInfo = await VersionInfo.load();` && |\n| &&
+             `            z2ui5.oConfig.UI5VersionInfo = {` && |\n| &&
+             `                version: oVersionInfo.version,` && |\n| &&
+             `                buildTimestamp: oVersionInfo.buildTimestamp,` && |\n| &&
+             `                gav: oVersionInfo.gav,` && |\n| &&
+             `            }` && |\n| &&
+             `` && |\n| &&
+             `            if (/iPad|iPhone/.test(navigator.platform)) {` && |\n| &&
+             `                window.addEventListener("__pagehide", this.__pagehide.bind(this));` && |\n| &&
+             `            } else {` && |\n| &&
+             `                window.addEventListener("__beforeunload", this.__beforeunload.bind(this));` && |\n| &&
+             `            }` && |\n| &&
+             `` && |\n| &&
+             `            document.addEventListener("keydown", function (zEvent) {` && |\n| &&
+             `                if (zEvent?.ctrlKey && zEvent?.key === "F12") {` && |\n| &&
+             `                    if (!z2ui5.debugTool) {` && |\n| &&
+             `                        z2ui5.debugTool = new DebugTool();` && |\n| &&
+             `                    }` && |\n| &&
+             `                    z2ui5.debugTool.toggle();` && |\n| &&
+             `                }` && |\n| &&
+             `            });` && |\n| &&
+             `` && |\n| &&
+             `            window.addEventListener("popstate", (event) => {` && |\n| &&
+             `                delete event?.state?.response?.PARAMS?.SET_PUSH_STATE;` && |\n| &&
+             `                delete event?.state?.response?.PARAMS?.SET_APP_STATE_ACTIVE;` && |\n| &&
+             `                if (event?.state?.view) {` && |\n| &&
+             `                    z2ui5.oController.ViewDestroy();` && |\n| &&
+             `                    z2ui5.oResponse = event.state.response;` && |\n| &&
+             `                    z2ui5.oController.displayView(event.state.view, event.state.model);` && |\n| &&
+             `                }` && |\n| &&
+             `            });` && |\n| &&
+             `` && |\n| &&
+             `            z2ui5.oRouter = this.getRouter();` && |\n| &&
+             `            z2ui5.oRouter.initialize();` && |\n| &&
+             `            z2ui5.oRouter.stop();` && |\n| &&
+             `` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        __beforeunload: function () {` && |\n| &&
+             `            window.removeEventListener("__beforeunload", this.__beforeunload.bind(this));` && |\n| &&
+             `            this.destroy();` && |\n| &&
+             `        },` && |\n| &&
+             `        __pagehide: function () {` && |\n| &&
+             `            window.removeEventListener("__pagehide", this.__pagehide.bind(this));` && |\n| &&
+             `            this.destroy();` && |\n| &&
+             `        },` && |\n| &&
+             `` && |\n| &&
+             `        exit: function () {` && |\n| &&
+             `            Server.endSession();` && |\n| &&
+             `            if (UIComponent.prototype.exit)` && |\n| &&
+             `                UIComponent.prototype.exit.apply(this, arguments);` && |\n| &&
+             `        },` && |\n| &&
+             `    });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
               ``.
 
   ENDMETHOD.
@@ -18939,7 +19120,7 @@ CLASS z2ui5_cl_app_app_xml IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `<mvc:View controllerName="z2ui5.controller.App"` &&
+    result = `<mvc:View controllerName="z2ui5.controller.App"` &&
              `    xmlns:html="http://www.w3.org/1999/xhtml"` &&
              `    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"` &&
              `    xmlns="sap.m">` &&
@@ -18957,1072 +19138,1149 @@ CLASS z2ui5_cl_app_app_js IMPLEMENTATION.
 
   METHOD get.
 
-    result =              `sap.ui.define(["sap/ui/core/mvc/Controller",` && |\n|  &&
-             `  "z2ui5/controller/View1.controller",` && |\n|  &&
-             `  "z2ui5/cc/Server",` && |\n|  &&
-             `  "sap/ui/core/routing/HashChanger"` && |\n|  &&
-             `], function (BaseController, Controller, Server, HashChanger) {` && |\n|  &&
-             `  return BaseController.extend("z2ui5.controller.App", {` && |\n|  &&
-             `` && |\n|  &&
-             `    onInit() {` && |\n|  &&
-             `` && |\n|  &&
-             `      z2ui5.oOwnerComponent = this.getOwnerComponent();` && |\n|  &&
-             `      z2ui5.oConfig.pathname = z2ui5.oOwnerComponent.getManifest()["sap.app"].dataSources.http.uri;` && |\n|  &&
-             `      if (z2ui5?.checkLocal == true) {` && |\n|  &&
-             `        z2ui5.oConfig.pathname = window.location.href;` && |\n|  &&
-             `      };` && |\n|  &&
-             `` && |\n|  &&
-             `      z2ui5.oController = new Controller();` && |\n|  &&
-             `      z2ui5.oApp = this.getView().byId("app");` && |\n|  &&
-             `` && |\n|  &&
-             `      z2ui5.oControllerNest = new Controller();` && |\n|  &&
-             `      z2ui5.oControllerNest2 = new Controller();` && |\n|  &&
-             `      z2ui5.oControllerPopup = new Controller();` && |\n|  &&
-             `      z2ui5.oControllerPopover = new Controller();` && |\n|  &&
-             `` && |\n|  &&
-             `      z2ui5.onBeforeRoundtrip = [];` && |\n|  &&
-             `      z2ui5.onAfterRendering = [];` && |\n|  &&
-             `      z2ui5.onBeforeEventFrontend = [];` && |\n|  &&
-             `      z2ui5.onAfterRoundtrip = [];` && |\n|  &&
-             `` && |\n|  &&
-             `      z2ui5.checkNestAfter = false;` && |\n|  &&
-             `` && |\n|  &&
-             `    //  if (sap.ui.core.routing.HashChanger.getInstance().getHash().includes("z2ui5-xapp-state")){` && |\n|  &&
-             `       if (HashChanger.getInstance().getHash()){` && |\n|  &&
-             `          z2ui5.checkInit = true;` && |\n|  &&
-             `          Server.Roundtrip();` && |\n|  &&
-             `      }` && |\n|  &&
-             `` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `});` && |\n|  &&
-             `` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Timer", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.Timer", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        delayMS: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        checkActive: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: true` && |\n|  &&
-             `        },` && |\n|  &&
-             `        checkRepeat: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `      },` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "finished": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {},` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    onAfterRendering() { },` && |\n|  &&
-             `    delayedCall(oControl) {` && |\n|  &&
-             `` && |\n|  &&
-             `      if (oControl.getProperty("checkActive") == false) {` && |\n|  &&
-             `        return;` && |\n|  &&
-             `      }` && |\n|  &&
-             `      setTimeout((oControl) => {` && |\n|  &&
-             `        oControl.setProperty("checkActive", false)` && |\n|  &&
-             `        oControl.fireFinished();` && |\n|  &&
-             `        if (oControl.getProperty("checkRepeat")) {` && |\n|  &&
-             `          oControl.delayedCall(oControl);` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `        , parseInt(oControl.getProperty("delayMS")), oControl);` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) {` && |\n|  &&
-             `      oControl.delayedCall(oControl);` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Focus", ["sap/ui/core/Control",], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.Focus", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        setUpdate: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: true` && |\n|  &&
-             `        },` && |\n|  &&
-             `        focusId: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        selectionStart: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: "0"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        selectionEnd: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: "0"` && |\n|  &&
-             `        },` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    init() { },` && |\n|  &&
-             `    setFocusId(val) {` && |\n|  &&
-             `      try {` && |\n|  &&
-             `        this.setProperty("focusId", val);` && |\n|  &&
-             `        var oElement = z2ui5.oView.byId(val);` && |\n|  &&
-             `        var oFocus = oElement.getFocusInfo();` && |\n|  &&
-             `        oElement.applyFocusInfo(oFocus);` && |\n|  &&
-             `      } catch (e) { }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) {` && |\n|  &&
-             `      if (!oControl.getProperty("setUpdate")) {` && |\n|  &&
-             `        return;` && |\n|  &&
-             `      }` && |\n|  &&
-             `      oControl.setProperty("setUpdate", false);` && |\n|  &&
-             `      setTimeout((oControl) => {` && |\n|  &&
-             `        var oElement = z2ui5.oView.byId(oControl.getProperty("focusId"));` && |\n|  &&
-             `        var oFocus = oElement.getFocusInfo();` && |\n|  &&
-             `        oFocus.selectionStart = parseInt(oControl.getProperty("selectionStart"));` && |\n|  &&
-             `        oFocus.selectionEnd = parseInt(oControl.getProperty("selectionEnd"));` && |\n|  &&
-             `        oElement.applyFocusInfo(oFocus);` && |\n|  &&
-             `      }` && |\n|  &&
-             `        , 100, oControl);` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Title", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.Title", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        title: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setTitle(val) {` && |\n|  &&
-             `      this.setProperty("title", val);` && |\n|  &&
-             `      document.title = val;` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `sap.ui.define("z2ui5/LPTitle", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.LPTitle", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        title: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        ApplicationFullWidth:{` && |\n|  &&
-             `          type : "boolean"` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setTitle(val) {` && |\n|  &&
-             `      try {` && |\n|  &&
-             `        this.setProperty("title", val);` && |\n|  &&
-             `        z2ui5.oLaunchpadService.setTitle(val);` && |\n|  &&
-             `      } catch (e) {` && |\n|  &&
-             `        console.error("Launchpad Service to set Title not found");` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    setApplicationFullWidth(val) {` && |\n|  &&
-             `      this.setProperty("ApplicationFullWidth", val);` && |\n|  &&
-             `      z2ui5.ApplicationFullWidth = val;` && |\n|  &&
-             `    sap.ui.require([` && |\n|  &&
-             `      "sap/ushell/services/AppConfiguration"` && |\n|  &&
-             `    ], async (AppConfiguration)  => {` && |\n|  &&
-             `      AppConfiguration.setApplicationFullWidth(z2ui5.ApplicationFullWidth);` && |\n|  &&
-             `    });` && |\n|  &&
-             `` && |\n|  &&
-             `  },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer(oRm, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `sap.ui.define("z2ui5/History", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.History", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        search: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setSearch(val) {` && |\n|  &&
-             `      this.setProperty("search", val);` && |\n|  &&
-             `      history.replaceState(null, null, window.location.pathname + val);` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Tree", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.Tree", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        tree_id: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    setBackend() {` && |\n|  &&
-             `      z2ui5.treeState = z2ui5.oView.byId(this.getProperty("tree_id")).getBinding('items').getCurrentTreeState();` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    init() {` && |\n|  &&
-             `      z2ui5.onBeforeRoundtrip.push(this.setBackend.bind(this));` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer(oRm, oControl) {` && |\n|  &&
-             `      if (!z2ui5.treeState) return;` && |\n|  &&
-             `      setTimeout((id) => {` && |\n|  &&
-             `        z2ui5.oView.byId(id).getBinding('items').setTreeState(z2ui5.treeState);` && |\n|  &&
-             `      }, 100, oControl.getProperty("tree_id"));` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `});` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Scrolling", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.Scrolling", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        setUpdate: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: true` && |\n|  &&
-             `        },` && |\n|  &&
-             `        items: {` && |\n|  &&
-             `          type: "Array"` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    setBackend() {` && |\n|  &&
-             `      const items = this.getProperty("items");` && |\n|  &&
-             `` && |\n|  &&
-             `      if (items) {` && |\n|  &&
-             `        items.forEach(item => {` && |\n|  &&
-             `          try {` && |\n|  &&
-             `            const scrollDelegate = z2ui5.oView.byId(item.N).getScrollDelegate();` && |\n|  &&
-             `            item.V = scrollDelegate ? scrollDelegate.getScrollTop() : 0;` && |\n|  &&
-             `          } catch {` && |\n|  &&
-             `            try {` && |\n|  &&
-             `              const element = document.getElementById(``${z2ui5.oView.byId(item.ID).getId()}-inner``);` && |\n|  &&
-             `              item.V = element ? element.scrollTop : 0;` && |\n|  &&
-             `            } catch { }` && |\n|  &&
-             `          }` && |\n|  &&
-             `        });` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    init() {` && |\n|  &&
-             `      z2ui5.onBeforeRoundtrip.push(this.setBackend.bind(this));` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer(oRm, oControl) {` && |\n|  &&
-             `      if (!oControl.getProperty("setUpdate")) return;` && |\n|  &&
-             `` && |\n|  &&
-             `      oControl.setProperty("setUpdate", false);` && |\n|  &&
-             `      const items = oControl.getProperty("items");` && |\n|  &&
-             `      if (!items) return;` && |\n|  &&
-             `` && |\n|  &&
-             `      setTimeout(() => {` && |\n|  &&
-             `        items.forEach(item => {` && |\n|  &&
-             `          try {` && |\n|  &&
-             `            z2ui5.oView.byId(item.N).scrollTo(item.V);` && |\n|  &&
-             `          } catch {` && |\n|  &&
-             `            try {` && |\n|  &&
-             `              const element = document.getElementById(``${z2ui5.oView.byId(item.ID).getId()}-inner``);` && |\n|  &&
-             `              if (element) element.scrollTop = item.V;` && |\n|  &&
-             `            } catch {` && |\n|  &&
-             `              setTimeout(() => {` && |\n|  &&
-             `                z2ui5.oView.byId(item.N).scrollTo(item.V);` && |\n|  &&
-             `              }, 1);` && |\n|  &&
-             `            }` && |\n|  &&
-             `          }` && |\n|  &&
-             `        });` && |\n|  &&
-             `      }, 100);` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `});` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Info", ["sap/ui/core/Control", "sap/ui/VersionInfo", "sap/ui/Device"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.Info", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        ui5_version: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_phone: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_desktop: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_tablet: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_combi: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_height: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_width: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        ui5_theme: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_os: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_systemtype: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        device_browser: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `      },` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "finished": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {},` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    init() { },` && |\n|  &&
-             `` && |\n|  &&
-             `    onAfterRendering() {` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    async renderer(_, oControl) {` && |\n|  &&
-             `` && |\n|  &&
-             `      let oDevice = z2ui5.oView.getModel("device").oData;` && |\n|  &&
-             `      oControl.setProperty("ui5_version", z2ui5.oConfig.UI5VersionInfo.version);` && |\n|  &&
-             `      oControl.setProperty("device_phone", oDevice.system.phone);` && |\n|  &&
-             `      oControl.setProperty("device_desktop", oDevice.system.desktop);` && |\n|  &&
-             `      oControl.setProperty("device_tablet", oDevice.system.tablet);` && |\n|  &&
-             `      oControl.setProperty("device_combi", oDevice.system.combi);` && |\n|  &&
-             `      oControl.setProperty("device_height", oDevice.resize.height);` && |\n|  &&
-             `      oControl.setProperty("device_width", oDevice.resize.width);` && |\n|  &&
-             `      oControl.setProperty("device_os", oDevice.os.name);` && |\n|  &&
-             `      oControl.setProperty("device_browser", oDevice.browser.name);` && |\n|  &&
-             `      oControl.fireFinished();` && |\n|  &&
-             `` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Geolocation", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.Geolocation", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        longitude: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        latitude: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        altitude: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        accuracy: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
+    result = `sap.ui.define(["sap/ui/core/mvc/Controller",` && |\n| &&
+             `  "z2ui5/controller/View1.controller",` && |\n| &&
+             `  "z2ui5/cc/Server",` && |\n| &&
+             `  "sap/ui/core/routing/HashChanger"` && |\n| &&
+             `], function (BaseController, Controller, Server, HashChanger) {` && |\n| &&
+             `  return BaseController.extend("z2ui5.controller.App", {` && |\n| &&
+             `` && |\n| &&
+             `    onInit() {` && |\n| &&
+             `` && |\n| &&
+             `      z2ui5.oOwnerComponent = this.getOwnerComponent();` && |\n| &&
+             `      z2ui5.oConfig.pathname = z2ui5.oOwnerComponent.getManifest()["sap.app"].dataSources.http.uri;` && |\n| &&
+             `      if (z2ui5?.checkLocal == true) {` && |\n| &&
+             `        z2ui5.oConfig.pathname = window.location.href;` && |\n| &&
+             `      };` && |\n| &&
+             `` && |\n| &&
+             `      z2ui5.oController = new Controller();` && |\n| &&
+             `      z2ui5.oApp = this.getView().byId("app");` && |\n| &&
+             `` && |\n| &&
+             `      z2ui5.oControllerNest = new Controller();` && |\n| &&
+             `      z2ui5.oControllerNest2 = new Controller();` && |\n| &&
+             `      z2ui5.oControllerPopup = new Controller();` && |\n| &&
+             `      z2ui5.oControllerPopover = new Controller();` && |\n| &&
+             `` && |\n| &&
+             `      z2ui5.onBeforeRoundtrip = [];` && |\n| &&
+             `      z2ui5.onAfterRendering = [];` && |\n| &&
+             `      z2ui5.onBeforeEventFrontend = [];` && |\n| &&
+             `      z2ui5.onAfterRoundtrip = [];` && |\n| &&
+             `` && |\n| &&
+             `      z2ui5.checkNestAfter = false;` && |\n| &&
+             `` && |\n| &&
+             `    //  if (sap.ui.core.routing.HashChanger.getInstance().getHash().includes("z2ui5-xapp-state")){` && |\n| &&
+             `       if (HashChanger.getInstance().getHash()){` && |\n| &&
+             `          z2ui5.checkInit = true;` && |\n| &&
+             `          Server.Roundtrip();` && |\n| &&
+             `      }` && |\n| &&
+             `` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Timer", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.Timer", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        delayMS: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        checkActive: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: true` && |\n| &&
+             `        },` && |\n| &&
+             `        checkRepeat: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "finished": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {},` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    onAfterRendering() { },` && |\n| &&
+             `    delayedCall(oControl) {` && |\n| &&
+             `` && |\n| &&
+             `      if (oControl.getProperty("checkActive") == false) {` && |\n| &&
+             `        return;` && |\n| &&
+             `      }` && |\n| &&
+             `      setTimeout((oControl) => {` && |\n| &&
+             `        oControl.setProperty("checkActive", false)` && |\n| &&
+             `        oControl.fireFinished();` && |\n| &&
+             `        if (oControl.getProperty("checkRepeat")) {` && |\n| &&
+             `          oControl.delayedCall(oControl);` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `        , parseInt(oControl.getProperty("delayMS")), oControl);` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) {` && |\n| &&
+             `      oControl.delayedCall(oControl);` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Focus", ["sap/ui/core/Control",], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.Focus", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        setUpdate: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: true` && |\n| &&
+             `        },` && |\n| &&
+             `        focusId: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        selectionStart: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: "0"` && |\n| &&
+             `        },` && |\n| &&
+             `        selectionEnd: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: "0"` && |\n| &&
+             `        },` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    init() { },` && |\n| &&
+             `    setFocusId(val) {` && |\n| &&
+             `      try {` && |\n| &&
+             `        this.setProperty("focusId", val);` && |\n| &&
+             `        var oElement = z2ui5.oView.byId(val);` && |\n| &&
+             `        var oFocus = oElement.getFocusInfo();` && |\n| &&
+             `        oElement.applyFocusInfo(oFocus);` && |\n| &&
+             `      } catch (e) { }` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) {` && |\n| &&
+             `      if (!oControl.getProperty("setUpdate")) {` && |\n| &&
+             `        return;` && |\n| &&
+             `      }` && |\n| &&
+             `      oControl.setProperty("setUpdate", false);` && |\n| &&
+             `      setTimeout((oControl) => {` && |\n| &&
+             `        var oElement = z2ui5.oView.byId(oControl.getProperty("focusId"));` && |\n| &&
+             `        var oFocus = oElement.getFocusInfo();` && |\n| &&
+             `        oFocus.selectionStart = parseInt(oControl.getProperty("selectionStart"));` && |\n| &&
+             `        oFocus.selectionEnd = parseInt(oControl.getProperty("selectionEnd"));` && |\n| &&
+             `        oElement.applyFocusInfo(oFocus);` && |\n| &&
+             `      }` && |\n| &&
+             `        , 100, oControl);` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Title", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.Title", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        title: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    setTitle(val) {` && |\n| &&
+             `      this.setProperty("title", val);` && |\n| &&
+             `      document.title = val;` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `sap.ui.define("z2ui5/LPTitle", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.LPTitle", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        title: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        ApplicationFullWidth:{` && |\n| &&
+             `          type : "boolean"` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    setTitle(val) {` && |\n| &&
+             `      try {` && |\n| &&
+             `        this.setProperty("title", val);` && |\n| &&
+             `        z2ui5.oLaunchpadService.setTitle(val);` && |\n| &&
+             `      } catch (e) {` && |\n| &&
+             `        console.error("Launchpad Service to set Title not found");` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    setApplicationFullWidth(val) {` && |\n| &&
+             `      this.setProperty("ApplicationFullWidth", val);` && |\n| &&
+             `      z2ui5.ApplicationFullWidth = val;` && |\n| &&
+             `    sap.ui.require([` && |\n| &&
+             `      "sap/ushell/services/AppConfiguration"` && |\n| &&
+             `    ], async (AppConfiguration)  => {` && |\n| &&
+             `      AppConfiguration.setApplicationFullWidth(z2ui5.ApplicationFullWidth);` && |\n| &&
+             `    });` && |\n| &&
+             `` && |\n| &&
+             `  },` && |\n| &&
+             `` && |\n| &&
+             `    renderer(oRm, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `sap.ui.define("z2ui5/History", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.History", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        search: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    setSearch(val) {` && |\n| &&
+             `      this.setProperty("search", val);` && |\n| &&
+             `      history.replaceState(null, null, window.location.pathname + val);` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Tree", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.Tree", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        tree_id: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    setBackend() {` && |\n| &&
+             `      z2ui5.treeState = z2ui5.oView.byId(this.getProperty("tree_id")).getBinding('items').getCurrentTreeState();` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    init() {` && |\n| &&
+             `      z2ui5.onBeforeRoundtrip.push(this.setBackend.bind(this));` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    renderer(oRm, oControl) {` && |\n| &&
+             `      if (!z2ui5.treeState) return;` && |\n| &&
+             `      setTimeout((id) => {` && |\n| &&
+             `        z2ui5.oView.byId(id).getBinding('items').setTreeState(z2ui5.treeState);` && |\n| &&
+             `      }, 100, oControl.getProperty("tree_id"));` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Scrolling", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.Scrolling", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        setUpdate: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: true` && |\n| &&
+             `        },` && |\n| &&
+             `        items: {` && |\n| &&
+             `          type: "Array"` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    setBackend() {` && |\n| &&
+             `      const items = this.getProperty("items");` && |\n| &&
+             `` && |\n| &&
+             `      if (items) {` && |\n| &&
+             `        items.forEach(item => {` && |\n| &&
+             `          try {` && |\n| &&
+             `            const scrollDelegate = z2ui5.oView.byId(item.N).getScrollDelegate();` && |\n| &&
+             `            item.V = scrollDelegate ? scrollDelegate.getScrollTop() : 0;` && |\n| &&
+             `          } catch {` && |\n| &&
+             `            try {` && |\n| &&
+             `              const element = document.getElementById(``${z2ui5.oView.byId(item.ID).getId()}-inner``);` && |\n| &&
+             `              item.V = element ? element.scrollTop : 0;` && |\n| &&
+             `            } catch { }` && |\n| &&
+             `          }` && |\n| &&
+             `        });` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    init() {` && |\n| &&
+             `      z2ui5.onBeforeRoundtrip.push(this.setBackend.bind(this));` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    renderer(oRm, oControl) {` && |\n| &&
+             `      if (!oControl.getProperty("setUpdate")) return;` && |\n| &&
+             `` && |\n| &&
+             `      oControl.setProperty("setUpdate", false);` && |\n| &&
+             `      const items = oControl.getProperty("items");` && |\n| &&
+             `      if (!items) return;` && |\n| &&
+             `` && |\n| &&
+             `      setTimeout(() => {` && |\n| &&
+             `        items.forEach(item => {` && |\n| &&
+             `          try {` && |\n| &&
+             `            z2ui5.oView.byId(item.N).scrollTo(item.V);` && |\n| &&
+             `          } catch {` && |\n| &&
+             `            try {` && |\n| &&
+             `              const element = document.getElementById(``${z2ui5.oView.byId(item.ID).getId()}-inner``);` && |\n| &&
+             `              if (element) element.scrollTop = item.V;` && |\n| &&
+             `            } catch {` && |\n| &&
+             `              setTimeout(() => {` && |\n| &&
+             `                z2ui5.oView.byId(item.N).scrollTo(item.V);` && |\n| &&
+             `              }, 1);` && |\n| &&
+             `            }` && |\n| &&
+             `          }` && |\n| &&
+             `        });` && |\n| &&
+             `      }, 100);` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Info", ["sap/ui/core/Control", "sap/ui/VersionInfo", "sap/ui/Device"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.Info", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        ui5_version: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_phone: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_desktop: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_tablet: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_combi: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_height: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_width: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        ui5_theme: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_os: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_systemtype: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `        device_browser: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "finished": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {},` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    init() { },` && |\n| &&
+             `` && |\n| &&
+             `    onAfterRendering() {` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    async renderer(_, oControl) {` && |\n| &&
+             `` && |\n| &&
+             `      let oDevice = z2ui5.oView.getModel("device").oData;` && |\n| &&
+             `      oControl.setProperty("ui5_version", z2ui5.oConfig.UI5VersionInfo.version);` && |\n| &&
+             `      oControl.setProperty("device_phone", oDevice.system.phone);` && |\n| &&
+             `      oControl.setProperty("device_desktop", oDevice.system.desktop);` && |\n| &&
+             `      oControl.setProperty("device_tablet", oDevice.system.tablet);` && |\n| &&
+             `      oControl.setProperty("device_combi", oDevice.system.combi);` && |\n| &&
+             `      oControl.setProperty("device_height", oDevice.resize.height);` && |\n| &&
+             `      oControl.setProperty("device_width", oDevice.resize.width);` && |\n| &&
+             `      oControl.setProperty("device_os", oDevice.os.name);` && |\n| &&
+             `      oControl.setProperty("device_browser", oDevice.browser.name);` && |\n| &&
+             `      oControl.fireFinished();` && |\n| &&
+             `` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Geolocation", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.Geolocation", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        longitude: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        latitude: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        altitude: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        accuracy: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
              |\n|.
     result = result &&
-             `        altitudeAccuracy: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        speed: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        heading: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        enableHighAccuracy: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        timeout: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: "5000"` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "finished": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {},` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    callbackPosition(position) {` && |\n|  &&
-             `` && |\n|  &&
-             `      this.setProperty("longitude", position.coords.longitude, true);` && |\n|  &&
-             `      this.setProperty("latitude", position.coords.latitude, true);` && |\n|  &&
-             `      this.setProperty("altitude", position.coords.altitude, true);` && |\n|  &&
-             `      this.setProperty("accuracy", position.coords.accuracy, true);` && |\n|  &&
-             `      this.setProperty("altitudeAccuracy", position.coords.altitudeAccuracy, true);` && |\n|  &&
-             `      this.setProperty("speed", position.coords.speed, true);` && |\n|  &&
-             `      this.setProperty("heading", position.coords.heading, true);` && |\n|  &&
-             `      this.fireFinished();` && |\n|  &&
-             `` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    async init() {` && |\n|  &&
-             `` && |\n|  &&
-             `      navigator.geolocation.getCurrentPosition(this.callbackPosition.bind(this));` && |\n|  &&
-             `` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    exit() {` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    onAfterRendering() {` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer() {` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/FileUploader", ["sap/ui/core/Control", "sap/m/Button", "sap/ui/unified/FileUploader", "sap/m/HBox"], function (Control, Button, FileUploader, HBox) {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.FileUploader", {` && |\n|  &&
-             `` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        value: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        path: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        tooltip: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        fileType: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        placeholder: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        buttonText: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        style: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: ""` && |\n|  &&
-             `        },` && |\n|  &&
-             `        uploadButtonText: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: "Upload"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        enabled: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: true` && |\n|  &&
-             `        },` && |\n|  &&
-             `        icon: {` && |\n|  &&
-             `          type: "string",` && |\n|  &&
-             `          defaultValue: "sap-icon://browse-folder"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        iconOnly: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        buttonOnly: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        multiple: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        visible: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: true` && |\n|  &&
-             `        },` && |\n|  &&
-             `        checkDirectUpload: {` && |\n|  &&
-             `          type: "boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `` && |\n|  &&
-             `      aggregations: {},` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "upload": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {}` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `      renderer: null` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer: function (oRm, oControl) {` && |\n|  &&
-             `` && |\n|  &&
-             `      if (!oControl.getProperty("checkDirectUpload")) {` && |\n|  &&
-             `        oControl.oUploadButton = new Button({` && |\n|  &&
-             `          text: oControl.getProperty("uploadButtonText"),` && |\n|  &&
-             `          enabled: oControl.getProperty("path") !== "",` && |\n|  &&
-             `          press: function (oEvent) {` && |\n|  &&
-             `` && |\n|  &&
-             `            this.setProperty("path", this.oFileUploader.getProperty("value"));` && |\n|  &&
-             `` && |\n|  &&
-             `            var file = z2ui5.oUpload.oFileUpload.files[0];` && |\n|  &&
-             `            var reader = new FileReader();` && |\n|  &&
-             `` && |\n|  &&
-             `            reader.onload = function (evt) {` && |\n|  &&
-             `              var vContent = evt.currentTarget.result;` && |\n|  &&
-             `              this.setProperty("value", vContent);` && |\n|  &&
-             `              this.fireUpload();` && |\n|  &&
-             `              //this.getView().byId('picture' ).getDomRef().src = vContent;` && |\n|  &&
-             `            }` && |\n|  &&
-             `              .bind(this)` && |\n|  &&
-             `` && |\n|  &&
-             `            reader.readAsDataURL(file);` && |\n|  &&
-             `          }` && |\n|  &&
-             `            .bind(oControl)` && |\n|  &&
-             `        });` && |\n|  &&
-             `      }` && |\n|  &&
-             `` && |\n|  &&
-             `      oControl.oFileUploader = new FileUploader({` && |\n|  &&
-             `        icon: oControl.getProperty("icon"),` && |\n|  &&
-             `        iconOnly: oControl.getProperty("iconOnly"),` && |\n|  &&
-             `        buttonOnly: oControl.getProperty("buttonOnly"),` && |\n|  &&
-             `        buttonText: oControl.getProperty("buttonText"),` && |\n|  &&
-             `        style: oControl.getProperty("style"),` && |\n|  &&
-             `        fileType: oControl.getProperty("fileType"),` && |\n|  &&
-             `        visible: oControl.getProperty("visible"),` && |\n|  &&
-             `        uploadOnChange: oControl.getProperty("checkDirectUpload"),` && |\n|  &&
-             `        enabled: oControl.getProperty("enabled"),` && |\n|  &&
-             `        value: oControl.getProperty("path"),` && |\n|  &&
-             `        placeholder: oControl.getProperty("placeholder"),` && |\n|  &&
-             `        change: function (oEvent) {` && |\n|  &&
-             `          if (oControl.getProperty("checkDirectUpload")) {` && |\n|  &&
-             `            return;` && |\n|  &&
-             `          }` && |\n|  &&
-             `` && |\n|  &&
-             `          var value = oEvent.getSource().getProperty("value");` && |\n|  &&
-             `          this.setProperty("path", value);` && |\n|  &&
-             `          if (value) {` && |\n|  &&
-             `            this.oUploadButton.setEnabled();` && |\n|  &&
-             `          } else {` && |\n|  &&
-             `            this.oUploadButton.setEnabled(false);` && |\n|  &&
-             `          }` && |\n|  &&
-             `          this.oUploadButton.rerender();` && |\n|  &&
-             `          z2ui5.oUpload = oEvent.oSource;` && |\n|  &&
-             `        }` && |\n|  &&
-             `          .bind(oControl),` && |\n|  &&
-             `        uploadComplete: function (oEvent) {` && |\n|  &&
-             `          if (!oControl.getProperty("checkDirectUpload")) {` && |\n|  &&
-             `            return;` && |\n|  &&
-             `          }` && |\n|  &&
-             `` && |\n|  &&
-             `          var value = oEvent.getSource().getProperty("value");` && |\n|  &&
-             `          this.setProperty("path", value);` && |\n|  &&
-             `` && |\n|  &&
-             `          var file = oEvent.oSource.oFileUpload.files[0];` && |\n|  &&
-             `          var reader = new FileReader();` && |\n|  &&
-             `` && |\n|  &&
-             `          reader.onload = function (evt) {` && |\n|  &&
-             `            var vContent = evt.currentTarget.result;` && |\n|  &&
-             `            this.setProperty("value", vContent);` && |\n|  &&
-             `            this.fireUpload();` && |\n|  &&
-             `          }` && |\n|  &&
-             `            .bind(this)` && |\n|  &&
-             `` && |\n|  &&
-             `          reader.readAsDataURL(file);` && |\n|  &&
-             `        }` && |\n|  &&
-             `          .bind(oControl)` && |\n|  &&
-             `      });` && |\n|  &&
-             `` && |\n|  &&
-             `      var hbox = new HBox();` && |\n|  &&
-             `      hbox.addItem(oControl.oFileUploader);` && |\n|  &&
-             `      hbox.addItem(oControl.oUploadButton);` && |\n|  &&
-             `      oRm.renderControl(hbox);` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `});` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/MultiInputExt", ["sap/ui/core/Control", "sap/m/Token", "sap/ui/core/Core", "sap/ui/core/Element"], (Control, Token, Core, Element) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.MultiInputExt", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        MultiInputId: {` && |\n|  &&
-             `          type: "String"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        MultiInputName: {` && |\n|  &&
-             `          type: "String"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        addedTokens: {` && |\n|  &&
-             `          type: "Array"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        checkInit: {` && |\n|  &&
-             `          type: "Boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        },` && |\n|  &&
-             `        removedTokens: {` && |\n|  &&
-             `          type: "Array"` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "change": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {}` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    init() {` && |\n|  &&
-             `      z2ui5.onAfterRendering.push(this.setControl.bind(this));` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    onTokenUpdate(oEvent) {` && |\n|  &&
-             `      this.setProperty("addedTokens", []);` && |\n|  &&
-             `      this.setProperty("removedTokens", []);` && |\n|  &&
-             `` && |\n|  &&
-             `      if (oEvent.mParameters.type == "removed") {` && |\n|  &&
-             `        let removedTokens = [];` && |\n|  &&
-             `        oEvent.mParameters.removedTokens.forEach((item) => {` && |\n|  &&
-             `          removedTokens.push({` && |\n|  &&
-             `            KEY: item.getKey(),` && |\n|  &&
-             `            TEXT: item.getText()` && |\n|  &&
-             `          });` && |\n|  &&
-             `        }` && |\n|  &&
-             `        );` && |\n|  &&
-             `        this.setProperty("removedTokens", removedTokens);` && |\n|  &&
-             `      } else {` && |\n|  &&
-             `        let addedTokens = [];` && |\n|  &&
-             `        oEvent.mParameters.addedTokens.forEach((item) => {` && |\n|  &&
-             `          addedTokens.push({` && |\n|  &&
-             `            KEY: item.getKey(),` && |\n|  &&
-             `            TEXT: item.getText()` && |\n|  &&
-             `          });` && |\n|  &&
-             `        }` && |\n|  &&
-             `        );` && |\n|  &&
-             `        this.setProperty("addedTokens", addedTokens);` && |\n|  &&
-             `      }` && |\n|  &&
-             `      this.fireChange();` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) {` && |\n|  &&
-             `      z2ui5.onAfterRendering.push(this.setControl.bind(oControl));` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setControl() {` && |\n|  &&
-             `      let table = z2ui5.oView.byId(this.getProperty("MultiInputId"));` && |\n|  &&
-             `      if (!table) {` && |\n|  &&
-             `        try {` && |\n|  &&
-             `          // table = Core.byId(Element.getElementsByName(this.getProperty("MultiInputName"))[0].id.replace('-inner', ''));` && |\n|  &&
-             `        } catch (e) {` && |\n|  &&
-             `          return;` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `      if (!table) {` && |\n|  &&
-             `        return;` && |\n|  &&
-             `      }` && |\n|  &&
-             `      if (this.getProperty("checkInit") == true) {` && |\n|  &&
-             `        return;` && |\n|  &&
-             `      }` && |\n|  &&
-             `      this.setProperty("checkInit", true);` && |\n|  &&
-             `      table.attachTokenUpdate(this.onTokenUpdate.bind(this));` && |\n|  &&
-             `      var fnValidator = function (args) {` && |\n|  &&
-             `        var text = args.text;` && |\n|  &&
-             `        return new Token({` && |\n|  &&
-             `          key: text,` && |\n|  &&
-             `          text: text` && |\n|  &&
-             `        });` && |\n|  &&
-             `      };` && |\n|  &&
-             `      table.addValidator(fnValidator);` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRM, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/SmartMultiInputExt", ["sap/ui/core/Control", "sap/m/Token", "sap/ui/core/Core", "sap/ui/core/Element"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.SmartMultiInputExt", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        multiInputId: {` && |\n|  &&
-             `          type: "String"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        addedTokens: {` && |\n|  &&
-             `          type: "Array"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        removedTokens: {` && |\n|  &&
-             `          type: "Array"` && |\n|  &&
-             `        },` && |\n|  &&
-             `        rangeData: {` && |\n|  &&
-             `          type: "Array",` && |\n|  &&
-             `          defaultValue: []` && |\n|  &&
-             `        },` && |\n|  &&
-             `        checkInit: {` && |\n|  &&
-             `          type: "Boolean",` && |\n|  &&
-             `          defaultValue: false` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "change": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {}` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    init() {` && |\n|  &&
-             `      z2ui5.onAfterRendering.push(this.setControl.bind(this));` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    onTokenUpdate(oEvent) {` && |\n|  &&
-             `      this.setProperty("addedTokens", []);` && |\n|  &&
-             `      this.setProperty("removedTokens", []);` && |\n|  &&
-             `` && |\n|  &&
-             `      if (oEvent.mParameters.type == "removed") {` && |\n|  &&
-             `        let removedTokens = [];` && |\n|  &&
-             `        oEvent.mParameters.removedTokens.forEach((item) => {` && |\n|  &&
-             `          removedTokens.push({` && |\n|  &&
-             `            KEY: item.getKey(),` && |\n|  &&
-             `            TEXT: item.getText()` && |\n|  &&
-             `          });` && |\n|  &&
-             `        }` && |\n|  &&
-             `        );` && |\n|  &&
-             `        this.setProperty("removedTokens", removedTokens);` && |\n|  &&
-             `      } else {` && |\n|  &&
-             `        let addedTokens = [];` && |\n|  &&
-             `        oEvent.mParameters.addedTokens.forEach((item) => {` && |\n|  &&
-             `          addedTokens.push({` && |\n|  &&
-             `            KEY: item.getKey(),` && |\n|  &&
-             `            TEXT: item.getText()` && |\n|  &&
-             `          });` && |\n|  &&
-             `        }` && |\n|  &&
-             `        );` && |\n|  &&
-             `        this.setProperty("addedTokens", addedTokens);` && |\n|  &&
-             `      }` && |\n|  &&
-             `      const aTokens = oEvent.getSource().getTokens();` && |\n|  &&
-             `      this.setProperty("rangeData", oEvent.getSource().getRangeData().map((oRangeData, iIndex) => {` && |\n|  &&
-             `        const oToken = aTokens[iIndex];` && |\n|  &&
-             `        oRangeData.tokenText = oToken.getText();` && |\n|  &&
-             `        oRangeData.tokenLongKey = oToken.data("longKey");` && |\n|  &&
-             `        return oRangeData;` && |\n|  &&
-             `      }));` && |\n|  &&
-             `      this.fireChange();` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setRangeData(aRangeData) {` && |\n|  &&
-             `      this.setProperty("rangeData", aRangeData);` && |\n|  &&
-             `      this.inputInitialized().then((input) => {` && |\n|  &&
-             `        input.setRangeData(aRangeData.map((oRangeData) => {` && |\n|  &&
-             `          const oRangeDataNew = {};` && |\n|  &&
-             `          Object.entries(oRangeData).forEach((aEntry) => {` && |\n|  &&
-             `            const sKeyNameNew = aEntry[0].toLowerCase();` && |\n|  &&
-             `            oRangeDataNew[(sKeyNameNew === "keyfield" ? "keyField" : sKeyNameNew)] = aEntry[1];` && |\n|  &&
-             `          });` && |\n|  &&
+             `        altitudeAccuracy: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        speed: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        heading: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        enableHighAccuracy: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        timeout: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: "5000"` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "finished": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {},` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    callbackPosition(position) {` && |\n| &&
+             `` && |\n| &&
+             `      this.setProperty("longitude", position.coords.longitude, true);` && |\n| &&
+             `      this.setProperty("latitude", position.coords.latitude, true);` && |\n| &&
+             `      this.setProperty("altitude", position.coords.altitude, true);` && |\n| &&
+             `      this.setProperty("accuracy", position.coords.accuracy, true);` && |\n| &&
+             `      this.setProperty("altitudeAccuracy", position.coords.altitudeAccuracy, true);` && |\n| &&
+             `      this.setProperty("speed", position.coords.speed, true);` && |\n| &&
+             `      this.setProperty("heading", position.coords.heading, true);` && |\n| &&
+             `      this.fireFinished();` && |\n| &&
+             `` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    async init() {` && |\n| &&
+             `` && |\n| &&
+             `      navigator.geolocation.getCurrentPosition(this.callbackPosition.bind(this));` && |\n| &&
+             `` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    exit() {` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    onAfterRendering() {` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    renderer() {` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Storage", ["sap/ui/core/Control", "sap/ui/util/Storage"], (Control, Storage) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.Storage", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        type: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: "session"` && |\n| &&
+             `        },` && |\n| &&
+             `        prefix: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        key: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        value: {` && |\n| &&
+             `          type: "any",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "finished": {` && |\n| &&
+             `          parameters: {` && |\n| &&
+             `            type: {` && |\n| &&
+             `              type: "string",` && |\n| &&
+             `            },` && |\n| &&
+             `            prefix: {` && |\n| &&
+             `              type: "string",` && |\n| &&
+             `            },` && |\n| &&
+             `            key: {` && |\n| &&
+             `              type: "string",` && |\n| &&
+             `            },` && |\n| &&
+             `            value: {` && |\n| &&
+             `              type: "any",` && |\n| &&
+             `            }` && |\n| &&
+             `          }` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    async renderer(_, oControl) {` && |\n| &&
+             `      let storageType = oControl.getProperty("type");` && |\n| &&
+             `      let storageKeyPrefix = oControl.getProperty("prefix");` && |\n| &&
+             `      let storageKey  = oControl.getProperty("key");` && |\n| &&
+             `      let storageValue = oControl.getProperty("value");` && |\n| &&
+             `      let oStorage = new Storage(storageType, storageKeyPrefix);` && |\n| &&
+             `      let storedValue = oStorage.get(storageKey);` && |\n| &&
+             `      if (storedValue == null) {` && |\n| &&
+             `        storedValue = "";` && |\n| &&
+             `      }` && |\n| &&
+             `      if (storedValue !== storageValue) {` && |\n| &&
+             `         oControl.setProperty("value", storedValue);` && |\n| &&
+             `         oControl.fireFinished({` && |\n| &&
+             `           "type": storageType,` && |\n| &&
+             `           "prefix": storageKeyPrefix,` && |\n| &&
+             `           "key": storageKey,` && |\n| &&
+             `           "value": storedValue` && |\n| &&
+             `         });` && |\n| &&
+             `       }` && |\n| &&
+             `    },` && |\n| &&
+             `    onAfterRendering() { },` && |\n| &&
+             `    init() { }` && |\n| &&
+             `  });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/FileUploader", ["sap/ui/core/Control", "sap/m/Button", "sap/ui/unified/FileUploader", "sap/m/HBox"], function (Control, Button, FileUploader, HBox) {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.FileUploader", {` && |\n| &&
+             `` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        value: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        path: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        tooltip: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        fileType: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        placeholder: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        buttonText: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        style: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: ""` && |\n| &&
+             `        },` && |\n| &&
+             `        uploadButtonText: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: "Upload"` && |\n| &&
+             `        },` && |\n| &&
+             `        enabled: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: true` && |\n| &&
+             `        },` && |\n| &&
+             `        icon: {` && |\n| &&
+             `          type: "string",` && |\n| &&
+             `          defaultValue: "sap-icon://browse-folder"` && |\n| &&
+             `        },` && |\n| &&
+             `        iconOnly: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        buttonOnly: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        multiple: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        visible: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: true` && |\n| &&
+             `        },` && |\n| &&
+             `        checkDirectUpload: {` && |\n| &&
+             `          type: "boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `` && |\n| &&
+             `      aggregations: {},` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "upload": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {}` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `      renderer: null` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    renderer: function (oRm, oControl) {` && |\n| &&
+             `` && |\n| &&
+             `      if (!oControl.getProperty("checkDirectUpload")) {` && |\n| &&
+             `        oControl.oUploadButton = new Button({` && |\n| &&
+             `          text: oControl.getProperty("uploadButtonText"),` && |\n| &&
+             `          enabled: oControl.getProperty("path") !== "",` && |\n| &&
+             `          press: function (oEvent) {` && |\n| &&
+             `` && |\n| &&
+             `            this.setProperty("path", this.oFileUploader.getProperty("value"));` && |\n| &&
+             `` && |\n| &&
+             `            var file = z2ui5.oUpload.oFileUpload.files[0];` && |\n| &&
+             `            var reader = new FileReader();` && |\n| &&
+             `` && |\n| &&
+             `            reader.onload = function (evt) {` && |\n| &&
+             `              var vContent = evt.currentTarget.result;` && |\n| &&
+             `              this.setProperty("value", vContent);` && |\n| &&
+             `              this.fireUpload();` && |\n| &&
+             `              //this.getView().byId('picture' ).getDomRef().src = vContent;` && |\n| &&
+             `            }` && |\n| &&
+             `              .bind(this)` && |\n| &&
+             `` && |\n| &&
+             `            reader.readAsDataURL(file);` && |\n| &&
+             `          }` && |\n| &&
+             `            .bind(oControl)` && |\n| &&
+             `        });` && |\n| &&
+             `      }` && |\n| &&
+             `` && |\n| &&
+             `      oControl.oFileUploader = new FileUploader({` && |\n| &&
+             `        icon: oControl.getProperty("icon"),` && |\n| &&
+             `        iconOnly: oControl.getProperty("iconOnly"),` && |\n| &&
+             `        buttonOnly: oControl.getProperty("buttonOnly"),` && |\n| &&
+             `        buttonText: oControl.getProperty("buttonText"),` && |\n| &&
+             `        style: oControl.getProperty("style"),` && |\n| &&
+             `        fileType: oControl.getProperty("fileType"),` && |\n| &&
+             `        visible: oControl.getProperty("visible"),` && |\n| &&
+             `        uploadOnChange: oControl.getProperty("checkDirectUpload"),` && |\n| &&
+             `        enabled: oControl.getProperty("enabled"),` && |\n| &&
+             `        value: oControl.getProperty("path"),` && |\n| &&
+             `        placeholder: oControl.getProperty("placeholder"),` && |\n| &&
+             `        change: function (oEvent) {` && |\n| &&
+             `          if (oControl.getProperty("checkDirectUpload")) {` && |\n| &&
+             `            return;` && |\n| &&
+             `          }` && |\n| &&
+             `` && |\n| &&
+             `          var value = oEvent.getSource().getProperty("value");` && |\n| &&
+             `          this.setProperty("path", value);` && |\n| &&
+             `          if (value) {` && |\n| &&
+             `            this.oUploadButton.setEnabled();` && |\n| &&
+             `          } else {` && |\n| &&
+             `            this.oUploadButton.setEnabled(false);` && |\n| &&
+             `          }` && |\n| &&
+             `          this.oUploadButton.rerender();` && |\n| &&
+             `          z2ui5.oUpload = oEvent.oSource;` && |\n| &&
+             `        }` && |\n| &&
+             `          .bind(oControl),` && |\n| &&
+             `        uploadComplete: function (oEvent) {` && |\n| &&
+             `          if (!oControl.getProperty("checkDirectUpload")) {` && |\n| &&
+             `            return;` && |\n| &&
+             `          }` && |\n| &&
+             `` && |\n| &&
+             `          var value = oEvent.getSource().getProperty("value");` && |\n| &&
+             `          this.setProperty("path", value);` && |\n| &&
+             `` && |\n| &&
+             `          var file = oEvent.oSource.oFileUpload.files[0];` && |\n| &&
+             `          var reader = new FileReader();` && |\n| &&
+             `` && |\n| &&
+             `          reader.onload = function (evt) {` && |\n| &&
+             `            var vContent = evt.currentTarget.result;` && |\n| &&
+             `            this.setProperty("value", vContent);` && |\n| &&
+             `            this.fireUpload();` && |\n| &&
+             `          }` && |\n| &&
+             `            .bind(this)` && |\n| &&
+             `` && |\n| &&
+             `          reader.readAsDataURL(file);` && |\n| &&
+             `        }` && |\n| &&
+             `          .bind(oControl)` && |\n| &&
+             `      });` && |\n| &&
+             `` && |\n| &&
+             `      var hbox = new HBox();` && |\n| &&
+             `      hbox.addItem(oControl.oFileUploader);` && |\n| &&
+             `      hbox.addItem(oControl.oUploadButton);` && |\n| &&
+             `      oRm.renderControl(hbox);` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/MultiInputExt", ["sap/ui/core/Control", "sap/m/Token", "sap/ui/core/Core", "sap/ui/core/Element"], (Control, Token, Core, Element) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.MultiInputExt", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        MultiInputId: {` && |\n| &&
+             `          type: "String"` && |\n| &&
+             `        },` && |\n| &&
+             `        MultiInputName: {` && |\n| &&
+             `          type: "String"` && |\n| &&
+             `        },` && |\n| &&
+             `        addedTokens: {` && |\n| &&
+             `          type: "Array"` && |\n| &&
+             `        },` && |\n| &&
+             `        checkInit: {` && |\n| &&
+             `          type: "Boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        },` && |\n| &&
+             `        removedTokens: {` && |\n| &&
+             `          type: "Array"` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "change": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {}` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    init() {` && |\n| &&
+             `      z2ui5.onAfterRendering.push(this.setControl.bind(this));` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    onTokenUpdate(oEvent) {` && |\n| &&
+             `      this.setProperty("addedTokens", []);` && |\n| &&
+             `      this.setProperty("removedTokens", []);` && |\n| &&
+             `` && |\n| &&
+             `      if (oEvent.mParameters.type == "removed") {` && |\n| &&
+             `        let removedTokens = [];` && |\n| &&
+             `        oEvent.mParameters.removedTokens.forEach((item) => {` && |\n| &&
+             `          removedTokens.push({` && |\n| &&
+             `            KEY: item.getKey(),` && |\n| &&
+             `            TEXT: item.getText()` && |\n| &&
+             `          });` && |\n| &&
+             `        }` && |\n| &&
+             `        );` && |\n| &&
+             `        this.setProperty("removedTokens", removedTokens);` && |\n| &&
+             `      } else {` && |\n| &&
+             `        let addedTokens = [];` && |\n| &&
+             `        oEvent.mParameters.addedTokens.forEach((item) => {` && |\n| &&
+             `          addedTokens.push({` && |\n| &&
+             `            KEY: item.getKey(),` && |\n| &&
+             `            TEXT: item.getText()` && |\n| &&
+             `          });` && |\n| &&
+             `        }` && |\n| &&
+             `        );` && |\n| &&
+             `        this.setProperty("addedTokens", addedTokens);` && |\n| &&
+             `      }` && |\n| &&
+             `      this.fireChange();` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) {` && |\n| &&
+             `      z2ui5.onAfterRendering.push(this.setControl.bind(oControl));` && |\n| &&
+             `    },` && |\n| &&
+             `    setControl() {` && |\n| &&
+             `      let table = z2ui5.oView.byId(this.getProperty("MultiInputId"));` && |\n| &&
+             `      if (!table) {` && |\n| &&
+             `        try {` && |\n| &&
+             `          // table = Core.byId(Element.getElementsByName(this.getProperty("MultiInputName"))[0].id.replace('-inner', ''));` && |\n| &&
+             `        } catch (e) {` && |\n| &&
+             `          return;` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `      if (!table) {` && |\n| &&
+             `        return;` && |\n| &&
+             `      }` && |\n| &&
+             `      if (this.getProperty("checkInit") == true) {` && |\n| &&
+             `        return;` && |\n| &&
+             `      }` && |\n| &&
+             `      this.setProperty("checkInit", true);` && |\n| &&
+             `      table.attachTokenUpdate(this.onTokenUpdate.bind(this));` && |\n| &&
+             `      var fnValidator = function (args) {` && |\n| &&
+             `        var text = args.text;` && |\n| &&
+             `        return new Token({` && |\n| &&
+             `          key: text,` && |\n| &&
+             `          text: text` && |\n| &&
+             `        });` && |\n| &&
+             `      };` && |\n| &&
+             `      table.addValidator(fnValidator);` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRM, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/SmartMultiInputExt", ["sap/ui/core/Control", "sap/m/Token", "sap/ui/core/Core", "sap/ui/core/Element"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.SmartMultiInputExt", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        multiInputId: {` && |\n| &&
+             `          type: "String"` && |\n| &&
+             `        },` && |\n| &&
+             `        addedTokens: {` && |\n| &&
+             `          type: "Array"` && |\n| &&
              |\n|.
     result = result &&
-             `          return oRangeDataNew;` && |\n|  &&
-             `        }));` && |\n|  &&
-             `        //we need to set token text explicitly, as setRangeData does no recalculation` && |\n|  &&
-             `        input.getTokens().forEach((token, index) => {` && |\n|  &&
-             `          const oRangeData = aRangeData[index];` && |\n|  &&
-             `          token.data("longKey", oRangeData.TOKENLONGKEY);` && |\n|  &&
-             `          token.data("range", null);` && |\n|  &&
-             `          const sTokenText = oRangeData.TOKENTEXT;` && |\n|  &&
-             `          if (sTokenText) {` && |\n|  &&
-             `            token.setText(sTokenText);` && |\n|  &&
-             `          }` && |\n|  &&
-             `        });` && |\n|  &&
-             `      });` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) { },` && |\n|  &&
-             `    setControl() {` && |\n|  &&
-             `      const input = z2ui5.oView.byId(this.getProperty("multiInputId"));` && |\n|  &&
-             `      if (!input) {` && |\n|  &&
-             `        return;` && |\n|  &&
-             `      }` && |\n|  &&
-             `      if (this.getProperty("checkInit") == true) {` && |\n|  &&
-             `        return;` && |\n|  &&
-             `      }` && |\n|  &&
-             `      this.setProperty("checkInit", true);` && |\n|  &&
-             `      input.attachTokenUpdate(this.onTokenUpdate.bind(this));` && |\n|  &&
-             `      input.attachInnerControlsCreated(this.onInnerControlsCreated.bind(this));` && |\n|  &&
-             `    },` && |\n|  &&
-             `    inputInitialized(input) {` && |\n|  &&
-             `      return new Promise((resolve, reject) => {` && |\n|  &&
-             `        if (this._bInnerControlsCreated) {` && |\n|  &&
-             `          resolve(input); //resolve immediately` && |\n|  &&
-             `        } else {` && |\n|  &&
-             `          this._oPendingInnerControlsCreated = resolve; //resolve later` && |\n|  &&
-             `        }` && |\n|  &&
-             `      });` && |\n|  &&
-             `    },` && |\n|  &&
-             `    _oPendingInnerControlsCreated: null,` && |\n|  &&
-             `    _bInnerControlsCreated: false,` && |\n|  &&
-             `    onInnerControlsCreated(oEvent) {` && |\n|  &&
-             `      const input = oEvent.getSource();` && |\n|  &&
-             `      if (this._oPendingInnerControlsCreated) {` && |\n|  &&
-             `        this._oPendingInnerControlsCreated(input);` && |\n|  &&
-             `      }` && |\n|  &&
-             `      this._oPendingInnerControlsCreated = null;` && |\n|  &&
-             `      this._bInnerControlsCreated = true;` && |\n|  &&
-             `    }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/CameraPicture", [` && |\n|  &&
-             `  "sap/ui/core/Control",` && |\n|  &&
-             `  "sap/m/Dialog",` && |\n|  &&
-             `  "sap/m/Button"` && |\n|  &&
-             `], function (Control, Dialog, Button) {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.CameraPicture", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        id: { type: "string" },` && |\n|  &&
-             `        value: { type: "string" },` && |\n|  &&
-             `        press: { type: "string" },` && |\n|  &&
-             `        autoplay: { type: "boolean", defaultValue: true }` && |\n|  &&
-             `      },` && |\n|  &&
-             `      events: {` && |\n|  &&
-             `        "OnPhoto": {` && |\n|  &&
-             `          allowPreventDefault: true,` && |\n|  &&
-             `          parameters: {` && |\n|  &&
-             `            "photo": {` && |\n|  &&
-             `              type: "string"` && |\n|  &&
-             `            }` && |\n|  &&
-             `          }` && |\n|  &&
-             `        }` && |\n|  &&
-             `      },` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    capture: function (oEvent) {` && |\n|  &&
-             `` && |\n|  &&
-             `      var video = document.querySelector("#zvideo");` && |\n|  &&
-             `      var canvas = document.getElementById('zcanvas');` && |\n|  &&
-             `      var resultb64 = "";` && |\n|  &&
-             `      canvas.width = 200;` && |\n|  &&
-             `      canvas.height = 200;` && |\n|  &&
-             `      canvas.getContext('2d').drawImage(video, 0, 0, 200, 200);` && |\n|  &&
-             `      resultb64 = canvas.toDataURL();` && |\n|  &&
-             `      this.setProperty("value", resultb64);` && |\n|  &&
-             `      this.fireOnPhoto({` && |\n|  &&
-             `        "photo": resultb64` && |\n|  &&
-             `      });` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    onPicture: function (oEvent) {` && |\n|  &&
-             `` && |\n|  &&
-             `      if (!this._oScanDialog) {` && |\n|  &&
-             `        this._oScanDialog = new Dialog({` && |\n|  &&
-             `          title: "Device Photo Function",` && |\n|  &&
-             `          contentWidth: "640px",` && |\n|  &&
-             `          contentHeight: "480px",` && |\n|  &&
-             `          horizontalScrolling: false,` && |\n|  &&
-             `          verticalScrolling: false,` && |\n|  &&
-             `          stretch: true,` && |\n|  &&
-             `          content: [` && |\n|  &&
-             `            new HTML({` && |\n|  &&
-             `              id: this.getId() + 'PictureContainer',` && |\n|  &&
-             `              content: '<video width="600px" height="400px" autoplay="true" id="zvideo">'` && |\n|  &&
-             `            }),` && |\n|  &&
-             `            new Button({` && |\n|  &&
-             `              text: "Capture",` && |\n|  &&
-             `              press: function (oEvent) {` && |\n|  &&
-             `                this.capture();` && |\n|  &&
-             `                this._oScanDialog.close();` && |\n|  &&
-             `              }.bind(this)` && |\n|  &&
-             `            }),` && |\n|  &&
-             `            new HTML({` && |\n|  &&
-             `              content: '<canvas hidden id="zcanvas" style="overflow:auto"></canvas>'` && |\n|  &&
-             `            }),` && |\n|  &&
-             `          ],` && |\n|  &&
-             `          endButton: new Button({` && |\n|  &&
-             `            text: "Cancel",` && |\n|  &&
-             `            press: function (oEvent) {` && |\n|  &&
-             `              this._oScanDialog.close();` && |\n|  &&
-             `            }.bind(this)` && |\n|  &&
-             `          }),` && |\n|  &&
-             `        });` && |\n|  &&
-             `      }` && |\n|  &&
-             `` && |\n|  &&
-             `      this._oScanDialog.open();` && |\n|  &&
-             `` && |\n|  &&
-             `      setTimeout(function () {` && |\n|  &&
-             `        var video = document.querySelector('#zvideo');` && |\n|  &&
-             `        if (navigator.mediaDevices.getUserMedia) {` && |\n|  &&
-             `          navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })` && |\n|  &&
-             `            .then(function (stream) {` && |\n|  &&
-             `              video.srcObject = stream;` && |\n|  &&
-             `            })` && |\n|  &&
-             `            .catch(function (error) {` && |\n|  &&
-             `              console.log("Something went wrong!");` && |\n|  &&
-             `            });` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }.bind(this), 300);` && |\n|  &&
-             `` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer: function (oRM, oControl) {` && |\n|  &&
-             `` && |\n|  &&
-             `      var oButton = new Button({` && |\n|  &&
-             `        icon: "sap-icon://camera",` && |\n|  &&
-             `        text: "Camera",` && |\n|  &&
-             `        press: oControl.onPicture.bind(oControl),` && |\n|  &&
-             `      });` && |\n|  &&
-             `      oRM.renderControl(oButton);` && |\n|  &&
-             `` && |\n|  &&
-             `    },` && |\n|  &&
-             `  });` && |\n|  &&
-             `});` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/UITableExt", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `` && |\n|  &&
-             `  return Control.extend("z2ui5.UITableExt", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        tableId: {` && |\n|  &&
-             `          type: "String"` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    init() {` && |\n|  &&
-             `      z2ui5.onBeforeRoundtrip.push(this.readFilter.bind(this));` && |\n|  &&
-             `      z2ui5.onAfterRoundtrip.push(this.setFilter.bind(this));` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    readFilter() {` && |\n|  &&
-             `      try {` && |\n|  &&
-             `        let id = this.getProperty("tableId");` && |\n|  &&
-             `        let oTable = z2ui5.oView.byId(id);` && |\n|  &&
-             `        this.aFilters = oTable.getBinding().aFilters;` && |\n|  &&
-             `      } catch (e) { }` && |\n|  &&
-             `      ;` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    setFilter() {` && |\n|  &&
-             `      try {` && |\n|  &&
-             `        setTimeout((aFilters) => {` && |\n|  &&
-             `          let id = this.getProperty("tableId");` && |\n|  &&
-             `          let oTable = z2ui5.oView.byId(id);` && |\n|  &&
-             `          oTable.getBinding().filter(aFilters);` && |\n|  &&
-             `        }` && |\n|  &&
-             `          , 100, this.aFilters);` && |\n|  &&
-             `      } catch (e) { }` && |\n|  &&
-             `      ;` && |\n|  &&
-             `    },` && |\n|  &&
-             `` && |\n|  &&
-             `    renderer(oRM, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Util", [], () => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return {` && |\n|  &&
-             `    DateCreateObject: (s) => new Date(s),` && |\n|  &&
-             `    //  DateAbapTimestampToDate: (sTimestamp) => new sap.gantt.misc.Format.abapTimestampToDate(sTimestamp), commented for UI5 2.x compatibility` && |\n|  &&
-             `    DateAbapDateToDateObject: (d) => new Date(d.slice(0, 4), parseInt(d.slice(4, 6)) - 1, d.slice(6, 8)),` && |\n|  &&
-             `    DateAbapDateTimeToDateObject: (d, t = '000000') => new Date(d.slice(0, 4), parseInt(d.slice(4, 6)) - 1, d.slice(6, 8), t.slice(0, 2), t.slice(2, 4), t.slice(4, 6)),` && |\n|  &&
-             `  };` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `sap.ui.require(["z2ui5/Util"], (Util) => {` && |\n|  &&
-             `  z2ui5.Util = Util;` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Favicon", ["sap/ui/core/Control"], (Control) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.Favicon", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        favicon: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setFavicon(val) {` && |\n|  &&
-             `      this.setProperty("favicon", val);` && |\n|  &&
-             `      let headTitle = document.querySelector('head');` && |\n|  &&
-             `      let setFavicon = document.createElement('link');` && |\n|  &&
-             `      setFavicon.setAttribute('rel', 'shortcut icon');` && |\n|  &&
-             `      setFavicon.setAttribute('href', val);` && |\n|  &&
-             `      headTitle.appendChild(setFavicon);` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
-             `` && |\n|  &&
-             `sap.ui.define("z2ui5/Dirty", ["sap/ui/core/Control", "sap/ushell/Container"], (Control, Container) => {` && |\n|  &&
-             `  "use strict";` && |\n|  &&
-             `  return Control.extend("z2ui5.Dirty", {` && |\n|  &&
-             `    metadata: {` && |\n|  &&
-             `      properties: {` && |\n|  &&
-             `        isDirty: {` && |\n|  &&
-             `          type: "string"` && |\n|  &&
-             `        },` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    setIsDirty(val) {` && |\n|  &&
-             `      if (Container) {` && |\n|  &&
-             `        Container.setDirtyFlag(val);` && |\n|  &&
-             `      } else {` && |\n|  &&
-             `        window.onbeforeunload = function (e) {` && |\n|  &&
-             `          if (val) {` && |\n|  &&
-             `            e.preventDefault();` && |\n|  &&
-             `          }` && |\n|  &&
-             `        }` && |\n|  &&
-             `      }` && |\n|  &&
-             `    },` && |\n|  &&
-             `    renderer(oRm, oControl) { }` && |\n|  &&
-             `  });` && |\n|  &&
-             `}` && |\n|  &&
-             `);` && |\n|  &&
+             `        },` && |\n| &&
+             `        removedTokens: {` && |\n| &&
+             `          type: "Array"` && |\n| &&
+             `        },` && |\n| &&
+             `        rangeData: {` && |\n| &&
+             `          type: "Array",` && |\n| &&
+             `          defaultValue: []` && |\n| &&
+             `        },` && |\n| &&
+             `        checkInit: {` && |\n| &&
+             `          type: "Boolean",` && |\n| &&
+             `          defaultValue: false` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "change": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {}` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    init() {` && |\n| &&
+             `      z2ui5.onAfterRendering.push(this.setControl.bind(this));` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    onTokenUpdate(oEvent) {` && |\n| &&
+             `      this.setProperty("addedTokens", []);` && |\n| &&
+             `      this.setProperty("removedTokens", []);` && |\n| &&
+             `` && |\n| &&
+             `      if (oEvent.mParameters.type == "removed") {` && |\n| &&
+             `        let removedTokens = [];` && |\n| &&
+             `        oEvent.mParameters.removedTokens.forEach((item) => {` && |\n| &&
+             `          removedTokens.push({` && |\n| &&
+             `            KEY: item.getKey(),` && |\n| &&
+             `            TEXT: item.getText()` && |\n| &&
+             `          });` && |\n| &&
+             `        }` && |\n| &&
+             `        );` && |\n| &&
+             `        this.setProperty("removedTokens", removedTokens);` && |\n| &&
+             `      } else {` && |\n| &&
+             `        let addedTokens = [];` && |\n| &&
+             `        oEvent.mParameters.addedTokens.forEach((item) => {` && |\n| &&
+             `          addedTokens.push({` && |\n| &&
+             `            KEY: item.getKey(),` && |\n| &&
+             `            TEXT: item.getText()` && |\n| &&
+             `          });` && |\n| &&
+             `        }` && |\n| &&
+             `        );` && |\n| &&
+             `        this.setProperty("addedTokens", addedTokens);` && |\n| &&
+             `      }` && |\n| &&
+             `      const aTokens = oEvent.getSource().getTokens();` && |\n| &&
+             `      this.setProperty("rangeData", oEvent.getSource().getRangeData().map((oRangeData, iIndex) => {` && |\n| &&
+             `        const oToken = aTokens[iIndex];` && |\n| &&
+             `        oRangeData.tokenText = oToken.getText();` && |\n| &&
+             `        oRangeData.tokenLongKey = oToken.data("longKey");` && |\n| &&
+             `        return oRangeData;` && |\n| &&
+             `      }));` && |\n| &&
+             `      this.fireChange();` && |\n| &&
+             `    },` && |\n| &&
+             `    setRangeData(aRangeData) {` && |\n| &&
+             `      this.setProperty("rangeData", aRangeData);` && |\n| &&
+             `      this.inputInitialized().then((input) => {` && |\n| &&
+             `        input.setRangeData(aRangeData.map((oRangeData) => {` && |\n| &&
+             `          const oRangeDataNew = {};` && |\n| &&
+             `          Object.entries(oRangeData).forEach((aEntry) => {` && |\n| &&
+             `            const sKeyNameNew = aEntry[0].toLowerCase();` && |\n| &&
+             `            oRangeDataNew[(sKeyNameNew === "keyfield" ? "keyField" : sKeyNameNew)] = aEntry[1];` && |\n| &&
+             `          });` && |\n| &&
+             `          return oRangeDataNew;` && |\n| &&
+             `        }));` && |\n| &&
+             `        //we need to set token text explicitly, as setRangeData does no recalculation` && |\n| &&
+             `        input.getTokens().forEach((token, index) => {` && |\n| &&
+             `          const oRangeData = aRangeData[index];` && |\n| &&
+             `          token.data("longKey", oRangeData.TOKENLONGKEY);` && |\n| &&
+             `          token.data("range", null);` && |\n| &&
+             `          const sTokenText = oRangeData.TOKENTEXT;` && |\n| &&
+             `          if (sTokenText) {` && |\n| &&
+             `            token.setText(sTokenText);` && |\n| &&
+             `          }` && |\n| &&
+             `        });` && |\n| &&
+             `      });` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) { },` && |\n| &&
+             `    setControl() {` && |\n| &&
+             `      const input = z2ui5.oView.byId(this.getProperty("multiInputId"));` && |\n| &&
+             `      if (!input) {` && |\n| &&
+             `        return;` && |\n| &&
+             `      }` && |\n| &&
+             `      if (this.getProperty("checkInit") == true) {` && |\n| &&
+             `        return;` && |\n| &&
+             `      }` && |\n| &&
+             `      this.setProperty("checkInit", true);` && |\n| &&
+             `      input.attachTokenUpdate(this.onTokenUpdate.bind(this));` && |\n| &&
+             `      input.attachInnerControlsCreated(this.onInnerControlsCreated.bind(this));` && |\n| &&
+             `    },` && |\n| &&
+             `    inputInitialized(input) {` && |\n| &&
+             `      return new Promise((resolve, reject) => {` && |\n| &&
+             `        if (this._bInnerControlsCreated) {` && |\n| &&
+             `          resolve(input); //resolve immediately` && |\n| &&
+             `        } else {` && |\n| &&
+             `          this._oPendingInnerControlsCreated = resolve; //resolve later` && |\n| &&
+             `        }` && |\n| &&
+             `      });` && |\n| &&
+             `    },` && |\n| &&
+             `    _oPendingInnerControlsCreated: null,` && |\n| &&
+             `    _bInnerControlsCreated: false,` && |\n| &&
+             `    onInnerControlsCreated(oEvent) {` && |\n| &&
+             `      const input = oEvent.getSource();` && |\n| &&
+             `      if (this._oPendingInnerControlsCreated) {` && |\n| &&
+             `        this._oPendingInnerControlsCreated(input);` && |\n| &&
+             `      }` && |\n| &&
+             `      this._oPendingInnerControlsCreated = null;` && |\n| &&
+             `      this._bInnerControlsCreated = true;` && |\n| &&
+             `    }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/CameraPicture", [` && |\n| &&
+             `  "sap/ui/core/Control",` && |\n| &&
+             `  "sap/m/Dialog",` && |\n| &&
+             `  "sap/m/Button",` && |\n| &&
+             `  "sap/ui/core/HTML"` && |\n| &&
+             `], function (Control, Dialog, Button, HTML) {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.CameraPicture", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        id: { type: "string" },` && |\n| &&
+             `        value: { type: "string" },` && |\n| &&
+             `        press: { type: "string" },` && |\n| &&
+             `        autoplay: { type: "boolean", defaultValue: true }` && |\n| &&
+             `      },` && |\n| &&
+             `      events: {` && |\n| &&
+             `        "OnPhoto": {` && |\n| &&
+             `          allowPreventDefault: true,` && |\n| &&
+             `          parameters: {` && |\n| &&
+             `            "photo": {` && |\n| &&
+             `              type: "string"` && |\n| &&
+             `            }` && |\n| &&
+             `          }` && |\n| &&
+             `        }` && |\n| &&
+             `      },` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    capture: function (oEvent) {` && |\n| &&
+             `` && |\n| &&
+             `      var video = document.querySelector("#zvideo");` && |\n| &&
+             `      var canvas = document.getElementById('zcanvas');` && |\n| &&
+             `      var resultb64 = "";` && |\n| &&
+             `      canvas.width = 200;` && |\n| &&
+             `      canvas.height = 200;` && |\n| &&
+             `      canvas.getContext('2d').drawImage(video, 0, 0, 200, 200);` && |\n| &&
+             `      resultb64 = canvas.toDataURL();` && |\n| &&
+             `      this.setProperty("value", resultb64);` && |\n| &&
+             `      this.fireOnPhoto({` && |\n| &&
+             `        "photo": resultb64` && |\n| &&
+             `      });` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    onPicture: function (oEvent) {` && |\n| &&
+             `` && |\n| &&
+             `      if (!this._oScanDialog) {` && |\n| &&
+             `        this._oScanDialog = new Dialog({` && |\n| &&
+             `          title: "Device Photo Function",` && |\n| &&
+             `          contentWidth: "640px",` && |\n| &&
+             `          contentHeight: "480px",` && |\n| &&
+             `          horizontalScrolling: false,` && |\n| &&
+             `          verticalScrolling: false,` && |\n| &&
+             `          stretch: true,` && |\n| &&
+             `          content: [` && |\n| &&
+             `            new HTML({` && |\n| &&
+             `              id: this.getId() + 'PictureContainer',` && |\n| &&
+             `              content: '<video width="600px" height="400px" autoplay="true" id="zvideo">'` && |\n| &&
+             `            }),` && |\n| &&
+             `            new Button({` && |\n| &&
+             `              text: "Capture",` && |\n| &&
+             `              press: function (oEvent) {` && |\n| &&
+             `                this.capture();` && |\n| &&
+             `                this._oScanDialog.close();` && |\n| &&
+             `              }.bind(this)` && |\n| &&
+             `            }),` && |\n| &&
+             `            new HTML({` && |\n| &&
+             `              content: '<canvas hidden id="zcanvas" style="overflow:auto"></canvas>'` && |\n| &&
+             `            }),` && |\n| &&
+             `          ],` && |\n| &&
+             `          endButton: new Button({` && |\n| &&
+             `            text: "Cancel",` && |\n| &&
+             `            press: function (oEvent) {` && |\n| &&
+             `              this._oScanDialog.close();` && |\n| &&
+             `            }.bind(this)` && |\n| &&
+             `          }),` && |\n| &&
+             `        });` && |\n| &&
+             `      }` && |\n| &&
+             `` && |\n| &&
+             `      this._oScanDialog.open();` && |\n| &&
+             `` && |\n| &&
+             `      setTimeout(function () {` && |\n| &&
+             `        var video = document.querySelector('#zvideo');` && |\n| &&
+             `        if (navigator.mediaDevices.getUserMedia) {` && |\n| &&
+             `          navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })` && |\n| &&
+             `            .then(function (stream) {` && |\n| &&
+             `              video.srcObject = stream;` && |\n| &&
+             `            })` && |\n| &&
+             `            .catch(function (error) {` && |\n| &&
+             `              console.log("Something went wrong!");` && |\n| &&
+             `            });` && |\n| &&
+             `        }` && |\n| &&
+             `      }.bind(this), 300);` && |\n| &&
+             `` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    renderer: function (oRM, oControl) {` && |\n| &&
+             `` && |\n| &&
+             `      var oButton = new Button({` && |\n| &&
+             `        icon: "sap-icon://camera",` && |\n| &&
+             `        text: "Camera",` && |\n| &&
+             `        press: oControl.onPicture.bind(oControl),` && |\n| &&
+             `      });` && |\n| &&
+             `      oRM.renderControl(oButton);` && |\n| &&
+             `` && |\n| &&
+             `    },` && |\n| &&
+             `  });` && |\n| &&
+             `});` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/UITableExt", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `` && |\n| &&
+             `  return Control.extend("z2ui5.UITableExt", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        tableId: {` && |\n| &&
+             `          type: "String"` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    init() {` && |\n| &&
+             `      z2ui5.onBeforeRoundtrip.push(this.readFilter.bind(this));` && |\n| &&
+             `      z2ui5.onAfterRoundtrip.push(this.setFilter.bind(this));` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    readFilter() {` && |\n| &&
+             `      try {` && |\n| &&
+             `        let id = this.getProperty("tableId");` && |\n| &&
+             `        let oTable = z2ui5.oView.byId(id);` && |\n| &&
+             `        this.aFilters = oTable.getBinding().aFilters;` && |\n| &&
+             `      } catch (e) { }` && |\n| &&
+             `      ;` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    setFilter() {` && |\n| &&
+             `      try {` && |\n| &&
+             `        setTimeout((aFilters) => {` && |\n| &&
+             `          let id = this.getProperty("tableId");` && |\n| &&
+             `          let oTable = z2ui5.oView.byId(id);` && |\n| &&
+             `          oTable.getBinding().filter(aFilters);` && |\n| &&
+             `        }` && |\n| &&
+             `          , 100, this.aFilters);` && |\n| &&
+             `      } catch (e) { }` && |\n| &&
+             `      ;` && |\n| &&
+             `    },` && |\n| &&
+             `` && |\n| &&
+             `    renderer(oRM, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Util", [], () => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return {` && |\n| &&
+             `    DateCreateObject: (s) => new Date(s),` && |\n| &&
+             `    //  DateAbapTimestampToDate: (sTimestamp) => new sap.gantt.misc.Format.abapTimestampToDate(sTimestamp), commented for UI5 2.x compatibility` && |\n| &&
+             `    DateAbapDateToDateObject: (d) => new Date(d.slice(0, 4), parseInt(d.slice(4, 6)) - 1, d.slice(6, 8)),` && |\n| &&
+             `    DateAbapDateTimeToDateObject: (d, t = '000000') => new Date(d.slice(0, 4), parseInt(d.slice(4, 6)) - 1, d.slice(6, 8), t.slice(0, 2), t.slice(2, 4), t.slice(4, 6)),` && |\n| &&
+             `  };` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `sap.ui.require(["z2ui5/Util"], (Util) => {` && |\n| &&
+             `  z2ui5.Util = Util;` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Favicon", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.Favicon", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        favicon: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    setFavicon(val) {` && |\n| &&
+             `      this.setProperty("favicon", val);` && |\n| &&
+             `      let headTitle = document.querySelector('head');` && |\n| &&
+             `      let setFavicon = document.createElement('link');` && |\n| &&
+             `      setFavicon.setAttribute('rel', 'shortcut icon');` && |\n| &&
+             `      setFavicon.setAttribute('href', val);` && |\n| &&
+             `      headTitle.appendChild(setFavicon);` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
+             `sap.ui.define("z2ui5/Dirty", ["sap/ui/core/Control"], (Control) => {` && |\n| &&
+             `  "use strict";` && |\n| &&
+             `  return Control.extend("z2ui5.Dirty", {` && |\n| &&
+             `    metadata: {` && |\n| &&
+             `      properties: {` && |\n| &&
+             `        isDirty: {` && |\n| &&
+             `          type: "string"` && |\n| &&
+             `        },` && |\n| &&
+             `      }` && |\n| &&
+             `    },` && |\n| &&
+             `    setIsDirty(val) {` && |\n| &&
+             `` && |\n| &&
+             `      sap.ui.require([ "sap/ushell/Container"` && |\n| &&
+             `      ], async (Container) => {` && |\n| &&
+             `` && |\n| &&
+             `        if (Container) {` && |\n| &&
+             `          Container.setDirtyFlag(val);` && |\n| &&
+             `        } else {` && |\n| &&
+             `          window.onbeforeunload = function (e) {` && |\n| &&
+             `          if (val) {` && |\n| &&
+             `            e.preventDefault();` && |\n| &&
+             `          }` && |\n| &&
+             `        }` && |\n| &&
+             `      }` && |\n| &&
+             `` && |\n| &&
+             `     });` && |\n| &&
+             `` && |\n| &&
+             `    },` && |\n| &&
+             `    renderer(oRm, oControl) { }` && |\n| &&
+             `  });` && |\n| &&
+             `}` && |\n| &&
+             `);` && |\n| &&
+             `` && |\n| &&
               ``.
 
   ENDMETHOD.
@@ -20065,7 +20323,7 @@ CLASS z2ui5_cl_core_srv_json IMPLEMENTATION.
     ENDIF.
 
     LOOP AT t_attri->* REFERENCE INTO DATA(lr_attri)
-         WHERE     bind_type = z2ui5_if_core_types=>cs_bind_type-two_way
+         WHERE bind_type = z2ui5_if_core_types=>cs_bind_type-two_way
                AND view      = lv_view.
       TRY.
 
@@ -20090,7 +20348,9 @@ CLASS z2ui5_cl_core_srv_json IMPLEMENTATION.
           lo_val_front->to_abap( IMPORTING ev_container = <val> ).
 
         CATCH cx_root INTO DATA(x).
-          z2ui5_cl_util=>x_raise( |JSON_PARSING_ERROR: { x->get_text( ) } | ).
+          RAISE EXCEPTION TYPE z2ui5_cx_util_error
+            EXPORTING
+              val = |JSON_PARSING_ERROR: { x->get_text( ) } |.
       ENDTRY.
     ENDLOOP.
 
@@ -20111,7 +20371,7 @@ CLASS z2ui5_cl_core_srv_json IMPLEMENTATION.
 
           CASE lr_attri->bind_type.
             WHEN z2ui5_if_core_types=>cs_bind_type-one_way
-            OR z2ui5_if_core_types=>cs_bind_type-two_way.
+                OR z2ui5_if_core_types=>cs_bind_type-two_way.
 
               ASSIGN lr_attri->r_ref->* TO FIELD-SYMBOL(<attribute>).
               IF sy-subrc <> 0.
@@ -20165,7 +20425,7 @@ CLASS z2ui5_cl_core_srv_json IMPLEMENTATION.
 
         result-s_front-o_comp_data = lo_ajson->slice( `/CONFIG/ComponentData` ).
 
-        result-s_control-check_launchpad = xsdbool(    result-s_front-search   CS `scenario=LAUNCHPAD`
+        result-s_control-check_launchpad = xsdbool( result-s_front-search   CS `scenario=LAUNCHPAD`
                                                     OR result-s_front-pathname CS `/ui2/flp`
                                                     OR result-s_front-pathname CS `test/flpSandbox`
              ).
@@ -20369,7 +20629,7 @@ CLASS z2ui5_cl_core_srv_diss IMPLEMENTATION.
     DATA(lt_attri) = z2ui5_cl_util=>rtti_get_t_attri_by_oref( lr_ref ).
 
     LOOP AT lt_attri REFERENCE INTO DATA(lr_attri)
-         WHERE     visibility   = cl_abap_objectdescr=>public
+         WHERE visibility   = cl_abap_objectdescr=>public
                AND is_interface = abap_false
                AND is_constant  = abap_false.
       TRY.
@@ -20445,7 +20705,7 @@ CLASS z2ui5_cl_core_srv_diss IMPLEMENTATION.
     DATA(lt_attri_new) = VALUE z2ui5_if_core_types=>ty_t_attri( ).
 
     LOOP AT mt_attri->* REFERENCE INTO DATA(lr_attri)
-         WHERE     check_dissolved  = abap_false
+         WHERE check_dissolved  = abap_false
                AND bind_type       <> z2ui5_if_core_types=>cs_bind_type-one_time.
 
       lr_attri->check_dissolved = abap_true.
@@ -20772,6 +21032,17 @@ CLASS z2ui5_cl_core_srv_attri IMPLEMENTATION.
         CONTINUE.
       ENDIF.
 
+       "extra case - conversion exit alpha numeric
+      IF lr_attri->bind_type = z2ui5_if_core_types=>cs_bind_type-two_way AND (
+          lr_attri->o_typedescr->type_kind = cl_abap_classdescr=>typekind_num OR
+          lr_attri->o_typedescr->type_kind = cl_abap_classdescr=>typekind_numeric
+          ).
+        ASSIGN lr_attri->r_ref->* TO FIELD-SYMBOL(<val_ref2>).
+        CLEAR <val_ref2>.
+        CLEAR lr_attri->r_ref.
+        CONTINUE.
+      ENDIF.
+
       IF lr_attri->o_typedescr->type_kind <> cl_abap_classdescr=>typekind_dref.
         CLEAR lr_attri->r_ref.
         CONTINUE.
@@ -20898,9 +21169,9 @@ CLASS z2ui5_cl_core_srv_attri IMPLEMENTATION.
     LOOP AT mt_attri->* REFERENCE INTO DATA(lr_attri)
          WHERE o_typedescr IS BOUND.
 
-      IF     lr_attri->o_typedescr->kind <> cl_abap_typedescr=>kind_elem
-         AND lr_attri->o_typedescr->kind <> cl_abap_typedescr=>kind_struct
-         AND lr_attri->o_typedescr->kind <> cl_abap_typedescr=>kind_table.
+      IF lr_attri->o_typedescr->kind <> cl_abap_typedescr=>kind_elem
+          AND lr_attri->o_typedescr->kind <> cl_abap_typedescr=>kind_struct
+          AND lr_attri->o_typedescr->kind <> cl_abap_typedescr=>kind_table.
         CONTINUE.
       ENDIF.
 
@@ -20932,7 +21203,7 @@ CLASS z2ui5_cl_core_handler IMPLEMENTATION.
 
     result = VALUE #( body       = mv_response
                       s_stateful = ms_response-s_front-params-s_stateful
-    ).
+      ).
 
   ENDMETHOD.
 
@@ -20965,16 +21236,16 @@ CLASS z2ui5_cl_core_handler IMPLEMENTATION.
                            s_front-app    = z2ui5_cl_util=>rtti_get_classname_by_ref( mo_action->mo_app->mo_app )
         ).
 
-    IF    ms_response-s_front-params-s_view-check_update_model        = abap_true
-       OR ms_response-s_front-params-s_view_nest-check_update_model   = abap_true
-       OR ms_response-s_front-params-s_view_nest2-check_update_model  = abap_true
-       OR ms_response-s_front-params-s_popup-check_update_model       = abap_true
-       OR ms_response-s_front-params-s_popover-check_update_model     = abap_true
-       OR ms_response-s_front-params-s_view-xml IS NOT INITIAL
-       OR ms_response-s_front-params-s_view_nest-xml                 IS NOT INITIAL
-       OR ms_response-s_front-params-s_view_nest2-xml                IS NOT INITIAL
-       OR ms_response-s_front-params-s_popup-xml IS NOT INITIAL
-       OR ms_response-s_front-params-s_popover-xml                   IS NOT INITIAL.
+    IF ms_response-s_front-params-s_view-check_update_model        = abap_true
+        OR ms_response-s_front-params-s_view_nest-check_update_model   = abap_true
+        OR ms_response-s_front-params-s_view_nest2-check_update_model  = abap_true
+        OR ms_response-s_front-params-s_popup-check_update_model       = abap_true
+        OR ms_response-s_front-params-s_popover-check_update_model     = abap_true
+        OR ms_response-s_front-params-s_view-xml IS NOT INITIAL
+        OR ms_response-s_front-params-s_view_nest-xml                 IS NOT INITIAL
+        OR ms_response-s_front-params-s_view_nest2-xml                IS NOT INITIAL
+        OR ms_response-s_front-params-s_popup-xml IS NOT INITIAL
+        OR ms_response-s_front-params-s_popover-xml                   IS NOT INITIAL.
 
       DATA(lo_model) = NEW z2ui5_cl_core_srv_attri( attri = mo_action->mo_app->mt_attri
                                                     app   = mo_action->mo_app->mo_app ).
@@ -21095,7 +21366,7 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
   METHOD z2ui5_if_client~message_box_display.
 
     IF z2ui5_cl_util=>rtti_check_clike( text ) = abap_false.
-      DATA(lt_msg) = z2ui5_cl_util=>msg_get( text ).
+      DATA(lt_msg) = z2ui5_cl_util=>msg_get_t( text ).
       IF lines( lt_msg ) = 1.
         DATA(lv_text) = lt_msg[ 1 ]-text.
 
@@ -21105,7 +21376,7 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
                                    WHEN 'E' THEN `Error`
                                    WHEN 'S' THEN `Success`
                                    WHEN `W` THEN `Warning`
-                                   ELSE          `Information` ).
+                                   ELSE `Information` ).
 
       ELSEIF lines( lt_msg ) > 1.
         lv_text = | { lines( lt_msg ) } Messages found: |.
@@ -21119,7 +21390,7 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
                                WHEN 'E' THEN `Error`
                                WHEN 'S' THEN `Success`
                                WHEN `W` THEN `Warning`
-                               ELSE          `Information` ).
+                               ELSE `Information` ).
         ENDIF.
         lv_type = z2ui5_cl_util=>ui5_get_msg_type( lt_msg[ 1 ]-type ).
       ELSE.
@@ -21182,7 +21453,9 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
   METHOD z2ui5_if_client~nav_app_call.
 
     IF app IS NOT BOUND.
-      z2ui5_cl_util=>x_raise( `NAV_APP_LEAVE_TO_INITIAL_APP_ERROR` ).
+      RAISE EXCEPTION TYPE z2ui5_cx_util_error
+        EXPORTING
+          val = `NAV_APP_LEAVE_TO_INITIAL_APP_ERROR`.
     ENDIF.
 
     mo_action->ms_next-o_app_call = app.
@@ -21200,7 +21473,9 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
     ENDIF.
 
     IF app IS NOT BOUND.
-      z2ui5_cl_util=>x_raise( `NAV_APP_LEAVE_TO_INITIAL_APP_ERROR` ).
+      RAISE EXCEPTION TYPE z2ui5_cx_util_error
+        EXPORTING
+          val = `NAV_APP_LEAVE_TO_INITIAL_APP_ERROR`.
     ENDIF.
 
     mo_action->ms_next-o_app_leave = app.
@@ -21302,7 +21577,7 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
   METHOD z2ui5_if_client~view_display.
 
     mo_action->ms_next-s_set-s_view-xml = val.
-    mo_action->ms_next-s_set-s_view-switchDefaultModelAnnoURI = switch_default_model_anno_uri.
+    mo_action->ms_next-s_set-s_view-switchdefaultmodelannouri = switch_default_model_anno_uri.
     mo_action->ms_next-s_set-s_view-switch_default_model_path = switch_default_model_path.
 
   ENDMETHOD.
@@ -21318,12 +21593,12 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
     DATA(lo_bind) = NEW z2ui5_cl_core_srv_bind( mo_action->mo_app ).
     result = lo_bind->main( val    = z2ui5_cl_util=>conv_get_as_data_ref( val )
                             type   = z2ui5_if_core_types=>cs_bind_type-one_way
-                            config = VALUE #( path_only     = path
-                                              custom_filter = custom_filter
-                                              custom_mapper = custom_mapper
-                                              tab           = z2ui5_cl_util=>conv_get_as_data_ref( tab )
-                                              tab_index     = tab_index
-                                              switch_default_model = switch_Default_Model ) ).
+                            config = VALUE #( path_only            = path
+                                              custom_filter        = custom_filter
+                                              custom_mapper        = custom_mapper
+                                              tab                  = z2ui5_cl_util=>conv_get_as_data_ref( tab )
+                                              tab_index            = tab_index
+                                              switch_default_model = switch_default_model ) ).
   ENDMETHOD.
 
   METHOD z2ui5_if_client~_bind_edit.
@@ -21331,14 +21606,14 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
     DATA(lo_bind) = NEW z2ui5_cl_core_srv_bind( mo_action->mo_app ).
     result = lo_bind->main( val    = z2ui5_cl_util=>conv_get_as_data_ref( val )
                             type   = z2ui5_if_core_types=>cs_bind_type-two_way
-                            config = VALUE #( path_only          = path
-                                              custom_filter      = custom_filter
-                                              custom_filter_back = custom_filter_back
-                                              custom_mapper      = custom_mapper
-                                              custom_mapper_back = custom_mapper_back
-                                              tab                = z2ui5_cl_util=>conv_get_as_data_ref( tab )
-                                              tab_index          = tab_index
-                                              switch_default_model = switch_Default_Model ) ).
+                            config = VALUE #( path_only            = path
+                                              custom_filter        = custom_filter
+                                              custom_filter_back   = custom_filter_back
+                                              custom_mapper        = custom_mapper
+                                              custom_mapper_back   = custom_mapper_back
+                                              tab                  = z2ui5_cl_util=>conv_get_as_data_ref( tab )
+                                              tab_index            = tab_index
+                                              switch_default_model = switch_default_model ) ).
 
   ENDMETHOD.
 
@@ -21346,10 +21621,10 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
 
     DATA(lo_bind) = NEW z2ui5_cl_core_srv_bind( mo_action->mo_app ).
     result = lo_bind->main_local( val    = val
-                                  config = VALUE #( path_only     = path
-                                                    custom_mapper = custom_mapper
-                                                    custom_filter = custom_filter
-                                                    switch_default_model = switch_Default_Model ) ).
+                                  config = VALUE #( path_only            = path
+                                                    custom_mapper        = custom_mapper
+                                                    custom_filter        = custom_filter
+                                                    switch_default_model = switch_default_model ) ).
 
   ENDMETHOD.
 
@@ -21420,7 +21695,7 @@ CLASS z2ui5_cl_core_client IMPLEMENTATION.
 
   METHOD z2ui5_if_client~check_on_init.
 
-    result = xsdbool( CAST z2ui5_if_app(  mo_action->mo_app->mo_app )->check_initialized = abap_false ).
+    result = xsdbool( CAST z2ui5_if_app( mo_action->mo_app->mo_app )->check_initialized = abap_false ).
 
   ENDMETHOD.
 
@@ -21704,12 +21979,13 @@ CLASS z2ui5_cl_core_action IMPLEMENTATION.
 ENDCLASS.
 
 CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
+
   METHOD cleanup.
 
     DATA(lv_four_hours_ago) = z2ui5_cl_util=>time_substract_seconds( time    = z2ui5_cl_util=>time_get_timestampl( )
                                                                      seconds = 60 * 60 * 4 ).
 
-    DELETE FROM z2ui5_t_99 WHERE timestampl < @lv_four_hours_ago.
+    DELETE FROM z2ui5_t_01 WHERE timestampl < @lv_four_hours_ago.
     COMMIT WORK.
 
   ENDMETHOD.
@@ -21718,18 +21994,17 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
     ASSERT draft-id IS NOT INITIAL.
 
-    DATA(ls_db) = VALUE z2ui5_if_core_types=>ty_s_db( id                = draft-id
-                                                      id_prev           = draft-id_prev
-                                                      id_prev_app       = draft-id_prev_app
-                                                      id_prev_app_stack = draft-id_prev_app_stack
-                                                      timestampl        = z2ui5_cl_util=>time_get_timestampl( )
-                                                      data              = model_xml ).
+    DATA(ls_db) = VALUE ty_s_db( id                = draft-id
+                                 id_prev           = draft-id_prev
+                                 id_prev_app       = draft-id_prev_app
+                                 id_prev_app_stack = draft-id_prev_app_stack
+                                 timestampl        = z2ui5_cl_util=>time_get_timestampl( )
+                                 data              = model_xml ).
 
-    MODIFY z2ui5_t_99 FROM @ls_db.
+    MODIFY z2ui5_t_01 FROM @ls_db.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_util_error
-        EXPORTING
-          val = `CREATE_OF_DRAFT_ENTRY_ON_DATABASE_FAILED`.
+        EXPORTING val = `CREATE_OF_DRAFT_ENTRY_ON_DATABASE_FAILED`.
     ENDIF.
     COMMIT WORK AND WAIT.
 
@@ -21739,14 +22014,14 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
     IF check_load_app = abap_true.
 
-      SELECT SINGLE * FROM z2ui5_t_99
+      SELECT SINGLE * FROM z2ui5_t_01
         WHERE id = @id
         INTO @result ##SUBRC_OK.
 
     ELSE.
 
       SELECT SINGLE id, id_prev, id_prev_app, id_prev_app_stack
-        FROM z2ui5_t_99
+        FROM z2ui5_t_01
         WHERE id = @id
         INTO CORRESPONDING FIELDS OF @result ##SUBRC_OK.
 
@@ -21754,8 +22029,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_util_error
-        EXPORTING
-          val = `NO_DRAFT_ENTRY_OF_PREVIOUS_REQUEST_FOUND`.
+        EXPORTING val = `NO_DRAFT_ENTRY_OF_PREVIOUS_REQUEST_FOUND`.
     ENDIF.
 
   ENDMETHOD.
@@ -21777,11 +22051,11 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
   METHOD count_entries.
 
-    SELECT COUNT( * )
-      FROM z2ui5_t_99
+    SELECT COUNT( * ) FROM z2ui5_t_01
       INTO @result.
 
   ENDMETHOD.
+
 ENDCLASS.
 
 CLASS z2ui5_cx_util_error IMPLEMENTATION.
@@ -21814,6 +22088,310 @@ CLASS z2ui5_cx_util_error IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
+CLASS z2ui5_cl_util_range IMPLEMENTATION.
+  METHOD constructor.
+    mr_range = ir_range.
+    mv_fieldname = |{ to_upper( iv_fieldname ) }|.
+    mr_range = ir_range.
+    mv_fieldname = |{ to_upper( iv_fieldname ) }|.
+  ENDMETHOD.
+  METHOD get_sql.
+    FIELD-SYMBOLS <lt_range> TYPE STANDARD TABLE.
+
+    ASSIGN me->mr_range->* TO <lt_range>.
+
+    IF xsdbool( <lt_range> IS INITIAL ) = abap_true.
+      RETURN.
+    ENDIF.
+
+    result = `(`.
+
+    LOOP AT <lt_range> ASSIGNING FIELD-SYMBOL(<ls_range_item>).
+
+      ASSIGN COMPONENT 'SIGN' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_sign>).
+      ASSIGN COMPONENT 'OPTION' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_option>).
+      ASSIGN COMPONENT 'LOW' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_low>).
+      ASSIGN COMPONENT 'HIGH' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_high>).
+
+      IF sy-tabix <> 1.
+        result = |{ result } OR|.
+      ENDIF.
+
+      IF <lv_sign> = signs-excluding.
+        result = |{ result } NOT|.
+      ENDIF.
+
+      result = |{ result } { me->mv_fieldname }|.
+
+      CASE <lv_option>.
+        WHEN options-equal OR
+             options-not_equal OR
+             options-greater_than OR
+             options-greater_equal OR
+             options-less_equal OR
+             options-less_than.
+          result = |{ result } { <lv_option> } { quote( <lv_low> ) }|.
+
+        WHEN options-between.
+          result = |{ result } BETWEEN { quote( <lv_low> ) } AND { quote( <lv_high> ) }|.
+
+        WHEN options-not_between.
+          result = |{ result } NOT BETWEEN { quote( <lv_low> ) } AND { quote( <lv_high> ) }|.
+
+        WHEN options-contains_pattern.
+          TRANSLATE <lv_low> USING '*%'.
+          result = |{ result } LIKE { quote( <lv_low> ) }|.
+
+        WHEN options-not_contains_pattern.
+          TRANSLATE <lv_low> USING '*%'.
+          result = |{ result } NOT LIKE { quote( <lv_low> ) }|.
+      ENDCASE.
+    ENDLOOP.
+
+    result = |{ result } )|.
+  ENDMETHOD.
+  METHOD quote.
+    out = |'{ replace( val  = val
+                       sub  = `'`
+                       with = `''`
+                       occ  = 0 ) }'|.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS z2ui5_cl_util_msg IMPLEMENTATION.
+  METHOD msg_get.
+    DATA(lv_kind) = z2ui5_cl_util=>rtti_get_type_kind( val ).
+    CASE lv_kind.
+
+      WHEN cl_abap_datadescr=>typekind_table.
+        FIELD-SYMBOLS <tab> TYPE ANY TABLE.
+        ASSIGN val TO <tab>.
+        LOOP AT <tab> ASSIGNING FIELD-SYMBOL(<row>).
+          DATA(lt_tab) = msg_get( <row> ).
+          INSERT LINES OF lt_tab INTO TABLE result.
+        ENDLOOP.
+
+      WHEN cl_abap_datadescr=>typekind_struct1 OR cl_abap_datadescr=>typekind_struct2.
+
+        IF val IS INITIAL.
+          RETURN.
+        ENDIF.
+
+        DATA(lt_attri) = z2ui5_cl_util=>rtti_get_t_attri_by_any( val ).
+
+        DATA(ls_result) = VALUE z2ui5_cl_util=>ty_s_msg( ).
+        LOOP AT lt_attri REFERENCE INTO DATA(ls_attri).
+          DATA(lv_name) = |VAL-{ ls_attri->name }|.
+          ASSIGN (lv_name) TO FIELD-SYMBOL(<comp>).
+
+          IF ls_attri->name = 'ITEM'.
+            lt_tab = msg_get( <comp> ).
+            INSERT LINES OF lt_tab INTO TABLE result.
+            RETURN.
+          ELSE.
+            ls_result = msg_map( name = ls_attri->name val = <comp> is_msg = ls_result ).
+          ENDIF.
+
+        ENDLOOP.
+        IF ls_result-text IS INITIAL AND ls_result-id IS NOT INITIAL.
+          MESSAGE ID ls_result-id TYPE 'I' NUMBER ls_result-no
+                  WITH ls_result-v1 ls_result-v2 ls_result-v3 ls_result-v4
+                  INTO ls_result-text.
+        ENDIF.
+        INSERT ls_result INTO TABLE result.
+
+      WHEN cl_abap_datadescr=>typekind_oref.
+        TRY.
+            DATA(lx) = CAST cx_root( val ).
+            ls_result = VALUE #( type = 'E' text = lx->get_text( ) ).
+            DATA(lt_attri_o) = z2ui5_cl_util=>rtti_get_t_attri_by_oref( val ).
+            LOOP AT lt_attri_o REFERENCE INTO DATA(ls_attri_o)
+                 WHERE visibility = 'U'.
+              lv_name = |VAL->{ ls_attri_o->name }|.
+              ASSIGN (lv_name) TO <comp>.
+              ls_result = msg_map( name = ls_attri_o->name val = <comp> is_msg = ls_result ).
+            ENDLOOP.
+            INSERT ls_result INTO TABLE result.
+          CATCH cx_root.
+
+            DATA obj TYPE REF TO object.
+            obj = val.
+
+            TRY.
+
+                DATA lr_tab TYPE REF TO data.
+                CREATE DATA lr_tab TYPE ('if_bali_log=>ty_item_table').
+                ASSIGN lr_tab->* TO FIELD-SYMBOL(<tab2>).
+
+                CALL METHOD obj->(`IF_BALI_LOG~GET_ALL_ITEMS`)
+                  RECEIVING
+                    item_table = <tab2>.
+
+                DATA(lt_tab2) = msg_get( <tab2> ).
+                INSERT LINES OF lt_tab2 INTO TABLE result.
+
+              CATCH cx_root.
+
+                TRY.
+
+                    CREATE DATA lr_tab TYPE ('BAPIRETTAB').
+                    ASSIGN lr_tab->* TO <tab2>.
+
+                    CALL METHOD obj->(`ZIF_LOGGER~EXPORT_TO_TABLE`)
+                      RECEIVING
+                        rt_bapiret = <tab2>.
+
+                    lt_tab2 = msg_get( <tab2> ).
+                    INSERT LINES OF lt_tab2 INTO TABLE result.
+
+                  CATCH cx_root INTO DATA(lx2).
+                    lt_attri_o = z2ui5_cl_util=>rtti_get_t_attri_by_oref( val ).
+                    LOOP AT lt_attri_o REFERENCE INTO ls_attri_o
+                         WHERE visibility = 'U'.
+                      lv_name = |OBJ->{ ls_attri_o->name }|.
+                      ASSIGN (lv_name) TO <comp>.
+                      ls_result = msg_map( name = ls_attri_o->name val = <comp> is_msg = ls_result ).
+                    ENDLOOP.
+                    INSERT ls_result INTO TABLE result.
+
+                ENDTRY.
+            ENDTRY.
+        ENDTRY.
+
+      WHEN OTHERS.
+
+        IF z2ui5_cl_util=>rtti_check_clike( val ).
+          INSERT VALUE #( text = val
+          )
+                 INTO TABLE result.
+        ENDIF.
+    ENDCASE.
+  ENDMETHOD.
+  METHOD msg_map.
+    result = is_msg.
+    CASE name.
+      WHEN 'ID' OR 'MSGID'.
+        result-id = val.
+      WHEN 'NO' OR 'NUMBER' OR 'MSGNO'.
+        result-no = val.
+      WHEN 'MESSAGE' OR 'TEXT'.
+        result-text = val.
+      WHEN 'TYPE' OR 'MSGTY'.
+        result-type = val.
+      WHEN 'MESSAGE_V1' OR 'MSGV1' OR 'V1'.
+        result-v1 = val.
+      WHEN 'MESSAGE_V2' OR 'MSGV2' OR 'V2'.
+        result-v2 = val.
+      WHEN 'MESSAGE_V3' OR 'MSGV3' OR 'V3'.
+        result-v3 = val.
+      WHEN 'MESSAGE_V4' OR 'MSGV4' OR 'V4'.
+        result-v4 = val.
+      WHEN 'TIME_STMP'.
+        result-timestampl = val.
+    ENDCASE.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS z2ui5_cl_util_db IMPLEMENTATION.
+
+  METHOD delete_by_handle.
+
+    DELETE FROM z2ui5_t_91
+        WHERE
+           uname = @uname
+            AND handle = @handle
+            AND handle2 = @handle2
+            AND handle3 = @handle3.
+
+    IF check_commit = abap_true.
+      COMMIT WORK AND WAIT.
+    ENDIF.
+
+  ENDMETHOD.
+  METHOD load_by_handle.
+
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
+
+    SELECT data
+      FROM z2ui5_t_91
+       WHERE
+        uname = @uname
+        AND handle = @handle
+        AND handle2 = @handle2
+        AND handle3 = @handle3
+      INTO CORRESPONDING FIELDS OF TABLE @lt_db.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE z2ui5_cx_util_error
+        EXPORTING
+          val = `No entry for handle exists`.
+    ENDIF.
+
+    DATA(ls_db) = lt_db[ 1 ].
+
+    z2ui5_cl_util=>xml_parse(
+      EXPORTING
+        xml = ls_db-data
+      IMPORTING
+        any = result ).
+
+  ENDMETHOD.
+  METHOD load_by_id.
+
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
+
+    SELECT data
+      FROM z2ui5_t_91
+      WHERE id = @id
+      INTO CORRESPONDING FIELDS OF TABLE @lt_db.
+    ASSERT sy-subrc = 0.
+
+    DATA(ls_db) = lt_db[ 1 ].
+
+    z2ui5_cl_util=>xml_parse(
+      EXPORTING
+        xml = ls_db-data
+      IMPORTING
+        any = result ).
+
+  ENDMETHOD.
+  METHOD save.
+
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
+    SELECT id
+      FROM z2ui5_t_91
+       WHERE
+        uname = @uname
+        AND handle = @handle
+        AND handle2 = @handle2
+        AND handle3 = @handle3
+      INTO CORRESPONDING FIELDS OF TABLE @lt_db ##SUBRC_OK.
+
+    DATA(ls_db) = VALUE z2ui5_t_91(
+        uname   = uname
+        handle  = handle
+        handle2 = handle2
+        handle3 = handle3
+        data    = z2ui5_cl_util=>xml_stringify( data ) ).
+
+    TRY.
+        ls_db-id = lt_db[ 1 ]-id.
+      CATCH cx_root.
+        ls_db-id = z2ui5_cl_util=>uuid_get_c32( ).
+    ENDTRY.
+
+    MODIFY z2ui5_t_91 FROM @ls_db.
+    ASSERT sy-subrc = 0.
+
+    IF check_commit = abap_true.
+      COMMIT WORK AND WAIT.
+    ENDIF.
+
+    result = ls_db-id.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
 CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
   METHOD delete_response_cookie.
 
@@ -21828,8 +22406,7 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('DELETE_COOKIE')
-        EXPORTING
-          name = lv_val.
+        EXPORTING name = lv_val.
 
     ELSE.
 
@@ -21854,10 +22431,8 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('GET_COOKIE')
-        EXPORTING
-          name  = lv_val
-        IMPORTING
-          value = result.
+        EXPORTING name  = lv_val
+        IMPORTING value = result.
 
     ELSE.
 
@@ -21884,18 +22459,14 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('GET_HEADER_FIELD')
-        EXPORTING
-          name  = lv_val
-        RECEIVING
-          value = result.
+        EXPORTING name  = lv_val
+        RECEIVING value = result.
 
     ELSE.
 
       CALL METHOD mo_request_cloud->('IF_WEB_HTTP_REQUEST~GET_HEADER_FIELD')
-        EXPORTING
-          i_name  = lv_val
-        RECEIVING
-          r_value = result.
+        EXPORTING i_name  = lv_val
+        RECEIVING r_value = result.
 
     ENDIF.
 
@@ -21914,16 +22485,14 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('SET_HEADER_FIELD')
-        EXPORTING
-          name  = lv_n
-          value = lv_v.
+        EXPORTING name  = lv_n
+                  value = lv_v.
 
     ELSE.
 
       CALL METHOD mo_response_cloud->('IF_WEB_HTTP_RESPONSE~SET_HEADER_FIELD')
-        EXPORTING
-          i_name  = lv_n
-          i_value = lv_v.
+        EXPORTING i_name  = lv_n
+                  i_value = lv_v.
 
     ENDIF.
 
@@ -21955,14 +22524,12 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('GET_CDATA')
-        RECEIVING
-          data = result.
+        RECEIVING data = result.
 
     ELSE.
 
       CALL METHOD mo_request_cloud->('IF_WEB_HTTP_REQUEST~GET_TEXT')
-        RECEIVING
-          r_value = result.
+        RECEIVING r_value = result.
 
     ENDIF.
 
@@ -21979,14 +22546,12 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('IF_HTTP_REQUEST~GET_METHOD')
-        RECEIVING
-          method = result.
+        RECEIVING method = result.
 
     ELSE.
 
       CALL METHOD mo_request_cloud->('IF_WEB_HTTP_REQUEST~GET_METHOD')
-        RECEIVING
-          r_value = result.
+        RECEIVING r_value = result.
 
     ENDIF.
 
@@ -22003,14 +22568,12 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('SET_CDATA')
-        EXPORTING
-          data = val.
+        EXPORTING data = val.
 
     ELSE.
 
       CALL METHOD mo_response_cloud->('IF_WEB_HTTP_RESPONSE~SET_TEXT')
-        EXPORTING
-          i_text = val.
+        EXPORTING i_text = val.
 
     ENDIF.
 
@@ -22029,16 +22592,14 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
       object = <any>.
 
       CALL METHOD object->('IF_HTTP_RESPONSE~SET_STATUS')
-        EXPORTING
-          code   = code
-          reason = lv_reason.
+        EXPORTING code   = code
+                  reason = lv_reason.
 
     ELSE.
 
       CALL METHOD mo_response_cloud->('IF_WEB_HTTP_RESPONSE~SET_STATUS')
-        EXPORTING
-          i_code   = code
-          i_reason = lv_reason.
+        EXPORTING i_code   = code
+                  i_reason = lv_reason.
 
     ENDIF.
 
@@ -22049,8 +22610,7 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
     IF mo_server_onprem IS BOUND.
 
       CALL METHOD mo_server_onprem->('SET_SESSION_STATEFUL')
-        EXPORTING
-          stateful = val.
+        EXPORTING stateful = val.
 
     ELSE.
 
@@ -22062,6 +22622,7 @@ CLASS z2ui5_cl_util_abap_http IMPLEMENTATION.
 ENDCLASS.
 
 CLASS z2ui5_cl_util_abap IMPLEMENTATION.
+
   METHOD context_check_abap_cloud.
 
     TRY.
@@ -22086,10 +22647,11 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     TYPES fixvalues TYPE STANDARD TABLE OF fixvalue WITH DEFAULT KEY.
     DATA lt_values TYPE fixvalues.
 
-    DATA lv_langu TYPE c LENGTH 1.
-    DATA temp1 LIKE LINE OF lt_values.
-    DATA lr_fix LIKE REF TO temp1.
-    DATA temp2 TYPE z2ui5_cl_util_abap=>ty_s_fix_val.
+    DATA lv_langu  TYPE c LENGTH 1.
+    DATA temp1     LIKE LINE OF lt_values.
+    DATA lr_fix    LIKE REF TO temp1.
+    DATA temp2     TYPE z2ui5_cl_util_abap=>ty_s_fix_val.
+
     lv_langu = ' '.
     lv_langu = langu.
 
@@ -22104,9 +22666,10 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         OTHERS         = 3.
 
     LOOP AT lt_values REFERENCE INTO lr_fix.
+
       CLEAR temp2.
-      temp2-low = lr_fix->low.
-      temp2-high = lr_fix->high.
+      temp2-low   = lr_fix->low.
+      temp2-high  = lr_fix->high.
       temp2-descr = lr_fix->ddtext.
       INSERT temp2
              INTO TABLE result.
@@ -22117,9 +22680,10 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
   METHOD conv_decode_x_base64.
     DATA lv_web_http_name TYPE c LENGTH 19.
-    DATA classname TYPE c LENGTH 15.
+    DATA classname        TYPE c LENGTH 15.
 
     TRY.
+
         lv_web_http_name = 'CL_WEB_HTTP_UTILITY'.
         CALL METHOD (lv_web_http_name)=>('DECODE_X_BASE64')
           EXPORTING
@@ -22128,6 +22692,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
             decoded = result.
 
       CATCH cx_root.
+
         classname = 'CL_HTTP_UTILITY'.
         CALL METHOD (classname)=>('DECODE_X_BASE64')
           EXPORTING
@@ -22141,9 +22706,10 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
   METHOD conv_encode_x_base64.
     DATA lv_web_http_name TYPE c LENGTH 19.
-    DATA classname TYPE c LENGTH 15.
+    DATA classname        TYPE c LENGTH 15.
 
     TRY.
+
         lv_web_http_name = 'CL_WEB_HTTP_UTILITY'.
         CALL METHOD (lv_web_http_name)=>('ENCODE_X_BASE64')
           EXPORTING
@@ -22152,6 +22718,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
             encoded   = result.
 
       CATCH cx_root.
+
         classname = 'CL_HTTP_UTILITY'.
         CALL METHOD (classname)=>('ENCODE_X_BASE64')
           EXPORTING
@@ -22165,7 +22732,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
   METHOD conv_get_string_by_xstring.
 
-    DATA conv TYPE REF TO object.
+    DATA conv          TYPE REF TO object.
     DATA conv_codepage TYPE c LENGTH 21.
     DATA conv_in_class TYPE c LENGTH 18.
 
@@ -22183,6 +22750,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
             result = result.
 
       CATCH cx_root.
+
         conv_in_class = 'CL_ABAP_CONV_IN_CE'.
         CALL METHOD (conv_in_class)=>create
           EXPORTING
@@ -22201,8 +22769,8 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
   METHOD conv_get_xstring_by_string.
 
-    DATA conv TYPE REF TO object.
-    DATA conv_codepage TYPE c LENGTH 21.
+    DATA conv           TYPE REF TO object.
+    DATA conv_codepage  TYPE c LENGTH 21.
     DATA conv_out_class TYPE c LENGTH 19.
 
     TRY.
@@ -22219,6 +22787,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
             result = result.
 
       CATCH cx_root.
+
         conv_out_class = 'CL_ABAP_CONV_OUT_CE'.
         CALL METHOD (conv_out_class)=>create
           EXPORTING
@@ -22239,20 +22808,22 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
     DATA object TYPE REF TO object.
     FIELD-SYMBOLS <any> TYPE any.
-    DATA lt_source TYPE string_table.
-    DATA lt_string TYPE string_table.
-    DATA lv_class TYPE string.
-    DATA lv_method TYPE string.
-    DATA xco_cp_abap TYPE c LENGTH 11.
-    DATA lv_name TYPE c LENGTH 13.
+    DATA lt_source       TYPE string_table.
+    DATA lt_string       TYPE string_table.
+    DATA lv_class        TYPE string.
+    DATA lv_method       TYPE string.
+    DATA xco_cp_abap     TYPE c LENGTH 11.
+    DATA lv_name         TYPE c LENGTH 13.
     DATA lv_check_method LIKE abap_false.
-    DATA lv_source LIKE LINE OF lt_source.
+    DATA lv_source       LIKE LINE OF lt_source.
     DATA lv_source_upper TYPE string.
 
     TRY.
+
         lv_class  = to_upper( iv_classname ).
 
         lv_method = to_upper( iv_methodname ).
+
         xco_cp_abap = 'XCO_CP_ABAP'.
         CALL METHOD (xco_cp_abap)=>('CLASS')
           EXPORTING
@@ -22279,6 +22850,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
             rt_source = result.
 
       CATCH cx_root.
+
         lv_name = 'CL_OO_FACTORY'.
         CALL METHOD (lv_name)=>('CREATE_INSTANCE')
           RECEIVING
@@ -22293,6 +22865,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         CALL METHOD object->('IF_OO_CLIF_SOURCE~GET_SOURCE')
           IMPORTING
             source = lt_source.
+
         lv_check_method = abap_false.
 
         LOOP AT lt_source INTO lv_source.
@@ -22337,15 +22910,15 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     DATA BEGIN OF ls_clskey.
     DATA   clsname TYPE c LENGTH 30.
     DATA END OF ls_clskey.
-    DATA class TYPE REF TO data.
-    DATA xco_cp_abap TYPE c LENGTH 11.
-    DATA temp3 TYPE z2ui5_cl_util_abap=>ty_t_classes.
+    DATA class               TYPE REF TO data.
+    DATA xco_cp_abap         TYPE c LENGTH 11.
+    DATA temp3               TYPE z2ui5_cl_util_abap=>ty_t_classes.
     DATA implementation_name LIKE LINE OF lt_implementation_names.
-    DATA temp4 LIKE LINE OF temp3.
-    DATA lv_fm TYPE string.
-    DATA type TYPE c LENGTH 12.
+    DATA temp4               LIKE LINE OF temp3.
+    DATA lv_fm               TYPE string.
+    DATA type                TYPE c LENGTH 12.
     FIELD-SYMBOLS <class> TYPE data.
-    DATA temp5 LIKE LINE OF lt_impl.
+    DATA temp5   LIKE LINE OF lt_impl.
     DATA lr_impl LIKE REF TO temp5.
     FIELD-SYMBOLS <description> TYPE any.
     DATA temp6 TYPE z2ui5_cl_util_abap=>ty_s_class_descr.
@@ -22353,6 +22926,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     TRY.
 
         ls_clskey-clsname = val.
+
         xco_cp_abap = 'XCO_CP_ABAP'.
         CALL METHOD (xco_cp_abap)=>interface
           EXPORTING
@@ -22375,11 +22949,12 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         CALL METHOD obj->('IF_XCO_INTF_IMPLEMENTATIONS~GET_NAMES')
           RECEIVING
             rt_names = lt_implementation_names.
+
         CLEAR temp3.
 
         LOOP AT lt_implementation_names INTO implementation_name.
 
-          temp4-classname = implementation_name.
+          temp4-classname   = implementation_name.
           temp4-description = rtti_get_class_descr_on_cloud( implementation_name ).
           INSERT temp4 INTO TABLE temp3.
         ENDLOOP.
@@ -22388,6 +22963,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
       CATCH cx_root.
 
         ls_key-intkey = val.
+
         lv_fm = `SEO_INTERFACE_IMPLEM_GET_ALL`.
         CALL FUNCTION lv_fm
           EXPORTING
@@ -22400,6 +22976,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         IF sy-subrc <> 0.
           RETURN.
         ENDIF.
+
         type = 'SEOC_CLASS_R'.
         CREATE DATA class TYPE (type).
 
@@ -22417,13 +22994,15 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
               clskey = ls_clskey
             IMPORTING
               class  = <class>.
+
           ASSIGN
             COMPONENT 'DESCRIPT'
             OF STRUCTURE <class>
             TO <description>.
           ASSERT sy-subrc = 0.
+
           CLEAR temp6.
-          temp6-classname = lr_impl->clsname.
+          temp6-classname   = lr_impl->clsname.
           temp6-description = <description>.
           INSERT
             temp6
@@ -22445,20 +23024,22 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
             scrtext_m TYPE string,
             scrtext_l TYPE string,
           END OF ddic.
-    DATA exists TYPE abap_bool.
+    DATA exists            TYPE abap_bool.
 
     DATA data_element_name LIKE i_data_element_name.
-    DATA temp7 TYPE REF TO cl_abap_structdescr.
-    DATA struct_desrc LIKE temp7.
+    DATA temp7             TYPE REF TO cl_abap_structdescr.
+    DATA struct_desrc      LIKE temp7.
     FIELD-SYMBOLS <ddic> TYPE data.
-    DATA lo_typedescr TYPE REF TO cl_abap_typedescr.
-    DATA temp8 TYPE REF TO cl_abap_datadescr.
-    DATA data_descr LIKE temp8.
+    DATA lo_typedescr           TYPE REF TO cl_abap_typedescr.
+    DATA temp8                  TYPE REF TO cl_abap_datadescr.
+    DATA data_descr             LIKE temp8.
     DATA xco_cp_abap_dictionary TYPE c LENGTH 22.
+
     data_element_name = i_data_element_name.
 
     TRY.
         cl_abap_typedescr=>describe_by_name( 'T100' ).
+
         temp7 ?= cl_abap_structdescr=>describe_by_name( 'DFIES' ).
 
         struct_desrc = temp7.
@@ -22467,12 +23048,14 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
         ASSIGN ddic_ref->* TO <ddic>.
         ASSERT sy-subrc = 0.
+
         cl_abap_elemdescr=>describe_by_name( EXPORTING  p_name      = data_element_name
                                              RECEIVING  p_descr_ref = lo_typedescr
                                              EXCEPTIONS OTHERS      = 1 ).
         IF sy-subrc <> 0.
           RETURN.
         ENDIF.
+
         temp8 ?= lo_typedescr.
 
         data_descr = temp8.
@@ -22540,9 +23123,9 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
 
   METHOD uuid_get_c22.
 
-    DATA lv_uuid TYPE c LENGTH 22.
+    DATA lv_uuid      TYPE c LENGTH 22.
     DATA lv_classname TYPE string.
-    DATA lv_fm TYPE string.
+    DATA lv_fm        TYPE string.
 
     TRY.
 
@@ -22554,6 +23137,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
                 uuid = lv_uuid.
 
           CATCH cx_sy_dyn_call_illegal_class.
+
             lv_fm = `GUID_CREATE`.
             CALL FUNCTION lv_fm
               IMPORTING
@@ -22587,9 +23171,9 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD uuid_get_c32.
-    DATA lv_uuid TYPE c LENGTH 32.
+    DATA lv_uuid      TYPE c LENGTH 32.
     DATA lv_classname TYPE string.
-    DATA lv_fm TYPE string.
+    DATA lv_fm        TYPE string.
 
     TRY.
 
@@ -22601,6 +23185,7 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
                 uuid = lv_uuid.
 
           CATCH cx_root.
+
             lv_fm = `GUID_CREATE`.
             CALL FUNCTION lv_fm
               IMPORTING
@@ -22620,9 +23205,10 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     DATA obj          TYPE REF TO object.
     DATA content      TYPE REF TO object.
     DATA lv_classname TYPE c LENGTH 30.
-    DATA xco_cp_abap TYPE c LENGTH 11.
+    DATA xco_cp_abap  TYPE c LENGTH 11.
 
     lv_classname = i_classname.
+
     xco_cp_abap = 'XCO_CP_ABAP'.
     CALL METHOD (xco_cp_abap)=>('CLASS')
       EXPORTING
@@ -22649,16 +23235,15 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     FIELD-SYMBOLS <dfies> TYPE STANDARD TABLE.
     FIELD-SYMBOLS <line>  TYPE any.
 
-    DATA temp9 TYPE cl_abap_structdescr=>component_table.
-    DATA comps LIKE temp9.
-    DATA temp10 TYPE REF TO cl_abap_structdescr.
-    DATA lo_struct LIKE temp10.
+    DATA temp9           TYPE cl_abap_structdescr=>component_table.
+    DATA comps           LIKE temp9.
+    DATA temp10          TYPE REF TO cl_abap_structdescr.
+    DATA lo_struct       LIKE temp10.
     DATA new_struct_desc TYPE REF TO cl_abap_structdescr.
-    DATA new_table_desc TYPE REF TO cl_abap_tabledescr.
-    DATA comp LIKE LINE OF comps.
-    FIELD-SYMBOLS <value> TYPE any.
+    DATA new_table_desc  TYPE REF TO cl_abap_tabledescr.
+    DATA comp            LIKE LINE OF comps.
+    FIELD-SYMBOLS <value>      TYPE any.
     FIELD-SYMBOLS <value_dest> TYPE any.
-    CLEAR temp9.
 
     comps = temp9.
 
@@ -22668,10 +23253,11 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     comps = lo_struct->get_components( ).
 
     TRY.
+
         new_struct_desc = cl_abap_structdescr=>create( comps ).
 
         new_table_desc = cl_abap_tabledescr=>create( p_line_type  = new_struct_desc
-                                                           p_table_kind = cl_abap_tabledescr=>tablekind_std ).
+                                                     p_table_kind = cl_abap_tabledescr=>tablekind_std ).
 
         CREATE DATA dfies TYPE HANDLE new_table_desc.
 
@@ -22691,11 +23277,14 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
         <dfies> = structdescr->get_ddic_field_list( ).
 
         LOOP AT <dfies> ASSIGNING <line>.
+
           LOOP AT comps INTO comp.
+
             ASSIGN COMPONENT comp-name OF STRUCTURE <line> TO <value>.
             IF <value> IS NOT ASSIGNED.
               CONTINUE.
             ENDIF.
+
             ASSIGN COMPONENT comp-name OF STRUCTURE s_dfies TO <value_dest>.
             IF <value_dest> IS NOT ASSIGNED.
               CONTINUE.
@@ -22854,284 +23443,36 @@ CLASS z2ui5_cl_util_abap IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
-ENDCLASS.
-CLASS kHGwlIiCDAqWuzmHSWUVKThwDidmDe DEFINITION DEFERRED.
-CLASS kHGwlIiCDAqWuzmHSWUVSQazryNNUC DEFINITION DEFERRED.
-* renamed: z2ui5_cl_util :: lcl_range_to_sql
-CLASS kHGwlIiCDAqWuzmHSWUVSQazryNNUC DEFINITION
-  FINAL CREATE PUBLIC.
 
-  PUBLIC SECTION.
+  METHOD rtti_get_table_desrc.
 
-    CONSTANTS: BEGIN OF signs,
-                 including TYPE string VALUE 'I',
-                 excluding TYPE string VALUE 'E',
-               END OF signs.
+    DATA ddtext TYPE c LENGTH 60.
 
-    CONSTANTS: BEGIN OF options,
-                 equal                TYPE string VALUE 'EQ',
-                 not_equal            TYPE string VALUE 'NE',
-                 between              TYPE string VALUE 'BT',
-                 not_between          TYPE string VALUE 'NB',
-                 contains_pattern     TYPE string VALUE 'CP',
-                 not_contains_pattern TYPE string VALUE 'NP',
-                 greater_than         TYPE string VALUE 'GT',
-                 greater_equal        TYPE string VALUE 'GE',
-                 less_equal           TYPE string VALUE 'LE',
-                 less_than            TYPE string VALUE 'LT',
-               END OF options.
-
-    METHODS constructor
-      IMPORTING
-        iv_fieldname TYPE clike
-        ir_range     TYPE REF TO data.
-
-    METHODS get_sql
-      RETURNING
-        VALUE(result) TYPE string.
-
-  PROTECTED SECTION.
-    DATA mv_fieldname TYPE string.
-    DATA mr_range     TYPE REF TO data.
-
-    CLASS-METHODS quote
-      IMPORTING
-        val        TYPE clike
-      RETURNING
-        VALUE(out) TYPE string.
-
-ENDCLASS.
-CLASS kHGwlIiCDAqWuzmHSWUVSQazryNNUC IMPLEMENTATION.
-  METHOD constructor.
-
-    mr_range = ir_range.
-    mv_fieldname = |{ to_upper( iv_fieldname ) }|.
-
-  ENDMETHOD.
-
-  METHOD get_sql.
-
-    FIELD-SYMBOLS <lt_range> TYPE STANDARD TABLE.
-
-    ASSIGN me->mr_range->* TO <lt_range>.
-
-    IF xsdbool( <lt_range> IS INITIAL ) = abap_true.
-      RETURN.
+    IF langu IS NOT SUPPLIED.
+      DATA(lan) = sy-langu.
+    ELSE.
+      lan = langu.
     ENDIF.
 
-    result = `(`.
+    IF context_check_abap_cloud( ).
 
-    LOOP AT <lt_range> ASSIGNING FIELD-SYMBOL(<ls_range_item>).
+      ddtext = tabname.
 
-      ASSIGN COMPONENT 'SIGN' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_sign>).
-      ASSIGN COMPONENT 'OPTION' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_option>).
-      ASSIGN COMPONENT 'LOW' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_low>).
-      ASSIGN COMPONENT 'HIGH' OF STRUCTURE <ls_range_item> TO FIELD-SYMBOL(<lv_high>).
+    ELSE.
 
-      IF sy-tabix <> 1.
-        result = |{ result } OR|.
-      ENDIF.
+      DATA(lv_tabname) = `dd02t`.
+      SELECT SINGLE ddtext FROM (lv_tabname)
+        WHERE tabname    = @tabname
+          AND ddlanguage = @lan
+         INTO @ddtext.
 
-      IF <lv_sign> = signs-excluding.
-        result = |{ result } NOT|.
-      ENDIF.
+    ENDIF.
 
-      result = |{ result } { me->mv_fieldname }|.
-
-      CASE <lv_option>.
-        WHEN options-equal OR
-             options-not_equal OR
-             options-greater_than OR
-             options-greater_equal OR
-             options-less_equal OR
-             options-less_than.
-          result = |{ result } { <lv_option> } { quote( <lv_low> ) }|.
-
-        WHEN options-between.
-          result = |{ result } BETWEEN { quote( <lv_low> ) } AND { quote( <lv_high> ) }|.
-
-        WHEN options-not_between.
-          result = |{ result } NOT BETWEEN { quote( <lv_low> ) } AND { quote( <lv_high> ) }|.
-
-        WHEN options-contains_pattern.
-          TRANSLATE <lv_low> USING '*%'.
-          result = |{ result } LIKE { quote( <lv_low> ) }|.
-
-        WHEN options-not_contains_pattern.
-          TRANSLATE <lv_low> USING '*%'.
-          result = |{ result } NOT LIKE { quote( <lv_low> ) }|.
-      ENDCASE.
-    ENDLOOP.
-
-    result = |{ result } )|.
-
-  ENDMETHOD.
-
-  METHOD quote.
-    out = |'{ replace( val  = val
-                       sub  = `'`
-                       with = `''`
-                       occ  = 0 ) }'|.
-  ENDMETHOD.
-ENDCLASS.
-
-* renamed: z2ui5_cl_util :: lcl_msp_mapper
-CLASS kHGwlIiCDAqWuzmHSWUVKThwDidmDe DEFINITION
-  FINAL CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    CLASS-METHODS msg_map
-      IMPORTING
-        name          TYPE clike
-        val           TYPE data
-        is_msg        TYPE z2ui5_cl_util=>ty_s_msg
-      RETURNING
-        VALUE(result) TYPE z2ui5_cl_util=>ty_s_msg.
-
-    CLASS-METHODS msg_get
-      IMPORTING
-        val           TYPE any
-      RETURNING
-        VALUE(result) TYPE z2ui5_cl_util=>ty_t_msg.
-
-ENDCLASS.
-
-CLASS kHGwlIiCDAqWuzmHSWUVKThwDidmDe IMPLEMENTATION.
-
-  METHOD msg_get.
-
-    DATA(lv_kind) = z2ui5_cl_util=>rtti_get_type_kind( val ).
-    CASE lv_kind.
-
-      WHEN cl_abap_datadescr=>typekind_table.
-        FIELD-SYMBOLS <tab> TYPE ANY TABLE.
-        ASSIGN val TO <tab>.
-        LOOP AT <tab> ASSIGNING FIELD-SYMBOL(<row>).
-          DATA(lt_tab) = msg_get( <row> ).
-          INSERT LINES OF lt_tab INTO TABLE result.
-        ENDLOOP.
-
-      WHEN cl_abap_datadescr=>typekind_struct1 OR cl_abap_datadescr=>typekind_struct2.
-
-        IF val IS INITIAL.
-          RETURN.
-        ENDIF.
-
-        DATA(lt_attri) = z2ui5_cl_util=>rtti_get_t_attri_by_any( val ).
-
-        DATA(ls_result) = VALUE z2ui5_cl_util=>ty_s_msg( ).
-        LOOP AT lt_attri REFERENCE INTO DATA(ls_attri).
-          DATA(lv_name) = |VAL-{ ls_attri->name }|.
-          ASSIGN (lv_name) TO FIELD-SYMBOL(<comp>).
-
-          IF ls_attri->name = 'ITEM'.
-            lt_tab = msg_get( <comp> ).
-            INSERT LINES OF lt_tab INTO TABLE result.
-            RETURN.
-          ELSE.
-            ls_result = msg_map( name = ls_attri->name val = <comp> is_msg = ls_result ).
-          ENDIF.
-
-        ENDLOOP.
-        IF ls_result-text IS INITIAL AND ls_result-id IS NOT INITIAL.
-          MESSAGE ID ls_result-id TYPE 'I' NUMBER ls_result-no
-                  WITH ls_result-v1 ls_result-v2 ls_result-v3 ls_result-v4
-                  INTO ls_result-text.
-        ENDIF.
-        INSERT ls_result INTO TABLE result.
-
-      WHEN cl_abap_datadescr=>typekind_oref.
-        TRY.
-            DATA(lx) = CAST cx_root( val ).
-            ls_result = VALUE #( type = 'E' text = lx->get_text( ) ).
-            DATA(lt_attri_o) = z2ui5_cl_util=>rtti_get_t_attri_by_oref( val ).
-            LOOP AT lt_attri_o REFERENCE INTO DATA(ls_attri_o)
-                 WHERE visibility = 'U'.
-              lv_name = |VAL->{ ls_attri_o->name }|.
-              ASSIGN (lv_name) TO <comp>.
-              ls_result = msg_map( name = ls_attri_o->name val = <comp> is_msg = ls_result ).
-            ENDLOOP.
-            INSERT ls_result INTO TABLE result.
-          CATCH cx_root.
-
-            DATA obj TYPE REF TO object.
-            obj = val.
-
-            TRY.
-
-                DATA lr_tab TYPE REF TO data.
-                CREATE DATA lr_tab TYPE ('if_bali_log=>ty_item_table').
-                ASSIGN lr_tab->* TO FIELD-SYMBOL(<tab2>).
-
-                CALL METHOD obj->(`IF_BALI_LOG~GET_ALL_ITEMS`)
-                  RECEIVING
-                    item_table = <tab2>.
-
-                DATA(lt_tab2) = msg_get( <tab2> ).
-                INSERT LINES OF lt_tab2 INTO TABLE result.
-
-              CATCH cx_root.
-
-                TRY.
-
-                    CREATE DATA lr_tab TYPE ('BAPIRETTAB').
-                    ASSIGN lr_tab->* TO <tab2>.
-
-                    CALL METHOD obj->(`ZIF_LOGGER~EXPORT_TO_TABLE`)
-                      RECEIVING
-                        rt_bapiret = <tab2>.
-
-                    lt_tab2 = msg_get( <tab2> ).
-                    INSERT LINES OF lt_tab2 INTO TABLE result.
-
-                  CATCH cx_root INTO DATA(lx2).
-                    lt_attri_o = z2ui5_cl_util=>rtti_get_t_attri_by_oref( val ).
-                    LOOP AT lt_attri_o REFERENCE INTO ls_attri_o
-                         WHERE visibility = 'U'.
-                      lv_name = |OBJ->{ ls_attri_o->name }|.
-                      ASSIGN (lv_name) TO <comp>.
-                      ls_result = msg_map( name = ls_attri_o->name val = <comp> is_msg = ls_result ).
-                    ENDLOOP.
-                    INSERT ls_result INTO TABLE result.
-
-                ENDTRY.
-            ENDTRY.
-        ENDTRY.
-
-      WHEN OTHERS.
-
-        IF z2ui5_cl_util=>rtti_check_clike( val ).
-          INSERT VALUE #( text = val
-          )
-                 INTO TABLE result.
-        ENDIF.
-    ENDCASE.
-
-  ENDMETHOD.
-
-  METHOD msg_map.
-
-    result = is_msg.
-    CASE name.
-      WHEN 'ID' OR 'MSGID'.
-        result-id = val.
-      WHEN 'NO' OR 'NUMBER' OR 'MSGNO'.
-        result-no = val.
-      WHEN 'MESSAGE' OR 'TEXT'.
-        result-text = val.
-      WHEN 'TYPE' OR 'MSGTY'.
-        result-type = val.
-      WHEN 'MESSAGE_V1' OR 'MSGV1' OR 'V1'.
-        result-v1 = val.
-      WHEN 'MESSAGE_V2' OR 'MSGV2' OR 'V2'.
-        result-v2 = val.
-      WHEN 'MESSAGE_V3' OR 'MSGV3' OR 'V3'.
-        result-v3 = val.
-      WHEN 'MESSAGE_V4' OR 'MSGV4' OR 'V4'.
-        result-v4 = val.
-      WHEN 'TIME_STMP'.
-        result-timestampl = val.
-    ENDCASE.
+    IF ddtext IS NOT INITIAL.
+      result = ddtext.
+    ELSE.
+      result = tabname.
+    ENDIF.
 
   ENDMETHOD.
 
@@ -23595,7 +23936,11 @@ CLASS z2ui5_cl_util IMPLEMENTATION.
 
   METHOD rtti_get_t_attri_by_include.
 
-    DATA(sdescr) = CAST cl_abap_structdescr( cl_abap_typedescr=>describe_by_name( type->absolute_name ) ).
+    cl_abap_typedescr=>describe_by_name( EXPORTING  p_name         = type->absolute_name
+                                         RECEIVING  p_descr_ref    = DATA(type_desc)
+                                         EXCEPTIONS type_not_found = 1 ).
+
+    DATA(sdescr) = CAST cl_abap_structdescr( type_desc ).
     DATA(comps) = sdescr->get_components( ).
 
     LOOP AT comps REFERENCE INTO DATA(lr_comp).
@@ -23647,15 +23992,16 @@ CLASS z2ui5_cl_util IMPLEMENTATION.
         ENDTRY.
     ENDTRY.
 
-    result = lo_struct->get_components( ).
+    DATA(comps) = lo_struct->get_components( ).
 
-    LOOP AT result REFERENCE INTO DATA(lr_comp)
-         WHERE as_include = abap_true.
+    LOOP AT comps REFERENCE INTO DATA(lr_comp).
 
-      DATA(lt_attri) = rtti_get_t_attri_by_include( lr_comp->type ).
-
-      DELETE result.
-      INSERT LINES OF lt_attri INTO TABLE result.
+      IF lr_comp->as_include = abap_false.
+        APPEND lr_comp->* TO result.
+      ELSE.
+        DATA(lt_attri) = rtti_get_t_attri_by_include( lr_comp->type ).
+        APPEND LINES OF lt_attri TO result.
+      ENDIF.
     ENDLOOP.
 
   ENDMETHOD.
@@ -24070,19 +24416,16 @@ CLASS z2ui5_cl_util IMPLEMENTATION.
 
     LOOP AT val INTO DATA(ls_filter).
 
-      " TODO: variable is assigned but never used (ABAP cleaner)
-      DATA lo_range TYPE REF TO kHGwlIiCDAqWuzmHSWUVSQazryNNUC.
-
-      lo_range = NEW #( iv_fieldname = ls_filter-name
+      DATA(lo_range) = NEW z2ui5_cl_util_range( iv_fieldname = ls_filter-name
                         ir_range     = REF #( ls_filter-t_range ) ).
 
     ENDLOOP.
 
   ENDMETHOD.
 
-  METHOD msg_get.
+  METHOD msg_get_t.
 
-    result = kHGwlIiCDAqWuzmHSWUVKThwDidmDe=>msg_get( val ).
+    result = z2ui5_cl_util_msg=>msg_get( val ).
 
   ENDMETHOD.
 
@@ -24106,6 +24449,22 @@ CLASS z2ui5_cl_util IMPLEMENTATION.
                        WHEN 'S' THEN `Success`
                        WHEN `W` THEN `Warning`
                        ELSE `Information` ).
+
+  ENDMETHOD.
+
+  METHOD rtti_create_tab_by_name.
+
+    DATA(struct_desc) = cl_abap_structdescr=>describe_by_name( val ).
+    DATA(data_desc) = CAST cl_abap_datadescr( struct_desc ).
+    DATA(gr_dyntable_typ) = cl_abap_tabledescr=>create( data_desc ).
+    CREATE DATA result TYPE HANDLE gr_dyntable_typ.
+
+  ENDMETHOD.
+
+  METHOD msg_get.
+
+    DATA(lt_msg) = msg_get_t( val ).
+    result = lt_msg[ 0 ].
 
   ENDMETHOD.
 
@@ -24155,43 +24514,37 @@ CLASS z2ui5_cl_srt_typedescr IMPLEMENTATION.
 
         elem_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_elemdescr
-          EXPORTING
-            rtti = elem_rtti.
+          EXPORTING rtti = elem_rtti.
 
       WHEN cl_abap_typedescr=>kind_struct.
 
         struct_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_structdescr
-          EXPORTING
-            rtti = struct_rtti.
+          EXPORTING rtti = struct_rtti.
 
       WHEN cl_abap_typedescr=>kind_table.
 
         table_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_tabledescr
-          EXPORTING
-            rtti = table_rtti.
+          EXPORTING rtti = table_rtti.
 
       WHEN cl_abap_typedescr=>kind_ref.
 
         ref_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_refdescr
-          EXPORTING
-            rtti = ref_rtti.
+          EXPORTING rtti = ref_rtti.
 
       WHEN cl_abap_typedescr=>kind_class.
 
         class_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_classdescr
-          EXPORTING
-            rtti = class_rtti.
+          EXPORTING rtti = class_rtti.
 
       WHEN cl_abap_typedescr=>kind_intf.
 
         intf_rtti ?= rtti.
         CREATE OBJECT srtti TYPE z2ui5_cl_srt_intfdescr
-          EXPORTING
-            rtti = intf_rtti.
+          EXPORTING rtti = intf_rtti.
 
       WHEN OTHERS.
         " Unsupported (new ABAP features in the future)
@@ -24247,8 +24600,7 @@ CLASS z2ui5_cl_srt_tabledescr IMPLEMENTATION.
 
       CATCH cx_sy_table_creation INTO lo_error.
         RAISE EXCEPTION TYPE z2ui5_cx_srt
-          EXPORTING
-            previous = lo_error.
+          EXPORTING previous = lo_error.
     ENDTRY.
   ENDMETHOD.
 ENDCLASS.
@@ -24310,8 +24662,7 @@ CLASS z2ui5_cl_srt_refdescr IMPLEMENTATION.
   METHOD constructor.
     super->constructor( rtti ).
     CREATE OBJECT referenced_type TYPE z2ui5_cl_srt_typedescr
-      EXPORTING
-        rtti = rtti->get_referenced_type( ).
+      EXPORTING rtti = rtti->get_referenced_type( ).
     IF referenced_type->not_serializable = abap_true.
       not_serializable = abap_true.
     ENDIF.
@@ -24429,68 +24780,69 @@ CLASS z2ui5_cl_srt_classdescr IMPLEMENTATION.
 ENDCLASS.
 
 CLASS z2ui5_cx_ajson_error IMPLEMENTATION.
-  METHOD constructor.
-    CALL METHOD super->constructor
-      EXPORTING
-        previous = previous.
-    me->rc = rc .
-    me->message = message .
-    me->location = location .
-    me->a1 = a1 .
-    me->a2 = a2 .
-    me->a3 = a3 .
-    me->a4 = a4 .
-    CLEAR me->textid.
-    IF textid IS INITIAL.
-      if_t100_message~t100key = zcx_ajson_error .
-    ELSE.
-      if_t100_message~t100key = textid.
-    ENDIF.
-  ENDMETHOD.
-  METHOD raise.
+method CONSTRUCTOR.
+CALL METHOD SUPER->CONSTRUCTOR
+EXPORTING
+PREVIOUS = PREVIOUS
+.
+me->RC = RC .
+me->MESSAGE = MESSAGE .
+me->LOCATION = LOCATION .
+me->A1 = A1 .
+me->A2 = A2 .
+me->A3 = A3 .
+me->A4 = A4 .
+clear me->textid.
+if textid is initial.
+  IF_T100_MESSAGE~T100KEY = ZCX_AJSON_ERROR .
+else.
+  IF_T100_MESSAGE~T100KEY = TEXTID.
+endif.
+endmethod.
+method raise.
 
-    DATA lx TYPE REF TO z2ui5_cx_ajson_error.
+  data lx type ref to z2ui5_cx_ajson_error.
 
-    CREATE OBJECT lx EXPORTING message = iv_msg.
-    lx->set_location(
-      iv_location = iv_location
-      is_node     = is_node ).
-    RAISE EXCEPTION lx.
+  create object lx exporting message = iv_msg.
+  lx->set_location(
+    iv_location = iv_location
+    is_node     = is_node ).
+  raise exception lx.
 
-  ENDMETHOD.
-  METHOD set_location.
+endmethod.
+method set_location.
 
-    DATA ls_msg TYPE ty_message_parts.
-    DATA lv_location TYPE string.
-    DATA lv_tmp TYPE string.
-    FIELD-SYMBOLS <path> TYPE string.
-    FIELD-SYMBOLS <name> TYPE string.
+  data ls_msg type ty_message_parts.
+  data lv_location type string.
+  data lv_tmp type string.
+  field-symbols <path> type string.
+  field-symbols <name> type string.
 
-    IF iv_location IS NOT INITIAL.
-      lv_location = iv_location.
-    ELSEIF is_node IS NOT INITIAL.
-      ASSIGN COMPONENT 'PATH' OF STRUCTURE is_node TO <path>.
-      ASSIGN COMPONENT 'NAME' OF STRUCTURE is_node TO <name>.
-      IF <path> IS ASSIGNED AND <name> IS ASSIGNED.
-        lv_location = <path> && <name>.
-      ENDIF.
-    ENDIF.
+  if iv_location is not initial.
+    lv_location = iv_location.
+  elseif is_node is not initial.
+    assign component 'PATH' of structure is_node to <path>.
+    assign component 'NAME' of structure is_node to <name>.
+    if <path> is assigned and <name> is assigned.
+      lv_location = <path> && <name>.
+    endif.
+  endif.
 
-    IF lv_location IS NOT INITIAL.
-      lv_tmp = message && | @{ lv_location }|.
-    ELSE.
-      lv_tmp = message.
-    ENDIF.
+  if lv_location is not initial.
+    lv_tmp = message && | @{ lv_location }|.
+  else.
+    lv_tmp = message.
+  endif.
 
-    ls_msg = lv_tmp.
+  ls_msg = lv_tmp.
 
-    location = lv_location.
-    a1       = ls_msg-a1.
-    a2       = ls_msg-a2.
-    a3       = ls_msg-a3.
-    a4       = ls_msg-a4.
+  location = lv_location.
+  a1       = ls_msg-a1.
+  a2       = ls_msg-a2.
+  a3       = ls_msg-a3.
+  a4       = ls_msg-a4.
 
-  ENDMETHOD.
+endmethod.
 ENDCLASS.
 
 CLASS z2ui5_cl_ajson_utilities IMPLEMENTATION.
@@ -25120,7 +25472,7 @@ CLASS z2ui5_cl_ajson_mapping IMPLEMENTATION.
     CREATE OBJECT ri_mapping TYPE kHGwlQWxBzogSXFKnfTxcwrelrEIET
       EXPORTING
         it_rename_map = it_rename_map
-        iv_rename_by  = iv_rename_by.
+        iv_rename_by = iv_rename_by.
 
   ENDMETHOD.
   METHOD create_to_camel_case.
@@ -25178,8 +25530,8 @@ CLASS kHGwlWxTjQFgGKrGWSYpKlBZxFUUhA DEFINITION FINAL.
     INTERFACES z2ui5_if_ajson_filter.
     METHODS constructor
       IMPORTING
-        it_skip_paths     TYPE string_table OPTIONAL
-        iv_skip_paths     TYPE string OPTIONAL
+        it_skip_paths TYPE string_table OPTIONAL
+        iv_skip_paths TYPE string OPTIONAL
         iv_pattern_search TYPE abap_bool
       RAISING
         z2ui5_cx_ajson_error.
@@ -25308,8 +25660,8 @@ CLASS z2ui5_cl_ajson_filter_lib IMPLEMENTATION.
     CREATE OBJECT ri_filter TYPE kHGwlWxTjQFgGKrGWSYpKlBZxFUUhA
       EXPORTING
         iv_pattern_search = iv_pattern_search
-        it_skip_paths     = it_skip_paths
-        iv_skip_paths     = iv_skip_paths.
+        it_skip_paths = it_skip_paths
+        iv_skip_paths = iv_skip_paths.
   ENDMETHOD.
 ENDCLASS.
 
@@ -25386,42 +25738,42 @@ CLASS kHGwlzUrcuWxYGvxpUmmzByNvbZmNu DEFINITION FINAL.
 
     CLASS-METHODS normalize_path
       IMPORTING
-        iv_path        TYPE string
+        iv_path TYPE string
       RETURNING
         VALUE(rv_path) TYPE string.
     CLASS-METHODS split_path
       IMPORTING
-        iv_path             TYPE string
+        iv_path TYPE string
       RETURNING
         VALUE(rv_path_name) TYPE z2ui5_if_ajson_types=>ty_path_name.
     CLASS-METHODS validate_array_index
       IMPORTING
-        iv_path         TYPE string
-        iv_index        TYPE string
+        iv_path TYPE string
+        iv_index TYPE string
       RETURNING
         VALUE(rv_index) TYPE i
       RAISING
         z2ui5_cx_ajson_error.
     CLASS-METHODS string_to_xstring_utf8
       IMPORTING
-        iv_str         TYPE string
+        iv_str TYPE string
       RETURNING
         VALUE(rv_xstr) TYPE xstring.
     CLASS-METHODS xstring_to_string_utf8
       IMPORTING
-        iv_xstr       TYPE xstring
+        iv_xstr TYPE xstring
       RETURNING
         VALUE(rv_str) TYPE string.
     CLASS-METHODS any_to_xstring
       IMPORTING
-        iv_data        TYPE any
+        iv_data TYPE any
       RETURNING
         VALUE(rv_xstr) TYPE xstring
       RAISING
         z2ui5_cx_ajson_error.
     CLASS-METHODS any_to_string
       IMPORTING
-        iv_data       TYPE any
+        iv_data TYPE any
       RETURNING
         VALUE(rv_str) TYPE string
       RAISING
@@ -25440,24 +25792,24 @@ CLASS kHGwlzUrcuWxYGvxpUmmzByNvbZmNu IMPLEMENTATION.
 
     TRY.
         CALL METHOD ('CL_ABAP_CONV_CODEPAGE')=>create_out
-          RECEIVING
-            instance = lo_conv.
+        RECEIVING
+          instance = lo_conv.
         CALL METHOD lo_conv->('IF_ABAP_CONV_OUT~CONVERT')
-          EXPORTING
-            source = iv_str
-          RECEIVING
-            result = rv_xstr.
+        EXPORTING
+          source = iv_str
+        RECEIVING
+          result = rv_xstr.
       CATCH cx_sy_dyn_call_illegal_class.
         CALL METHOD (lv_out_ce)=>create
-          EXPORTING
-            encoding = 'UTF-8'
-          RECEIVING
-            conv     = lo_conv.
+        EXPORTING
+          encoding = 'UTF-8'
+        RECEIVING
+          conv = lo_conv.
         CALL METHOD lo_conv->('CONVERT')
-          EXPORTING
-            data   = iv_str
-          IMPORTING
-            buffer = rv_xstr.
+        EXPORTING
+          data = iv_str
+        IMPORTING
+          buffer = rv_xstr.
     ENDTRY.
 
   ENDMETHOD.
@@ -25471,24 +25823,24 @@ CLASS kHGwlzUrcuWxYGvxpUmmzByNvbZmNu IMPLEMENTATION.
 
     TRY.
         CALL METHOD ('CL_ABAP_CONV_CODEPAGE')=>create_in
-          RECEIVING
-            instance = lo_conv.
+        RECEIVING
+          instance = lo_conv.
         CALL METHOD lo_conv->('IF_ABAP_CONV_IN~CONVERT')
-          EXPORTING
-            source = iv_xstr
-          RECEIVING
-            result = rv_str.
+        EXPORTING
+          source = iv_xstr
+        RECEIVING
+          result = rv_str.
       CATCH cx_sy_dyn_call_illegal_class.
         CALL METHOD (lv_in_ce)=>create
-          EXPORTING
-            encoding = 'UTF-8'
-          RECEIVING
-            conv     = lo_conv.
+        EXPORTING
+          encoding = 'UTF-8'
+        RECEIVING
+          conv = lo_conv.
         CALL METHOD lo_conv->('CONVERT')
-          EXPORTING
-            data   = iv_xstr
-          IMPORTING
-            buffer = rv_str.
+        EXPORTING
+          data = iv_xstr
+        IMPORTING
+          buffer = rv_str.
     ENDTRY.
 
   ENDMETHOD.
@@ -25632,8 +25984,8 @@ CLASS kHGwlzUrcuWxYGvxpUmmfipvepHQnc DEFINITION FINAL.
 
     METHODS parse
       IMPORTING
-        iv_json             TYPE any
-        iv_keep_item_order  TYPE abap_bool DEFAULT abap_false
+        iv_json TYPE any
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_json_tree) TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -25656,7 +26008,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmfipvepHQnc DEFINITION FINAL.
 
     METHODS _parse
       IMPORTING
-        iv_json             TYPE xstring
+        iv_json TYPE xstring
       RETURNING
         VALUE(rt_json_tree) TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -25684,9 +26036,9 @@ CLASS kHGwlzUrcuWxYGvxpUmmfipvepHQnc IMPLEMENTATION.
     lv_json = kHGwlzUrcuWxYGvxpUmmzByNvbZmNu=>any_to_xstring( iv_json ).
 
     TRY.
-        " TODO sane JSON check:
-        " JSON can be true,false,null,(-)digits
-        " or start from " or from {
+      " TODO sane JSON check:
+      " JSON can be true,false,null,(-)digits
+      " or start from " or from {
         rt_json_tree = _parse( lv_json ).
       CATCH cx_sxml_parse_error INTO lx_sxml_parse.
         lv_location = _get_location(
@@ -25852,9 +26204,9 @@ CLASS kHGwlzUrcuWxYGvxpUmmFgyFungUrS DEFINITION FINAL CREATE PRIVATE.
 
     CLASS-METHODS stringify
       IMPORTING
-        it_json_tree          TYPE z2ui5_if_ajson_types=>ty_nodes_ts
-        iv_indent             TYPE i DEFAULT 0
-        iv_keep_item_order    TYPE abap_bool DEFAULT abap_false
+        it_json_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts
+        iv_indent TYPE i DEFAULT 0
+        iv_keep_item_order TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rv_json_string) TYPE string
       RAISING
@@ -25874,7 +26226,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmFgyFungUrS DEFINITION FINAL CREATE PRIVATE.
 
     CLASS-METHODS escape_string
       IMPORTING
-        iv_unescaped      TYPE string
+        iv_unescaped TYPE string
       RETURNING
         VALUE(rv_escaped) TYPE string.
 
@@ -25893,7 +26245,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmFgyFungUrS DEFINITION FINAL CREATE PRIVATE.
     METHODS stringify_set
       IMPORTING
         iv_parent_path TYPE string
-        iv_array       TYPE abap_bool
+        iv_array TYPE abap_bool
       RAISING
         z2ui5_cx_ajson_error.
 
@@ -26095,7 +26447,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI DEFINITION FINAL.
 
     METHODS to_abap
       IMPORTING
-        it_nodes    TYPE z2ui5_if_ajson_types=>ty_nodes_ts
+        it_nodes     TYPE z2ui5_if_ajson_types=>ty_nodes_ts
       CHANGING
         c_container TYPE any
       RAISING
@@ -26143,16 +26495,16 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI DEFINITION FINAL.
 
     METHODS any_to_abap
       IMPORTING
-        iv_path         TYPE string
-        is_parent_type  TYPE ty_type_cache OPTIONAL
+        iv_path        TYPE string
+        is_parent_type TYPE ty_type_cache OPTIONAL
         i_container_ref TYPE REF TO data
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS value_to_abap
       IMPORTING
-        is_node         TYPE z2ui5_if_ajson_types=>ty_node
-        is_node_type    TYPE ty_type_cache
+        is_node      TYPE z2ui5_if_ajson_types=>ty_node
+        is_node_type TYPE ty_type_cache
         i_container_ref TYPE REF TO data
       RAISING
         z2ui5_cx_ajson_error
@@ -26160,9 +26512,9 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI DEFINITION FINAL.
 
     METHODS get_node_type
       IMPORTING
-        is_node             TYPE z2ui5_if_ajson_types=>ty_node OPTIONAL " Empty for root
-        is_parent_type      TYPE ty_type_cache OPTIONAL
-        i_container_ref     TYPE REF TO data OPTIONAL
+        is_node            TYPE z2ui5_if_ajson_types=>ty_node OPTIONAL " Empty for root
+        is_parent_type     TYPE ty_type_cache OPTIONAL
+        i_container_ref    TYPE REF TO data OPTIONAL
       RETURNING
         VALUE(rs_node_type) TYPE ty_type_cache
       RAISING
@@ -26306,12 +26658,12 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI IMPLEMENTATION.
 
     TRY.
 
-        " array_index because stringified index goes in wrong order [1, 10, 2 ...]
+      " array_index because stringified index goes in wrong order [1, 10, 2 ...]
         LOOP AT mr_nodes->* ASSIGNING <n> USING KEY array_index WHERE path = iv_path.
 
-          " Get or create type cache record
+        " Get or create type cache record
           IF is_parent_type-type_kind <> iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>table OR ls_node_type-type_kind IS INITIAL.
-            " table records are the same, no need to refetch twice
+          " table records are the same, no need to refetch twice
 
             ls_node_type = get_node_type(
             is_node        = <n>
@@ -26323,18 +26675,18 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI IMPLEMENTATION.
 
           ENDIF.
 
-          " Validate node type
+        " Validate node type
           IF ls_node_type-type_kind = iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>data_ref OR
            ls_node_type-type_kind = iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>object_ref.
-            " TODO maybe in future
+          " TODO maybe in future
             z2ui5_cx_ajson_error=>raise( 'Cannot assign to ref' ).
           ENDIF.
 
-          " Find target field reference
+        " Find target field reference
           CASE is_parent_type-type_kind.
             WHEN iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>table.
               IF NOT ls_node_type-target_field_name CO '0123456789'.
-                " Does not affect anything actually but for integrity
+              " Does not affect anything actually but for integrity
                 z2ui5_cx_ajson_error=>raise( 'Need index to access tables' ).
               ENDIF.
 
@@ -26358,7 +26710,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmXxNdxsjJjI IMPLEMENTATION.
               z2ui5_cx_ajson_error=>raise( 'Unexpected parent type' ).
           ENDCASE.
 
-          " Process value assignment
+        " Process value assignment
           CASE <n>-type.
             WHEN z2ui5_if_ajson_types=>node_type-object.
               IF ls_node_type-type_kind <> iUFTszUrcuWxYGvxpUmmdAMURRqLkF=>struct_flat AND
@@ -26587,12 +26939,12 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     CLASS-METHODS convert
       IMPORTING
-        iv_data           TYPE any
-        is_prefix         TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
-        iv_array_index    TYPE i DEFAULT 0
-        ii_custom_mapping TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        is_opts           TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
-        iv_item_order     TYPE i DEFAULT 0
+        iv_data            TYPE any
+        is_prefix          TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
+        iv_array_index     TYPE i DEFAULT 0
+        ii_custom_mapping  TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        is_opts            TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
+        iv_item_order      TYPE i DEFAULT 0
       RETURNING
         VALUE(rt_nodes)   TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -26600,13 +26952,13 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     CLASS-METHODS insert_with_type
       IMPORTING
-        iv_data           TYPE any
-        iv_type           TYPE z2ui5_if_ajson_types=>ty_node_type
-        is_prefix         TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
-        iv_array_index    TYPE i DEFAULT 0
-        ii_custom_mapping TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
-        is_opts           TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
-        iv_item_order     TYPE i DEFAULT 0
+        iv_data            TYPE any
+        iv_type            TYPE z2ui5_if_ajson_types=>ty_node_type
+        is_prefix          TYPE z2ui5_if_ajson_types=>ty_path_name OPTIONAL
+        iv_array_index     TYPE i DEFAULT 0
+        ii_custom_mapping  TYPE REF TO z2ui5_if_ajson_mapping OPTIONAL
+        is_opts            TYPE z2ui5_if_ajson=>ty_opts OPTIONAL
+        iv_item_order      TYPE i DEFAULT 0
       RETURNING
         VALUE(rt_nodes)   TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
@@ -26614,17 +26966,17 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     CLASS-METHODS format_date
       IMPORTING
-        iv_date       TYPE d
+        iv_date TYPE d
       RETURNING
         VALUE(rv_str) TYPE string.
     CLASS-METHODS format_time
       IMPORTING
-        iv_time       TYPE t
+        iv_time TYPE t
       RETURNING
         VALUE(rv_str) TYPE string.
     CLASS-METHODS format_timestamp
       IMPORTING
-        iv_ts         TYPE timestamp
+        iv_ts TYPE timestamp
       RETURNING
         VALUE(rv_str) TYPE string.
 
@@ -26639,84 +26991,84 @@ CLASS kHGwlzUrcuWxYGvxpUmmeJqampzabz DEFINITION FINAL.
 
     METHODS convert_any
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_ajson
       IMPORTING
-        io_json       TYPE REF TO z2ui5_if_ajson
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        io_json TYPE REF TO z2ui5_if_ajson
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_value
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_ref
       IMPORTING
-        iv_data       TYPE any
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_struc
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS convert_table
       IMPORTING
-        iv_data       TYPE any
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
     METHODS insert_value_with_type
       IMPORTING
-        iv_data       TYPE any
-        iv_type       TYPE z2ui5_if_ajson_types=>ty_node_type
-        io_type       TYPE REF TO cl_abap_typedescr
-        is_prefix     TYPE z2ui5_if_ajson_types=>ty_path_name
-        iv_index      TYPE i DEFAULT 0
+        iv_data TYPE any
+        iv_type TYPE z2ui5_if_ajson_types=>ty_node_type
+        io_type TYPE REF TO cl_abap_typedescr
+        is_prefix TYPE z2ui5_if_ajson_types=>ty_path_name
+        iv_index TYPE i DEFAULT 0
         iv_item_order TYPE i DEFAULT 0
       CHANGING
-        ct_nodes      TYPE z2ui5_if_ajson_types=>ty_nodes_tt
+        ct_nodes TYPE z2ui5_if_ajson_types=>ty_nodes_tt
       RAISING
         z2ui5_cx_ajson_error.
 
@@ -27198,7 +27550,7 @@ INTERFACE iUFTszUrcuWxYGvxpUmmtzVIYRIbuu.
     IMPORTING
       it_source_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts
     EXPORTING
-      et_dest_tree   TYPE z2ui5_if_ajson_types=>ty_nodes_ts
+      et_dest_tree TYPE z2ui5_if_ajson_types=>ty_nodes_ts
     RAISING
       z2ui5_cx_ajson_error.
 ENDINTERFACE.
@@ -27213,7 +27565,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmlwblMIpVBS DEFINITION FINAL.
     INTERFACES iUFTszUrcuWxYGvxpUmmtzVIYRIbuu.
     CLASS-METHODS new
       IMPORTING
-        ii_filter          TYPE REF TO z2ui5_if_ajson_filter
+        ii_filter TYPE REF TO z2ui5_if_ajson_filter
       RETURNING
         VALUE(ro_instance) TYPE REF TO kHGwlzUrcuWxYGvxpUmmlwblMIpVBS.
     METHODS constructor
@@ -27227,7 +27579,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmlwblMIpVBS DEFINITION FINAL.
 
     METHODS walk
       IMPORTING
-        iv_path   TYPE string
+        iv_path TYPE string
       CHANGING
         cs_parent TYPE z2ui5_if_ajson_types=>ty_node OPTIONAL
       RAISING
@@ -27326,7 +27678,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmhFTcRDbOtm DEFINITION FINAL.
     INTERFACES iUFTszUrcuWxYGvxpUmmtzVIYRIbuu.
     CLASS-METHODS new
       IMPORTING
-        ii_mapper          TYPE REF TO z2ui5_if_ajson_mapping
+        ii_mapper TYPE REF TO z2ui5_if_ajson_mapping
       RETURNING
         VALUE(ro_instance) TYPE REF TO kHGwlzUrcuWxYGvxpUmmhFTcRDbOtm.
     METHODS constructor
@@ -27439,7 +27791,7 @@ CLASS kHGwlzUrcuWxYGvxpUmmucOpllUiAS DEFINITION FINAL.
         VALUE(ro_instance) TYPE REF TO kHGwlzUrcuWxYGvxpUmmucOpllUiAS.
     METHODS add
       IMPORTING
-        ii_mutator     TYPE REF TO iUFTszUrcuWxYGvxpUmmtzVIYRIbuu
+        ii_mutator TYPE REF TO iUFTszUrcuWxYGvxpUmmtzVIYRIbuu
       RETURNING
         VALUE(ro_self) TYPE REF TO kHGwlzUrcuWxYGvxpUmmucOpllUiAS.
 
@@ -27511,8 +27863,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     CREATE OBJECT ro_instance
       EXPORTING
         iv_to_abap_corresponding_only = iv_to_abap_corresponding_only
-        iv_format_datetime            = iv_format_datetime
-        iv_keep_item_order            = iv_keep_item_order.
+        iv_format_datetime = iv_format_datetime
+        iv_keep_item_order = iv_keep_item_order.
     ro_instance->mi_custom_mapping = ii_custom_mapping.
   ENDMETHOD.
   METHOD create_from.
@@ -27526,8 +27878,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     CREATE OBJECT ro_instance
       EXPORTING
         iv_to_abap_corresponding_only = ii_source_json->opts( )-to_abap_corresponding_only
-        iv_format_datetime            = ii_source_json->opts( )-format_datetime
-        iv_keep_item_order            = ii_source_json->opts( )-keep_item_order.
+        iv_format_datetime = ii_source_json->opts( )-format_datetime
+        iv_keep_item_order = ii_source_json->opts( )-keep_item_order.
 
     IF ii_filter IS NOT BOUND AND ii_mapper IS NOT BOUND.
       ro_instance->mt_json_tree = ii_source_json->mt_json_tree.
@@ -27599,8 +27951,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     CREATE OBJECT ro_instance
       EXPORTING
         iv_to_abap_corresponding_only = iv_to_abap_corresponding_only
-        iv_format_datetime            = iv_format_datetime
-        iv_keep_item_order            = iv_keep_item_order.
+        iv_format_datetime = iv_format_datetime
+        iv_keep_item_order = iv_keep_item_order.
   ENDMETHOD.
   METHOD parse.
 
@@ -28142,6 +28494,8 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
     DATA lv_path_pattern    TYPE string.
 
     CREATE OBJECT lo_section.
+    lo_section->mi_custom_mapping = mi_custom_mapping.
+
     lv_normalized_path = kHGwlzUrcuWxYGvxpUmmzByNvbZmNu=>normalize_path( iv_path ).
     lv_path_len        = strlen( lv_normalized_path ).
     ls_path_parts      = kHGwlzUrcuWxYGvxpUmmzByNvbZmNu=>split_path( lv_normalized_path ).
@@ -28248,42 +28602,23 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
         c_container = ev_container ).
 
   ENDMETHOD.
-
   METHOD z2ui5_if_ajson~to_abap_corresponding_only.
     ms_opts-to_abap_corresponding_only = iv_enable.
     ri_json = me.
   ENDMETHOD.
 ENDCLASS.
 
-CLASS zcl_abap2ui5_standalone DEFINITION FINAL CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES if_http_extension.
-
-  PROTECTED SECTION.
-  PRIVATE SECTION.
-ENDCLASS.
-
-CLASS zcl_abap2ui5_standalone IMPLEMENTATION.
-
-  METHOD if_http_extension~handle_request.
-
-    z2ui5_cl_http_handler=>factory( server )->main( ).
-
-  ENDMETHOD.
-
-ENDCLASS.
-
-
 ****************************************************
 INTERFACE lif_abapmerge_marker.
-* abapmerge 0.16.6 - 2025-02-12T14:04:26.932Z
-  CONSTANTS c_merge_timestamp TYPE string VALUE `2025-02-12T14:04:26.932Z`.
+* abapmerge 0.16.6 - 2025-05-12T05:48:57.528Z
+  CONSTANTS c_merge_timestamp TYPE string VALUE `2025-05-12T05:48:57.528Z`.
   CONSTANTS c_abapmerge_version TYPE string VALUE `0.16.6`.
 ENDINTERFACE.
+****************************************************
 
 
-CLASS z2ui5_cl_my_standalone_app DEFINITION
+
+CLASS z2ui5_cl_my_local_app DEFINITION
   CREATE PUBLIC.
 
   PUBLIC SECTION.
@@ -28298,7 +28633,7 @@ CLASS z2ui5_cl_my_standalone_app DEFINITION
 ENDCLASS.
 
 
-CLASS z2ui5_cl_my_standalone_app IMPLEMENTATION.
+CLASS z2ui5_cl_my_local_app IMPLEMENTATION.
 
   METHOD z2ui5_if_app~main.
 
@@ -28307,7 +28642,7 @@ CLASS z2ui5_cl_my_standalone_app IMPLEMENTATION.
 
       client->view_display( z2ui5_cl_xml_view=>factory(
         )->shell(
-        )->page( title = 'abap2UI5 - Hello abap2UI5 Standalone World'
+        )->page( title = 'abap2UI5 - Hello abap2UI5 Local World'
         )->simple_form( editable = abap_true
             )->content( ns = `form`
                 )->title( 'Make an input here and send it to the server...'
@@ -28328,4 +28663,3 @@ CLASS z2ui5_cl_my_standalone_app IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
-****************************************************
