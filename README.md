@@ -18,7 +18,7 @@ All abap2UI5 artifacts are combined into a single HTTP handler implementation as
 <img width="500" alt="Screenshot 2025-02-13 at 13 24 18" src="https://github.com/user-attachments/assets/5fcc56a8-8e2c-41b2-84b3-e50242ff648c" />
 
 #### Persistence
-To avoid any side effects with other abap2UI5 installations, this version uses the separatd tables for persistence. You can either pull this repository or manually create the following two table in your system:
+To avoid any side effects with other abap2UI5 installations, this version uses the separated tables for persistence. You can either pull this repository or manually create the following two table in your system:
 ```cds
 @EndUserText.label : 'abap2UI5-local'
 @AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
