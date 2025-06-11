@@ -26,7 +26,7 @@ To avoid any side effects with other abap2UI5 installations, this version uses t
 @AbapCatalog.deliveryClass : #A
 @AbapCatalog.dataMaintenance : #RESTRICTED
 define table z2ui5_t_99 {
-  key mandt         : mandt not null;
+  key mandt         : abap.char(3) not null;
   key id            : abap.char(32) not null;
   id_prev           : abap.char(32);
   id_prev_app       : abap.char(32);
