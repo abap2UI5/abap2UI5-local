@@ -8,10 +8,7 @@ INTERFACE z2ui5_if_ajson_types DEFERRED.
 INTERFACE z2ui5_if_ajson_mapping DEFERRED.
 INTERFACE z2ui5_if_ajson_filter DEFERRED.
 INTERFACE z2ui5_if_ajson DEFERRED.
-
-INTERFACE z2ui5_if_types LOAD.
-
-
+CLASS zcl_app DEFINITION DEFERRED.
 CLASS z2ui5_cl_xml_view_cc DEFINITION DEFERRED.
 CLASS z2ui5_cl_xml_view DEFINITION DEFERRED.
 CLASS z2ui5_cl_http_handler DEFINITION DEFERRED.
@@ -80,7 +77,6 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson_mapping DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson_filter_lib DEFINITION DEFERRED.
 CLASS z2ui5_cl_ajson DEFINITION DEFERRED.
-
 CLASS zcx_error DEFINITION
   inheriting from cx_static_check
   final
@@ -92,168 +88,6 @@ CLASS zcx_error DEFINITION
 endclass.
 class zcx_error implementation.
 endclass.
-
-CLASS z2ui5_cx_ajson_error DEFINITION
-  inheriting from CX_STATIC_CHECK
-  final
-  create public .
-
-public section.
-
-  interfaces IF_T100_MESSAGE .
-
-  types:
-    ty_rc type c length 4 .
-
-  constants:
-    begin of ZCX_AJSON_ERROR,
-      msgid type symsgid value '00',
-      msgno type symsgno value '001',
-      attr1 type scx_attrname value 'A1',
-      attr2 type scx_attrname value 'A2',
-      attr3 type scx_attrname value 'A3',
-      attr4 type scx_attrname value 'A4',
-    end of ZCX_AJSON_ERROR .
-  data RC type TY_RC read-only .
-  data MESSAGE type STRING read-only .
-  data LOCATION type STRING read-only .
-  data A1 type SYMSGV read-only .
-  data A2 type SYMSGV read-only .
-  data A3 type SYMSGV read-only .
-  data A4 type SYMSGV read-only .
-
-  methods CONSTRUCTOR
-    importing
-      !TEXTID like IF_T100_MESSAGE=>T100KEY optional
-      !PREVIOUS like PREVIOUS optional
-      !RC type TY_RC optional
-      !MESSAGE type STRING optional
-      !LOCATION type STRING optional
-      !A1 type SYMSGV optional
-      !A2 type SYMSGV optional
-      !A3 type SYMSGV optional
-      !A4 type SYMSGV optional .
-  class-methods RAISE
-    importing
-      !IV_MSG type STRING
-      !IV_LOCATION type STRING optional
-      !IS_NODE type ANY optional
-    raising
-      z2ui5_cx_ajson_error .
-  methods SET_LOCATION
-    importing
-      !IV_LOCATION type STRING optional
-      !IS_NODE type ANY optional
-    preferred parameter IV_LOCATION .
-protected section.
-private section.
-  types:
-    begin of ty_message_parts,
-      a1 like a1,
-      a2 like a1,
-      a3 like a1,
-      a4 like a1,
-    end of ty_message_parts.
-ENDCLASS.
-
-
-INTERFACE z2ui5_if_types.
-
-  TYPES:
-    BEGIN OF ty_s_name_value,
-      n TYPE string,
-      v TYPE string,
-    END OF ty_s_name_value.
-  TYPES ty_t_name_value TYPE STANDARD TABLE OF ty_s_name_value WITH EMPTY KEY.
-
-  TYPES:
-    BEGIN OF ty_s_http_config,
-      src                     TYPE string,
-      theme                   TYPE string,
-      content_security_policy TYPE string,
-      styles_css              TYPE string,
-      title                   TYPE string,
-      t_add_config            TYPE ty_t_name_value,
-      custom_js               TYPE string,
-    END OF ty_s_http_config.
-
-  TYPES:
-    BEGIN OF ty_s_draft,
-      id                TYPE string,
-      id_prev           TYPE string,
-      id_prev_app       TYPE string,
-      id_prev_app_stack TYPE string,
-    END OF ty_s_draft.
-
-  TYPES:
-    BEGIN OF ty_s_config,
-      origin           TYPE string,
-      pathname         TYPE string,
-      search           TYPE string,
-      hash             TYPE string,
-      t_startup_params TYPE ty_t_name_value,
-    END OF ty_s_config.
-
-  TYPES:
-    BEGIN OF ty_s_get,
-      event                  TYPE string,
-      t_event_arg            TYPE string_table,
-      check_launchpad_active TYPE abap_bool,
-      check_on_navigated     TYPE abap_bool,
-      viewname               TYPE string,
-      s_draft                TYPE ty_s_draft,
-      s_config               TYPE ty_s_config,
-      t_comp_params          TYPE ty_t_name_value,
-      r_event_data           TYPE REF TO data,
-    END OF ty_s_get.
-
-  TYPES:
-    BEGIN OF ty_s_event_control,
-      check_allow_multi_req TYPE abap_bool,
-    END OF ty_s_event_control.
-
-ENDINTERFACE.
-
-INTERFACE z2ui5_if_ajson_types.
-
-  TYPES:
-    ty_node_type TYPE string.
-
-  CONSTANTS:
-    BEGIN OF node_type,
-      boolean TYPE ty_node_type VALUE 'bool',
-      string  TYPE ty_node_type VALUE 'str',
-      number  TYPE ty_node_type VALUE 'num',
-      null    TYPE ty_node_type VALUE 'null',
-      array   TYPE ty_node_type VALUE 'array',
-      object  TYPE ty_node_type VALUE 'object',
-    END OF node_type.
-
-  TYPES:
-    BEGIN OF ty_node,
-      path TYPE string,
-      name TYPE string,
-      type TYPE ty_node_type,
-      value TYPE string,
-      index TYPE i,
-      order TYPE i,
-      children TYPE i,
-    END OF ty_node.
-  TYPES:
-    ty_nodes_tt TYPE STANDARD TABLE OF ty_node WITH KEY path name.
-  TYPES:
-    ty_nodes_ts TYPE SORTED TABLE OF ty_node
-      WITH UNIQUE KEY path name
-      WITH NON-UNIQUE SORTED KEY array_index COMPONENTS path index
-      WITH NON-UNIQUE SORTED KEY item_order COMPONENTS path order.
-
-  TYPES:
-    BEGIN OF ty_path_name,
-      path TYPE string,
-      name TYPE string,
-    END OF ty_path_name.
-
-ENDINTERFACE.
 
 INTERFACE z2ui5_if_ajson.
 
@@ -584,6 +418,46 @@ INTERFACE z2ui5_if_ajson_mapping.
 
 ENDINTERFACE.
 
+INTERFACE z2ui5_if_ajson_types.
+
+  TYPES:
+    ty_node_type TYPE string.
+
+  CONSTANTS:
+    BEGIN OF node_type,
+      boolean TYPE ty_node_type VALUE 'bool',
+      string  TYPE ty_node_type VALUE 'str',
+      number  TYPE ty_node_type VALUE 'num',
+      null    TYPE ty_node_type VALUE 'null',
+      array   TYPE ty_node_type VALUE 'array',
+      object  TYPE ty_node_type VALUE 'object',
+    END OF node_type.
+
+  TYPES:
+    BEGIN OF ty_node,
+      path TYPE string,
+      name TYPE string,
+      type TYPE ty_node_type,
+      value TYPE string,
+      index TYPE i,
+      order TYPE i,
+      children TYPE i,
+    END OF ty_node.
+  TYPES:
+    ty_nodes_tt TYPE STANDARD TABLE OF ty_node WITH KEY path name.
+  TYPES:
+    ty_nodes_ts TYPE SORTED TABLE OF ty_node
+      WITH UNIQUE KEY path name
+      WITH NON-UNIQUE SORTED KEY array_index COMPONENTS path index
+      WITH NON-UNIQUE SORTED KEY item_order COMPONENTS path order.
+
+  TYPES:
+    BEGIN OF ty_path_name,
+      path TYPE string,
+      name TYPE string,
+    END OF ty_path_name.
+
+ENDINTERFACE.
 
 INTERFACE z2ui5_if_core_types.
 
@@ -1050,6 +924,62 @@ INTERFACE z2ui5_if_client.
 
 ENDINTERFACE.
 
+INTERFACE z2ui5_if_types.
+
+  TYPES:
+    BEGIN OF ty_s_name_value,
+      n TYPE string,
+      v TYPE string,
+    END OF ty_s_name_value.
+  TYPES ty_t_name_value TYPE STANDARD TABLE OF ty_s_name_value WITH EMPTY KEY.
+
+  TYPES:
+    BEGIN OF ty_s_http_config,
+      src                     TYPE string,
+      theme                   TYPE string,
+      content_security_policy TYPE string,
+      styles_css              TYPE string,
+      title                   TYPE string,
+      t_add_config            TYPE ty_t_name_value,
+      custom_js               TYPE string,
+    END OF ty_s_http_config.
+
+  TYPES:
+    BEGIN OF ty_s_draft,
+      id                TYPE string,
+      id_prev           TYPE string,
+      id_prev_app       TYPE string,
+      id_prev_app_stack TYPE string,
+    END OF ty_s_draft.
+
+  TYPES:
+    BEGIN OF ty_s_config,
+      origin           TYPE string,
+      pathname         TYPE string,
+      search           TYPE string,
+      hash             TYPE string,
+      t_startup_params TYPE ty_t_name_value,
+    END OF ty_s_config.
+
+  TYPES:
+    BEGIN OF ty_s_get,
+      event                  TYPE string,
+      t_event_arg            TYPE string_table,
+      check_launchpad_active TYPE abap_bool,
+      check_on_navigated     TYPE abap_bool,
+      viewname               TYPE string,
+      s_draft                TYPE ty_s_draft,
+      s_config               TYPE ty_s_config,
+      t_comp_params          TYPE ty_t_name_value,
+      r_event_data           TYPE REF TO data,
+    END OF ty_s_get.
+
+  TYPES:
+    BEGIN OF ty_s_event_control,
+      check_allow_multi_req TYPE abap_bool,
+    END OF ty_s_event_control.
+
+ENDINTERFACE.
 
 interface zif_app .
 
@@ -1499,7 +1429,68 @@ CLASS z2ui5_cl_ajson_utilities DEFINITION
       RAISING
         z2ui5_cx_ajson_error .
 ENDCLASS.
+CLASS z2ui5_cx_ajson_error DEFINITION
+  inheriting from CX_STATIC_CHECK
+  final
+  create public .
 
+public section.
+
+  interfaces IF_T100_MESSAGE .
+
+  types:
+    ty_rc type c length 4 .
+
+  constants:
+    begin of ZCX_AJSON_ERROR,
+      msgid type symsgid value '00',
+      msgno type symsgno value '001',
+      attr1 type scx_attrname value 'A1',
+      attr2 type scx_attrname value 'A2',
+      attr3 type scx_attrname value 'A3',
+      attr4 type scx_attrname value 'A4',
+    end of ZCX_AJSON_ERROR .
+  data RC type TY_RC read-only .
+  data MESSAGE type STRING read-only .
+  data LOCATION type STRING read-only .
+  data A1 type SYMSGV read-only .
+  data A2 type SYMSGV read-only .
+  data A3 type SYMSGV read-only .
+  data A4 type SYMSGV read-only .
+
+  methods CONSTRUCTOR
+    importing
+      !TEXTID like IF_T100_MESSAGE=>T100KEY optional
+      !PREVIOUS like PREVIOUS optional
+      !RC type TY_RC optional
+      !MESSAGE type STRING optional
+      !LOCATION type STRING optional
+      !A1 type SYMSGV optional
+      !A2 type SYMSGV optional
+      !A3 type SYMSGV optional
+      !A4 type SYMSGV optional .
+  class-methods RAISE
+    importing
+      !IV_MSG type STRING
+      !IV_LOCATION type STRING optional
+      !IS_NODE type ANY optional
+    raising
+      z2ui5_cx_ajson_error .
+  methods SET_LOCATION
+    importing
+      !IV_LOCATION type STRING optional
+      !IS_NODE type ANY optional
+    preferred parameter IV_LOCATION .
+protected section.
+private section.
+  types:
+    begin of ty_message_parts,
+      a1 like a1,
+      a2 like a1,
+      a3 like a1,
+      a4 like a1,
+    end of ty_message_parts.
+ENDCLASS.
 "! <p class="shorttext synchronized" lang="en">Serializable RTTI any type</p>
 CLASS z2ui5_cl_srt_typedescr DEFINITION
   CREATE PUBLIC.
@@ -2560,7 +2551,7 @@ CLASS z2ui5_cl_core_srv_draft DEFINITION FINAL
   CREATE PUBLIC.
 
   PUBLIC SECTION.
-    TYPES ty_s_db TYPE z2ui5_t_99.
+    TYPES ty_s_db TYPE z2ui5_t_01.
 
     METHODS count_entries
       RETURNING
@@ -9471,7 +9462,19 @@ CLASS z2ui5_cl_xml_view_cc DEFINITION FINAL
 
   PRIVATE SECTION.
 ENDCLASS.
+CLASS zcl_app DEFINITION
+  create public .
 
+  public section.
+    interfaces zif_app.
+  protected section.
+  private section.
+endclass.
+class zcl_abapgit_zip implementation.
+  method zif_app~run.
+    write: / 'Hello'.
+  endmethod.
+endclass.
 
 CLASS z2ui5_cl_xml_view_cc IMPLEMENTATION.
 
@@ -21985,7 +21988,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
     DATA(lv_four_hours_ago) = z2ui5_cl_util=>time_substract_seconds( time    = z2ui5_cl_util=>time_get_timestampl( )
                                                                      seconds = 60 * 60 * 4 ).
 
-    DELETE FROM z2ui5_t_99 WHERE timestampl < @lv_four_hours_ago.
+    DELETE FROM z2ui5_t_01 WHERE timestampl < @lv_four_hours_ago.
     COMMIT WORK.
 
   ENDMETHOD.
@@ -22001,7 +22004,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
                                  timestampl        = z2ui5_cl_util=>time_get_timestampl( )
                                  data              = model_xml ).
 
-    MODIFY z2ui5_t_99 FROM @ls_db.
+    MODIFY z2ui5_t_01 FROM @ls_db.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_util_error
         EXPORTING val = `CREATE_OF_DRAFT_ENTRY_ON_DATABASE_FAILED`.
@@ -22014,14 +22017,14 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
     IF check_load_app = abap_true.
 
-      SELECT SINGLE * FROM z2ui5_t_99
+      SELECT SINGLE * FROM z2ui5_t_01
         WHERE id = @id
         INTO @result ##SUBRC_OK.
 
     ELSE.
 
       SELECT SINGLE id, id_prev, id_prev_app, id_prev_app_stack
-        FROM z2ui5_t_99
+        FROM z2ui5_t_01
         WHERE id = @id
         INTO CORRESPONDING FIELDS OF @result ##SUBRC_OK.
 
@@ -22051,7 +22054,7 @@ CLASS z2ui5_cl_core_srv_draft IMPLEMENTATION.
 
   METHOD count_entries.
 
-    SELECT COUNT( * ) FROM z2ui5_t_99
+    SELECT COUNT( * ) FROM z2ui5_t_01
       INTO @result.
 
   ENDMETHOD.
@@ -22296,7 +22299,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
 
   METHOD delete_by_handle.
 
-    DELETE FROM z2ui5_t_98
+    DELETE FROM z2ui5_t_91
         WHERE
            uname = @uname
             AND handle = @handle
@@ -22310,10 +22313,10 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
   ENDMETHOD.
   METHOD load_by_handle.
 
-    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
 
     SELECT data
-      FROM z2ui5_t_98
+      FROM z2ui5_t_91
        WHERE
         uname = @uname
         AND handle = @handle
@@ -22337,10 +22340,10 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
   ENDMETHOD.
   METHOD load_by_id.
 
-    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
 
     SELECT data
-      FROM z2ui5_t_99
+      FROM z2ui5_t_91
       WHERE id = @id
       INTO CORRESPONDING FIELDS OF TABLE @lt_db.
     ASSERT sy-subrc = 0.
@@ -22356,9 +22359,9 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
   ENDMETHOD.
   METHOD save.
 
-    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_99 WITH EMPTY KEY.
+    DATA lt_db TYPE STANDARD TABLE OF z2ui5_t_91 WITH EMPTY KEY.
     SELECT id
-      FROM z2ui5_t_98
+      FROM z2ui5_t_91
        WHERE
         uname = @uname
         AND handle = @handle
@@ -22366,7 +22369,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
         AND handle3 = @handle3
       INTO CORRESPONDING FIELDS OF TABLE @lt_db ##SUBRC_OK.
 
-    DATA(ls_db) = VALUE z2ui5_t_98(
+    DATA(ls_db) = VALUE z2ui5_t_91(
         uname   = uname
         handle  = handle
         handle2 = handle2
@@ -22379,7 +22382,7 @@ CLASS z2ui5_cl_util_db IMPLEMENTATION.
         ls_db-id = z2ui5_cl_util=>uuid_get_c32( ).
     ENDTRY.
 
-    MODIFY z2ui5_t_98 FROM @ls_db.
+    MODIFY z2ui5_t_91 FROM @ls_db.
     ASSERT sy-subrc = 0.
 
     IF check_commit = abap_true.
@@ -28608,58 +28611,12 @@ CLASS z2ui5_cl_ajson IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
+ z2ui5_cl_http_handler=>run( server ).
+
 ****************************************************
 INTERFACE lif_abapmerge_marker.
-* abapmerge 0.16.6 - 2025-05-12T05:48:57.528Z
-  CONSTANTS c_merge_timestamp TYPE string VALUE `2025-05-12T05:48:57.528Z`.
+* abapmerge 0.16.6 - 2026-05-06T22:15:03.724Z
+  CONSTANTS c_merge_timestamp TYPE string VALUE `2026-05-06T22:15:03.724Z`.
   CONSTANTS c_abapmerge_version TYPE string VALUE `0.16.6`.
 ENDINTERFACE.
 ****************************************************
-
-
-
-CLASS z2ui5_cl_my_local_app DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES z2ui5_if_app.
-
-    DATA name              TYPE string.
-    DATA check_initialized TYPE abap_bool.
-
-  PROTECTED SECTION.
-
-  PRIVATE SECTION.
-ENDCLASS.
-
-
-CLASS z2ui5_cl_my_local_app IMPLEMENTATION.
-
-  METHOD z2ui5_if_app~main.
-
-    IF check_initialized = abap_false.
-      check_initialized = abap_true.
-
-      client->view_display( z2ui5_cl_xml_view=>factory(
-        )->shell(
-        )->page( title = 'abap2UI5 - Hello abap2UI5 Local World'
-        )->simple_form( editable = abap_true
-            )->content( ns = `form`
-                )->title( 'Make an input here and send it to the server...'
-                )->label( 'Name'
-                )->input( client->_bind_edit( name )
-                )->button( text  = 'post'
-                           press = client->_event( 'BUTTON_POST' )
-        )->stringify( ) ).
-
-    ENDIF.
-
-    CASE client->get( )-event.
-      WHEN 'BUTTON_POST'.
-        client->message_box_display( |Your name is { name }| ).
-      WHEN OTHERS.
-    ENDCASE.
-
-  ENDMETHOD.
-
-ENDCLASS.
