@@ -8,9 +8,7 @@
       "syfixes": "find . -type f -name '*.abap' -exec sed -i -e 's/ RAISE EXCEPTION TYPE cx_sy_itab_line_not_found/ ASSERT 1 = 0/g' {} + ",
       "downport": "abaplint --fix .github/abaplint/abap_702.jsonc && npm run syfixes && cp -f .github/abaplint/abap_702.jsonc abaplint.jsonc && npm run abaplintpathfix",
       "init_downport": "git clone --branch 702 https://github.com/abap2UI5/abap2UI5 && cp -r abap2UI5/src src",
-      "cleanup_downport": "rm -rf abap2UI5 && rm -rf src/src",
-      "init_cloud": "git clone --branch main https://github.com/abap2UI5/abap2UI5 abap2UI5_cloud && cp -f abap2UI5_cloud/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap",
-      "cleanup_cloud": "rm -rf abap2UI5_cloud"
+      "cleanup_downport": "rm -rf abap2UI5 && rm -rf src/src"
     },
     "repository": {
       "type": "git",

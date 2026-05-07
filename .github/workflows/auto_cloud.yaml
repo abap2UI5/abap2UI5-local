@@ -12,31 +12,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - name: Checkout Repository
+    - name: Checkout cloud branch
       uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        ref: cloud
+        fetch-depth: 0
 
-    - run: npm ci
-    - run: npm run init_cloud
-    - run: npm run cleanup_cloud
+    - name: Copy locals_imp from standard
+      run: git checkout origin/standard -- src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
 
-    - name: Commit Changes
+    - name: Commit and push
       run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add .
-        git commit -m "Cloud changes" || echo "No changes to commit"
-
-    - name: Switch to Branch cloud
-      run: git checkout -B cloud
-
-    - name: Push Changes
-      uses: ad-m/github-push-action@v0.8.0
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: cloud
-        force: true
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Sync z2ui5_cl_abap2ui5_local locals_imp from standard"
+          git push origin cloud
+        fi
