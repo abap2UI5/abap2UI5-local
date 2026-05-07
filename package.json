@@ -20,12 +20,12 @@
     },
     "homepage": "https://github.com/abap2UI5/samples#readme",
     "devDependencies": {
-      "@abaplint/cli": "^2.113.86",
-      "@abaplint/database-sqlite": "^2.10.20",
-      "@abaplint/runtime": "^2.10.23",
-      "@abaplint/transpiler-cli": "^2.10.23"
+      "@abaplint/cli": "^2.119.14",
+      "@abaplint/database-sqlite": "^2.11.78",
+      "@abaplint/runtime": "^2.13.22",
+      "@abaplint/transpiler-cli": "^2.13.22"
     },
     "dependencies": {
-      "npm-check-updates": "^17.1.13"
+      "npm-check-updates": "^22.1.1"
     }
   }
