@@ -58,6 +58,10 @@ jobs:
           cd work
           npm ci
           npm run downport
+          # the downport rewrite can leave indentation-only lines behind;
+          # abapGit strips trailing blanks on pull, so drop them here to keep
+          # the pulled state identical to the branch content
+          find src -name '*.abap' -exec sed -i 's/[ \t]*$//' {} +
           npx abaplint
 
       - name: Push as single commit on top of main

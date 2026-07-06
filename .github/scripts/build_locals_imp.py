@@ -291,6 +291,10 @@ def main():
     src = rename_tables(src)
     src = restructure(src)
 
+    # abapGit strips trailing blanks when serializing, so any trailing
+    # whitespace here would show up as a diff right after pulling the branch
+    src = '\n'.join(line.rstrip() for line in src.split('\n'))
+
     output.write_text(src)
     version = re.search(r"CONSTANTS version TYPE string VALUE `([^`]+)`", src)
     print(f'written {output} ({src.count(chr(10))} lines, '
