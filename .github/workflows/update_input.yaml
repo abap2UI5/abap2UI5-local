@@ -1,0 +1,55 @@
+name: update_input
+
+# Overwrites input/ with the current upstream abap2UI5 sources, validates the
+# copy with abaplint (config abaplint.jsonc points at /input) and pushes the
+# refresh to main. The three generate_* workflows then rebuild the artifact
+# branches on top of the new main commit.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 1 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update_input
+  cancel-in-progress: false
+
+jobs:
+  update_input:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Checkout upstream abap2UI5
+        run: git clone --depth 1 https://github.com/abap2UI5/abap2UI5 /tmp/abap2UI5
+
+      - name: Overwrite input with latest upstream sources
+        run: |
+          rm -rf input
+          cp -r /tmp/abap2UI5/src input
+
+      - name: abaplint input
+        run: npx --yes @abaplint/cli@latest
+
+      - name: Commit and push to main
+        run: |
+          version=$(grep -oP "VALUE \`\K[0-9.]+" input/02/z2ui5_if_app.intf.abap)
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A input
+          if git diff --cached --quiet; then
+            echo "input: no changes"
+          else
+            git commit -m "update input to abap2UI5 v${version}"
+            git push origin main
+          fi
