@@ -1,0 +1,49 @@
+[![generate_standard](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/generate_standard.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/generate_standard.yaml)
+[![ABAP_STANDARD](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_STANDARD.yaml/badge.svg)](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/ABAP_STANDARD.yaml)
+[![last generated](https://img.shields.io/github/last-commit/abap2UI5/abap2UI5-local/standard?label=generated)](https://github.com/abap2UI5/abap2UI5-local/commits/standard)
+
+# abap2UI5-local — `standard` branch
+
+Ready-to-install [abap2UI5](https://github.com/abap2UI5/abap2UI5) for **Standard ABAP** (`if_http_extension`), generated from **abap2UI5 v{{VERSION}}**.
+
+The complete framework is merged into the local classes of a single HTTP handler class — no other abap2UI5 installation is required, and your app stays completely independent of the rest of the system.
+
+#### What's inside
+
+| Object | Type | Purpose |
+|---|---|---|
+| `Z2UI5_CL_ABAP2UI5_LOCAL` | Class | HTTP handler (`if_http_extension`) — the entire framework lives in its local classes |
+| `Z2UI5_T_99` | Table | Persistence for draft/session data |
+| `Z2UI5_T_98` | Table | Utility persistence |
+| `z2ui5_local` | ICF node | Service path `/sap/bc/z2ui5_local`, already wired to the handler class |
+
+#### Installation
+
+**Option A — abapGit (recommended):** pull this branch into your system.
+
+**Option B — copy & paste:** create the handler class manually and copy the sources from `src/`, then create the two tables (DDL in the [main README](https://github.com/abap2UI5/abap2UI5-local#persistence)) and an ICF node pointing to the class.
+
+#### Getting started
+
+1. Activate the ICF node in transaction `SICF`: locate `/sap/bc/z2ui5_local`, right-click → *Activate Service*.
+2. Create your app as a class (or local class) implementing `z2ui5_if_app` from the locals of the handler.
+3. Open it in the browser:
+
+```
+https://<host>:<port>/sap/bc/z2ui5_local?sap-client=<client>&app_start=<your_app_class>
+```
+
+#### Sibling branches
+
+| Branch | Use when |
+|---|---|
+| [`702`](https://github.com/abap2UI5/abap2UI5-local/tree/702) | Your system runs an old release (NW 7.02+) |
+| [`cloud`](https://github.com/abap2UI5/abap2UI5-local/tree/cloud) | You are on ABAP for Cloud / BTP ABAP Environment |
+
+#### About this branch
+
+This branch is **generated** — the [generate_standard](https://github.com/abap2UI5/abap2UI5-local/actions/workflows/generate_standard.yaml) workflow merges the upstream sources with [abapmerge](https://github.com/larshp/abapmerge), lints them with [abaplint](https://abaplint.org) and force-pushes the result as a single commit on top of `main`. Do not open pull requests against it: changes belong in [`main`](https://github.com/abap2UI5/abap2UI5-local) (tooling) or in [abap2UI5](https://github.com/abap2UI5/abap2UI5) (framework).
+
+#### Issues
+
+For bug reports or feature requests, please open an issue in the [abap2UI5 repository](https://github.com/abap2UI5/abap2UI5/issues).
