@@ -1,0 +1,276 @@
+CLASS z2ui5_cl_http_handler DEFINITION PUBLIC.
+
+  PUBLIC SECTION.
+    CLASS-METHODS run
+      IMPORTING
+        server TYPE REF TO object                    OPTIONAL
+        req    TYPE REF TO object                    OPTIONAL
+        res    TYPE REF TO object                    OPTIONAL
+          PREFERRED PARAMETER server.
+
+    CLASS-METHODS factory_cloud
+      IMPORTING
+        req           TYPE REF TO object
+        res           TYPE REF TO object
+      RETURNING
+        VALUE(result) TYPE REF TO z2ui5_cl_http_handler.
+
+    CLASS-METHODS factory
+      IMPORTING
+        server        TYPE REF TO object OPTIONAL
+        req           TYPE REF TO object OPTIONAL
+        res           TYPE REF TO object OPTIONAL
+          PREFERRED PARAMETER server
+      RETURNING
+        VALUE(result) TYPE REF TO z2ui5_cl_http_handler.
+
+    CLASS-METHODS _http_post
+      IMPORTING
+        is_req        TYPE z2ui5_cl_util_http=>ty_s_http_req
+      RETURNING
+        VALUE(result) TYPE z2ui5_if_core_types=>ty_s_http_res.
+
+    CLASS-METHODS _http_get
+      RETURNING
+        VALUE(result) TYPE z2ui5_if_core_types=>ty_s_http_res.
+
+    METHODS main.
+
+    CLASS-METHODS _main
+      IMPORTING
+        is_req        TYPE z2ui5_cl_util_http=>ty_s_http_req
+      RETURNING
+        VALUE(result) TYPE z2ui5_if_core_types=>ty_s_http_res.
+
+    CLASS-METHODS get_request
+      IMPORTING
+        server        TYPE REF TO object OPTIONAL
+        req           TYPE REF TO object OPTIONAL
+        res           TYPE REF TO object OPTIONAL
+          PREFERRED PARAMETER server
+      RETURNING
+        VALUE(result) TYPE z2ui5_cl_util_http=>ty_s_http_req.
+
+  PROTECTED SECTION.
+    CLASS-DATA so_sticky_handler TYPE REF TO z2ui5_cl_core_handler.
+
+    DATA mo_server TYPE REF TO z2ui5_cl_util_http.
+    DATA ms_req    TYPE z2ui5_cl_util_http=>ty_s_http_req.
+    DATA ms_res    TYPE z2ui5_if_core_types=>ty_s_http_res.
+
+    METHODS set_response.
+
+  PRIVATE SECTION.
+
+ENDCLASS.
+
+
+CLASS z2ui5_cl_http_handler IMPLEMENTATION.
+
+  METHOD main.
+
+    ms_req = mo_server->get_req_info( ).
+
+    CASE ms_req-method.
+      WHEN `HEAD`.
+        mo_server->set_session_stateful( 0 ).
+        RETURN.
+      WHEN OTHERS.
+        ms_res = _main( ms_req ).
+    ENDCASE.
+
+    set_response( ).
+
+  ENDMETHOD.
+
+  METHOD factory.
+
+    IF server IS BOUND.
+      result = NEW #( ).
+      result->mo_server = z2ui5_cl_util_http=>factory( server ).
+    ELSEIF req IS BOUND AND res IS BOUND.
+      result = factory_cloud( req = req
+                              res = res ).
+    ELSE.
+      RAISE EXCEPTION TYPE z2ui5_cx_util_error
+        EXPORTING val = `EMPTY_HTTP_HANDLER_CALL_ERROR`.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD factory_cloud.
+
+    result = NEW #( ).
+    result->mo_server = z2ui5_cl_util_http=>factory_cloud( req = req
+                                                           res = res ).
+
+  ENDMETHOD.
+
+  METHOD _http_get.
+
+    DATA(ls_config) = VALUE z2ui5_if_types=>ty_s_http_config( ).
+    z2ui5_cl_exit=>get_instance( )->set_config_http_get( CHANGING cs_config = ls_config ).
+
+    IF ls_config-styles_css IS INITIAL.
+      DATA(lv_style_css) = z2ui5_cl_app_style_css=>get( ).
+    ELSE.
+      lv_style_css = ls_config-styles_css.
+    ENDIF.
+
+    result-body = |<!DOCTYPE html>| && |\n| &&
+               |<html lang="en">| && |\n| &&
+               |<head>| && |\n| &&
+                  |{ ls_config-content_security_policy }\n| &&
+               |    <meta charset="UTF-8">| && |\n| &&
+               |    <meta name="viewport" content="width=device-width, initial-scale=1.0">| && |\n| &&
+               |    <meta http-equiv="X-UA-Compatible" content="IE=edge">| && |\n| &&
+                |<title>{ ls_config-title }</title>\n| &&
+                | <style>        html, body, body > div, #container, #container-uiarea \{\n| &&
+                |            height: 100%;\n| &&
+                |        \}</style> \n| &&
+                |<script>| && |\n| &&
+             |  function onInitComponent()\{| && |\n| &&
+             |    sap.ui.require.preload(\{| && |\n| &&
+             " The entries for all embedded frontend files come from the
+             " generated preload mapping (see .github/app2abap/trans2abap.js),
+             " so the list can never run out of sync with app/webapp.
+             z2ui5_cl_app_preload=>get( styles_css = lv_style_css
+                                        custom_js  = ls_config-custom_js ) &&
+             |    \});| && |\n| &&
+             |    sap.ui.require(["sap/ui/core/ComponentSupport"], function(ComponentSupport)\{| && |\n| &&
+             |     window.z2ui5 = \{ checkLocal : true \}; ComponentSupport.run();| && |\n| &&
+             |    \});| && |\n| &&
+             |  \}| && |\n| &&
+             |</script>| && |\n| &&
+                |<script id="sap-ui-bootstrap" data-sap-ui-resourceroots='\{ "z2ui5": "./" \}' data-sap-ui-oninit="onInitComponent" | && |\n| &&
+                 |data-sap-ui-compatVersion="edge" data-sap-ui-async="true" data-sap-ui-frameOptions="trusted" data-sap-ui-bindingSyntax="complex"| && |\n| &&
+                 |data-sap-ui-theme="{ ls_config-theme }" src="{ ls_config-src }"|.
+
+    LOOP AT ls_config-t_add_config REFERENCE INTO DATA(lr_config).
+      result-body = |{ result-body } { lr_config->n }='{ lr_config->v }'|.
+    ENDLOOP.
+
+    result-body          = result-body &&
+                 | ></script></head>| && |\n| &&
+                 |<body class="sapUiBody sapUiSizeCompact" id="content">| && |\n| &&
+                 |    <div data-sap-ui-component data-name="z2ui5" data-id="container" data-settings='\{"id" : "z2ui5"\}' data-handle-validation="true"></div>| && |\n| &&
+                 | </body></html>|.
+
+    result-status_code   = 200.
+    result-status_reason = `success`.
+
+  ENDMETHOD.
+
+  METHOD run.
+
+    DATA(lo_handler) = factory( server = server
+                                req    = req
+                                res    = res ).
+
+    lo_handler->main( ).
+
+  ENDMETHOD.
+
+  METHOD set_response.
+
+    mo_server->set_cdata( ms_res-body ).
+
+    DATA(ls_config) = VALUE z2ui5_if_types=>ty_s_http_config( ).
+    z2ui5_cl_exit=>get_instance( )->set_config_http_get( CHANGING cs_config = ls_config ).
+
+    LOOP AT ls_config-t_security_header INTO DATA(ls_header).
+      mo_server->set_header_field( n = ls_header-n
+                                   v = ls_header-v ).
+    ENDLOOP.
+
+    mo_server->set_status( code   = ms_res-status_code
+                           reason = ms_res-status_reason ).
+
+    " transform cookie into header-based contextid handling
+    DATA lv_contextid TYPE string.
+    IF ms_res-s_stateful-switched = abap_true.
+      mo_server->set_session_stateful( ms_res-s_stateful-active ).
+      IF mo_server->get_header_field( `sap-contextid-accept` ) = `header`.
+        lv_contextid = mo_server->get_response_cookie( `sap-contextid` ).
+        IF lv_contextid IS NOT INITIAL.
+          mo_server->delete_response_cookie( `sap-contextid` ).
+          mo_server->set_header_field( n = `sap-contextid`
+                                       v = lv_contextid ).
+        ENDIF.
+      ENDIF.
+    ELSE.
+      lv_contextid = mo_server->get_header_field( `sap-contextid` ).
+      IF lv_contextid IS NOT INITIAL.
+        mo_server->set_header_field( n = `sap-contextid`
+                                     v = lv_contextid ).
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD _http_post.
+    TRY.
+
+        IF so_sticky_handler IS NOT BOUND.
+          DATA(lo_post) = NEW z2ui5_cl_core_handler( is_req-body ).
+        ELSE.
+          lo_post = so_sticky_handler.
+          lo_post->mv_request_json = is_req-body.
+        ENDIF.
+
+        result = lo_post->main( ).
+
+        TRY.
+            DATA(li_app) = CAST z2ui5_if_app( lo_post->mo_action->mo_app->mo_app ).
+            IF li_app->check_sticky = abap_true.
+              so_sticky_handler = lo_post.
+            ELSE.
+              CLEAR so_sticky_handler.
+            ENDIF.
+          CATCH cx_root.
+            CLEAR so_sticky_handler.
+        ENDTRY.
+
+      CATCH cx_root INTO DATA(x).
+
+        DATA(lv_error_text) = x->get_text( ).
+        TRY.
+            DATA(ls_config) = VALUE z2ui5_if_types=>ty_s_http_config_post( ).
+            z2ui5_cl_exit=>get_instance( )->set_config_http_post( CHANGING cs_config = ls_config ).
+            IF ls_config-check_hide_error_details = abap_true.
+              lv_error_text = `An internal error occurred - error details are hidden by configuration (see z2ui5_if_exit->set_config_http_post)`.
+            ENDIF.
+          CATCH cx_root ##NO_HANDLER.
+        ENDTRY.
+
+        result = VALUE #( body          = |abap2UI5 Error: { lv_error_text }|
+                          status_code   = 500
+                          status_reason = `error` ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD _main.
+
+    z2ui5_cl_exit=>init_context( is_req ).
+
+    CASE is_req-method.
+      WHEN `GET`.
+        result = _http_get( ).
+      WHEN `POST`.
+        result = _http_post( is_req ).
+    ENDCASE.
+
+  ENDMETHOD.
+
+  METHOD get_request.
+
+    DATA(lo_handler) = factory( server = server
+                                req    = req
+                                res    = res ).
+
+    result-body   = lo_handler->mo_server->get_cdata( ).
+    result-method = lo_handler->mo_server->get_method( ).
+
+  ENDMETHOD.
+
+ENDCLASS.
