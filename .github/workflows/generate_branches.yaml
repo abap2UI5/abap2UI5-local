@@ -1,0 +1,103 @@
+name: generate_branches
+
+# Regenerates the three artifact branches (standard, 702, cloud) from the
+# current upstream abap2UI5 sources. main only carries the tooling; the
+# branches keep their own static files (handler class, table/service
+# definitions, lint configs) — this workflow just rebuilds the merged
+# locals_imp include on each of them.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 1 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate_branches
+  cancel-in-progress: false
+
+jobs:
+  generate_branches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main (tooling)
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Checkout standard branch
+        uses: actions/checkout@v4
+        with:
+          ref: standard
+          path: standard
+
+      - name: Checkout cloud branch
+        uses: actions/checkout@v4
+        with:
+          ref: cloud
+          path: cloud
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Checkout upstream abap2UI5
+        run: git clone --depth 1 https://github.com/abap2UI5/abap2UI5 /tmp/abap2UI5
+
+      - name: Read upstream version
+        id: version
+        run: echo "version=$(grep -oP "VALUE \`\K[0-9.]+" /tmp/abap2UI5/src/02/z2ui5_if_app.intf.abap)" >> "$GITHUB_OUTPUT"
+
+      - name: Build merged handler class
+        run: python3 main/.github/scripts/build_locals_imp.py /tmp/abap2UI5/src /tmp/locals_imp.abap
+
+      - name: Configure git author
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      # ------------------------------------------------------------ standard
+      - name: Update standard branch
+        run: |
+          cp /tmp/locals_imp.abap standard/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+          cd standard
+          npm ci
+          npx abaplint .github/abaplint/abap_standard.jsonc
+          git add src
+          if git diff --cached --quiet; then
+            echo "standard: no changes"
+          else
+            git commit -m "update merged handler class to abap2UI5 v${{ steps.version.outputs.version }}"
+            git push origin standard
+          fi
+
+      # ----------------------------------------------------------------- 702
+      - name: Generate 702 branch
+        run: |
+          cp -r standard 702work
+          cd 702work
+          npm run downport
+          npx abaplint
+          git checkout -B 702
+          git add .
+          git commit -m "generate 702 branch from abap2UI5 v${{ steps.version.outputs.version }}" || echo "702: no changes"
+          git push --force origin 702
+
+      # --------------------------------------------------------------- cloud
+      - name: Update cloud branch
+        run: |
+          cp /tmp/locals_imp.abap cloud/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+          cd cloud
+          npm ci
+          npx abaplint
+          git add src
+          if git diff --cached --quiet; then
+            echo "cloud: no changes"
+          else
+            git commit -m "update merged handler class to abap2UI5 v${{ steps.version.outputs.version }}"
+            git push origin cloud
+          fi
