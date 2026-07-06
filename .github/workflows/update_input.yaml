@@ -4,6 +4,11 @@ name: update_input
 # copy with abaplint (config abaplint.jsonc points at /input) and pushes the
 # refresh to main. The three generate_* workflows then rebuild the artifact
 # branches on top of the new main commit.
+#
+# The trigger_local workflow in abap2UI5/abap2UI5 performs the same input/
+# refresh on every push to its main branch (pushed here via deploy key), so
+# this repo follows upstream immediately. The monthly cron stays as a
+# safety net in case an upstream-side push is lost.
 
 on:
   workflow_dispatch:
