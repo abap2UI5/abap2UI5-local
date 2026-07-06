@@ -54,6 +54,7 @@ jobs:
       - name: Update and lint branch content
         run: |
           cp /tmp/locals_imp.abap work/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+          sed 's/{{VERSION}}/${{ steps.version.outputs.version }}/g' main/.github/readme/cloud.md > work/README.md
           cd work
           npm ci
           npx abaplint
