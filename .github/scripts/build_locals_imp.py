@@ -208,6 +208,13 @@ def main():
     src = run_abapmerge(upstream_src)
     src = strip_stub(src)
 
+    # abapmerge stamps the merge time into its marker interface; drop it so
+    # repeated runs produce identical output and the unchanged-tree check in
+    # the generate_* workflows can actually skip the push
+    src = re.sub(r'^(\* abapmerge \d+\.\d+\.\d+) - \S+$', r'\1', src, flags=re.M)
+    src = re.sub(r'(CONSTANTS c_merge_timestamp TYPE string VALUE )`[^`]*`',
+                 r'\1``', src)
+
     lines = src.split('\n')
     last_deferred = max(i for i, l in enumerate(lines)
                         if l.rstrip().endswith('DEFERRED.'))
