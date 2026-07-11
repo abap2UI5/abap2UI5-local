@@ -8,7 +8,8 @@ name: update_input
 # The trigger_local workflow in abap2UI5/abap2UI5 performs the same input/
 # refresh on every push to its main branch (pushed here via deploy key), so
 # this repo follows upstream immediately. The monthly cron stays as a
-# safety net in case an upstream-side push is lost.
+# safety net in case an upstream-side push is lost. Both sides run the same
+# script: .github/scripts/refresh_input.sh.
 
 on:
   workflow_dispatch:
@@ -38,23 +39,5 @@ jobs:
       - name: Checkout upstream abap2UI5
         run: git clone --depth 1 https://github.com/abap2UI5/abap2UI5 /tmp/abap2UI5
 
-      - name: Overwrite input with latest upstream sources
-        run: |
-          rm -rf input
-          cp -r /tmp/abap2UI5/src input
-
-      - name: abaplint input
-        run: npx --yes @abaplint/cli@latest
-
-      - name: Commit and push to main
-        run: |
-          version=$(grep -oP "VALUE \`\K[0-9.]+" input/02/z2ui5_if_app.intf.abap)
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -A input
-          if git diff --cached --quiet; then
-            echo "input: no changes"
-          else
-            git commit -m "update input to abap2UI5 v${version}"
-            git push origin main
-          fi
+      - name: Refresh input, lint and push
+        run: bash .github/scripts/refresh_input.sh /tmp/abap2UI5/src

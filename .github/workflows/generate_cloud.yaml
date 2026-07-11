@@ -1,9 +1,7 @@
 name: generate_cloud
 
-# Rebuilds the cloud branch: merges the sources from input/ on main into the
-# locals_imp include, lints the result and publishes the branch content as
-# exactly ONE commit on top of the current main head (force push). The branch
-# therefore always shows "1 commit ahead" of main and never behind.
+# Rebuilds the cloud branch via generate_branch.yaml, linted with the
+# default config.
 
 on:
   workflow_dispatch:
@@ -23,54 +21,7 @@ concurrency:
 jobs:
   generate_cloud:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout main (tooling + input)
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: main
-          path: main
-
-      - name: Checkout cloud branch (static files)
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: cloud
-          path: work
-          fetch-depth: 2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: '20'
-
-      - name: Read version
-        id: version
-        run: echo "version=$(grep -oP "VALUE \`\K[0-9.]+" main/input/02/z2ui5_if_app.intf.abap)" >> "$GITHUB_OUTPUT"
-
-      - name: Build merged handler class from input
-        run: python3 main/.github/scripts/build_locals_imp.py main/input /tmp/locals_imp.abap
-
-      - name: Update and lint branch content
-        run: |
-          cp /tmp/locals_imp.abap work/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
-          sed 's/{{VERSION}}/${{ steps.version.outputs.version }}/g' main/.github/readme/cloud.md > work/README.md
-          cd work
-          npm ci
-          npx abaplint
-
-      - name: Push as single commit on top of main
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          parent=$(git -C main rev-parse HEAD)
-          cd work
-          git fetch --no-tags --depth=1 origin "$parent"
-          git add -A
-          tree=$(git write-tree)
-          if [ "$tree" = "$(git rev-parse 'HEAD^{tree}' 2>/dev/null)" ] && [ "$parent" = "$(git rev-parse 'HEAD^' 2>/dev/null)" ]; then
-            echo "cloud: unchanged, skipping push"
-          else
-            commit=$(git commit-tree "$tree" -p "$parent" -m "update merged handler class to abap2UI5 v${{ steps.version.outputs.version }}")
-            git push --force origin "$commit:refs/heads/cloud"
-          fi
+    uses: ./.github/workflows/generate_branch.yaml
+    with:
+      branch: cloud
+      base_branch: cloud
