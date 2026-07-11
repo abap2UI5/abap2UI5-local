@@ -1,8 +1,0 @@
-npm-debug.log
-*.js.map
-.github
-test
-sample
-tsconfig.json
-/src/*
-.eslintrc.js
