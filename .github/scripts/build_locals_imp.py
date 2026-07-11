@@ -6,14 +6,9 @@ Pipeline:
      together with a stub report and merge them into one file via abapmerge.
   2. Strip the stub report statements from the merged output.
   3. Re-add the abap2UI5-local specific additions (zif_app / zcx_error).
-  4. Move the public TYPES/CONSTANTS of z2ui5_cl_util into z2ui5_cl_util_api and
-     rewrite the z2ui5_cl_util=> references inside the three util api class
-     definitions. Upstream declares these types in the subclass while the
-     superclass references them (legal for global classes, impossible to order
-     inside a single include), so the merged artifact needs them in the superclass.
-  5. Rename the persistence tables (z2ui5_t_01 -> z2ui5_t_99, z2ui5_t_91 -> z2ui5_t_98)
+  4. Rename the persistence tables (z2ui5_t_01 -> z2ui5_t_99, z2ui5_t_91 -> z2ui5_t_98)
      so the local variant stays independent of a regular abap2UI5 installation.
-  6. Rebuild the DEFERRED block and topologically sort all interface/class
+  5. Rebuild the DEFERRED block and topologically sort all interface/class
      definition blocks so every hard reference (inheritance, INTERFACES,
      component access, RAISING of exception classes) is defined before use.
 
@@ -98,73 +93,6 @@ def strip_stub(src: str) -> str:
             continue
         out.append(line)
     return '\n'.join(out)
-
-
-def code_part(line: str) -> str:
-    """Line content without full-line or inline comments."""
-    stripped = line.strip()
-    if stripped.startswith('"') or stripped.startswith('*'):
-        return ''
-    out = []
-    quote = None
-    for ch in line:
-        if quote:
-            out.append(ch)
-            if ch == quote:
-                quote = None
-        elif ch in ('`', "'"):
-            quote = ch
-            out.append(ch)
-        elif ch == '"':
-            break
-        else:
-            out.append(ch)
-    return ''.join(out).rstrip()
-
-
-def find_def_block(lines, name):
-    for i, line in enumerate(lines):
-        if re.match(rf'^CLASS {name} DEFINITION\b', line) \
-                and not line.rstrip().endswith('DEFERRED.'):
-            j = i
-            while not re.match(r'^ENDCLASS\s*\.\s*$', lines[j]):
-                j += 1
-            return i, j
-    raise AssertionError(f'definition of {name} not found')
-
-
-def move_util_types(src: str) -> str:
-    lines = src.split('\n')
-
-    # extract TYPES/CONSTANTS statements from z2ui5_cl_util's definition
-    start, end = find_def_block(lines, 'z2ui5_cl_util')
-    moved, keep = [], []
-    in_stmt = False
-    for line in lines[start:end + 1]:
-        if not in_stmt and re.match(r'^\s*(TYPES|CONSTANTS)\b', line):
-            in_stmt = True
-        if in_stmt:
-            moved.append(line)
-            if code_part(line).endswith('.'):
-                in_stmt = False
-        else:
-            keep.append(line)
-    assert not in_stmt and moved, 'TYPES extraction from z2ui5_cl_util failed'
-    lines[start:end + 1] = keep
-
-    # insert them at the top of z2ui5_cl_util_api's public section
-    start, end = find_def_block(lines, 'z2ui5_cl_util_api')
-    pub = next(i for i in range(start, end + 1)
-               if lines[i].strip() == 'PUBLIC SECTION.')
-    lines[pub + 1:pub + 1] = [''] + moved + ['']
-
-    # rewrite z2ui5_cl_util=> references inside the api class definitions
-    for cls in ('z2ui5_cl_util_api', 'z2ui5_cl_util_api_s', 'z2ui5_cl_util_api_c'):
-        start, end = find_def_block(lines, cls)
-        for i in range(start, end + 1):
-            lines[i] = re.sub(r'\b(z2ui5_cl_util)(\s*=>)', r'z2ui5_cl_util_api\2',
-                              lines[i], flags=re.I)
-    return '\n'.join(lines)
 
 
 def rename_tables(src: str) -> str:
@@ -287,7 +215,6 @@ def main():
              + ['', ''] + LOCAL_ADDITIONS.split('\n') + lines[last_deferred + 1:])
     src = '\n'.join(lines)
 
-    src = move_util_types(src)
     src = rename_tables(src)
     src = restructure(src)
 
