@@ -98,7 +98,7 @@ python3 .github/scripts/build_locals_imp.py input /tmp/locals_imp.abap
 
 #### Credits
 
-* Merged files created with [abapmerge](https://github.com/larshp/abapmerge) — this branch started as a fork of the abapmerge sources, which are kept here for reference
+* Merged files created with [abapmerge](https://github.com/larshp/abapmerge) (fetched from npm by `build_locals_imp.py`)
 * `702` branch created with [abaplint](https://abaplint.org)
 
 #### Compatibility

@@ -1,0 +1,108 @@
+name: generate_branch
+
+# Shared implementation for the generate_702/standard/cloud workflows:
+# takes the static files of the base branch, merges the sources from
+# input/ on main into the locals_imp include (optionally downported) and
+# publishes the branch content as exactly ONE commit on top of the current
+# main head (force push). The branch therefore always shows "1 commit
+# ahead" of main and never behind. Without a content change nothing is
+# pushed. The thin generate_<branch> callers provide the triggers and the
+# parameters.
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "Output branch to rebuild: standard | 702 | cloud"
+        required: true
+        type: string
+      base_branch:
+        description: "Branch providing the static files for the work tree"
+        required: true
+        type: string
+      lint_config:
+        description: "abaplint config passed to npx abaplint (empty = abaplint.jsonc)"
+        required: false
+        type: string
+        default: ''
+      do_downport:
+        description: "Downport the branch content before linting (702)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main (tooling + input)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout ${{ inputs.base_branch }} branch (static files)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.base_branch }}
+          path: work
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: work/package-lock.json
+
+      - name: Read version
+        id: version
+        run: echo "version=$(grep -oP "VALUE \`\K[0-9.]+" main/input/02/z2ui5_if_app.intf.abap)" >> "$GITHUB_OUTPUT"
+
+      - name: Build merged handler class from input
+        run: python3 main/.github/scripts/build_locals_imp.py main/input /tmp/locals_imp.abap
+
+      - name: Update branch content
+        run: |
+          cp /tmp/locals_imp.abap work/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+          sed 's/{{VERSION}}/${{ steps.version.outputs.version }}/g' 'main/.github/readme/${{ inputs.branch }}.md' > work/README.md
+          cd work
+          npm ci
+
+      - name: Downport branch content
+        if: inputs.do_downport
+        run: |
+          cd work
+          npm run downport
+          # the downport rewrite can leave indentation-only lines behind;
+          # abapGit strips trailing blanks on pull, so drop them here to keep
+          # the pulled state identical to the branch content
+          find src -name '*.abap' -exec sed -i 's/[ \t]*$//' {} +
+
+      - name: abaplint branch content
+        run: |
+          cd work
+          npx abaplint ${{ inputs.lint_config }}
+
+      - name: Push as single commit on top of main
+        env:
+          BRANCH: ${{ inputs.branch }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          parent=$(git -C main rev-parse HEAD)
+          cd work
+          git fetch --no-tags --depth=1 origin "$parent"
+          git fetch --no-tags --depth=2 origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" || true
+          git add -A
+          tree=$(git write-tree)
+          if [ "$tree" = "$(git rev-parse "origin/${BRANCH}^{tree}" 2>/dev/null)" ] && [ "$parent" = "$(git rev-parse "origin/${BRANCH}^" 2>/dev/null)" ]; then
+            echo "${BRANCH}: unchanged, skipping push"
+          else
+            commit=$(git commit-tree "$tree" -p "$parent" -m "update ${BRANCH} branch to abap2UI5 v${VERSION}")
+            git push --force origin "$commit:refs/heads/${BRANCH}"
+          fi
