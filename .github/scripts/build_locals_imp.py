@@ -5,7 +5,8 @@ Pipeline:
   1. Stage all upstream .clas.abap/.intf.abap files (incl. class locals, excl. testclasses)
      together with a stub report and merge them into one file via abapmerge.
   2. Strip the stub report statements from the merged output.
-  3. Re-add the abap2UI5-local specific additions (zif_app / zcx_error).
+  3. Re-add the abap2UI5-local specific additions (zif_app / zcx_error and the
+     z2ui5_cl_http_handler entry point, see LOCAL_ADDITIONS).
   4. Rename the persistence tables (z2ui5_t_01 -> z2ui5_t_99, z2ui5_t_91 -> z2ui5_t_98)
      so the local variant stays independent of a regular abap2UI5 installation.
   5. Rebuild the DEFERRED block and topologically sort all interface/class
@@ -26,6 +27,18 @@ from pathlib import Path
 STUB_NAME = 'z2ui5_merge_stub'
 ABAPMERGE = 'abapmerge@0.16.8'
 
+# Everything the folded include has to provide that upstream's sources do not.
+#
+# zif_app / zcx_error are the local stand-ins an app class is written against.
+#
+# z2ui5_cl_http_handler is the entry point: src/z2ui5_cl_abap2ui5_local on each
+# generated branch calls z2ui5_cl_http_handler=>run( ), and that name used to
+# arrive from upstream's src/99 - which the input refresh now drops, because a
+# self-contained fold has no use for the rest of that package. The name is a
+# contract between two files THIS repository owns, so the build supplies it
+# here rather than keeping a package alive for one empty subclass. Note that
+# the abaplint run in refresh_input.sh cannot see this: it resolves input/,
+# and the caller lives on the branch. The generate_* lint is the guard.
 LOCAL_ADDITIONS = '''CLASS zcx_error DEFINITION
   INHERITING FROM cx_static_check
   FINAL
@@ -43,6 +56,18 @@ INTERFACE zif_app .
   METHODS run RAISING zcx_error.
 
 ENDINTERFACE.
+
+CLASS z2ui5_cl_http_handler DEFINITION INHERITING FROM z2ui5_cl_ui5_http_handler.
+
+  PUBLIC SECTION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+ENDCLASS.
+
+CLASS z2ui5_cl_http_handler IMPLEMENTATION.
+
+ENDCLASS.
 
 '''
 
@@ -67,7 +92,7 @@ def run_abapmerge(upstream_src: Path) -> str:
         stub.write_text(
             f'REPORT {STUB_NAME}.\n\n'
             'START-OF-SELECTION.\n'
-            '  z2ui5_cl_http_handler=>run( ).\n'
+            '  z2ui5_cl_ui5_http_handler=>run( ).\n'
         )
         out = Path(tmp) / 'merged.abap'
         subprocess.run(
@@ -101,6 +126,54 @@ def rename_tables(src: str) -> str:
         src = re.sub(old.upper(), new.upper(), src)
         assert not re.search(old, src, re.I), f'{old} still referenced'
     return src
+
+
+def strip_comments(line: str) -> str:
+    """Drop the ABAP comment part of a line, respecting string literals.
+
+    The ordering below reads references out of the definition blocks, and a
+    reference that only appears in prose is not one: upstream's ABAP Doc says
+    things like "see z2ui5_cl_ui5_handler=>main_end" inside z2ui5_if_client,
+    which no compiler cares about but a plain regex happily turns into an edge
+    - and enough of those close a cycle that has no counterpart in the code.
+
+    Two comment forms: `*` in column 1 comments out the whole line, `"` starts
+    a comment that runs to the end of the line. A `"` inside a literal ('...',
+    `...` or |...|) is not a comment, hence the scan rather than a split.
+    """
+    if line.startswith('*'):
+        return ''
+    out = []
+    i, n = 0, len(line)
+    while i < n:
+        c = line[i]
+        if c == '"':
+            break
+        if c in ("'", '`'):
+            i += 1
+            while i < n:
+                if line[i] == c:
+                    if i + 1 < n and line[i + 1] == c:  # doubled = escaped
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                i += 1
+            continue
+        if c == '|':
+            i += 1
+            while i < n:
+                if line[i] == '\\':  # escapes \| \{ \} \\ inside a template
+                    i += 2
+                    continue
+                if line[i] == '|':
+                    i += 1
+                    break
+                i += 1
+            continue
+        out.append(c)
+        i += 1
+    return ''.join(out)
 
 
 def restructure(src: str) -> str:
@@ -165,7 +238,7 @@ def restructure(src: str) -> str:
 
     deps = {}
     for name, blk in blocks.items():
-        text = '\n'.join(blk).lower()
+        text = '\n'.join(strip_comments(l) for l in blk).lower()
         wants = set()
         for other in blocks:
             if other == name:
@@ -186,7 +259,16 @@ def restructure(src: str) -> str:
     while remaining:
         ready = sorted((k for k, v in remaining.items()
                         if not (v & set(remaining))), key=str.lower)
-        assert ready, f'dependency cycle among: {sorted(remaining)}'
+        if not ready:
+            # Name the edges, not just the members: the member list alone says
+            # nothing about which reference has to go, and this assert is the
+            # only thing the workflow log shows.
+            edges = '\n'.join(
+                f'  {k} -> {o}'
+                for k in sorted(remaining)
+                for o in sorted(remaining[k] & set(remaining)))
+            raise AssertionError(
+                f'dependency cycle among {len(remaining)} definitions:\n{edges}')
         for r in ready:
             ordered.append(r)
             del remaining[r]
