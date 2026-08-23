@@ -30,6 +30,28 @@ cd "$(dirname "$0")/../.."
 rm -rf input
 cp -r "$upstream_src" input
 
+# src/99 is upstream's FROZEN package: the superseded view builders
+# (z2ui5_cl_xml_view, z2ui5_cl_xml_view_cc), the old HTTP handler, the
+# seventeen built-in popups and two retired interfaces. A self-contained local
+# handler has no use for any of it, and every byte of it lands in the folded
+# class, so it is dropped here rather than carried and ignored.
+#
+# One exception, and it is measured rather than assumed: z2ui5_if_exit is the
+# only symbol under 99 that live code still references. z2ui5_cl_ui5_user_exit
+# types a CLASS-DATA against it (gi_user_exit_dep) so an exit written against
+# the superseded interface keeps being found and called - the compatibility
+# promise of the rename. Dropping it too would be a framework decision, not a
+# packaging one, so it stays until upstream retires that fallback.
+#
+# Checked by the abaplint run below, which resolves the whole copy: if a
+# future upstream change adds a reference into 99, this fails here instead of
+# in somebody's system.
+find input/99 -mindepth 1 -maxdepth 1 \
+     ! -name 'package.devc.xml' \
+     ! -name 'z2ui5_if_exit.intf.abap' \
+     ! -name 'z2ui5_if_exit.intf.xml' \
+     -exec rm -rf {} +
+
 npx --yes @abaplint/cli@latest
 
 version=$(grep -oP "VALUE \`\K[0-9.]+" input/02/z2ui5_if_app.intf.abap)
