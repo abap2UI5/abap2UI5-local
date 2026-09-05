@@ -1,0 +1,22 @@
+CLASS z2ui5_cl_abap2ui5_local DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+  interfaces IF_HTTP_SERVICE_EXTENSION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS z2ui5_cl_abap2ui5_local IMPLEMENTATION.
+
+  method IF_HTTP_SERVICE_EXTENSION~HANDLE_REQUEST.
+
+    z2ui5_cl_http_handler=>run( req = request res = response ).
+
+  ENDMETHOD.
+
+ENDCLASS.
