@@ -1,6 +1,6 @@
 {
     "global": {
-      "files": "/src/**/*.*"
+      "files": "/../../src/**/*.*"
     },
     "dependencies": [
       {
@@ -10,7 +10,7 @@
       }
     ],
     "syntax": {
-      "version": "v702",
+      "version": "v750",
       "errorNamespace": "."
     },
     "rules": {
