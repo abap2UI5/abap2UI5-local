@@ -1,9 +1,0 @@
-# main carries no npm manifest (the pipeline pins abapmerge inside
-# build_locals_imp.py and runs abaplint via npx); keep the GitHub
-# Actions pinned versions up to date instead.
-version: 2
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "monthly"

@@ -1,16 +1,16 @@
 {
     "global": {
-      "files": "/src/**/*.*"
+      "files": "/../../src/**/*.*"
     },
     "dependencies": [
       {
-        "url": "https://github.com/open-abap/open-abap-core",
+        "url": "https://github.com/abapedia/steampunk-2305-api",
         "folder": "/deps",
         "files": "/src/**/*.*"
       }
     ],
     "syntax": {
-      "version": "v702",
+      "version": "cloud",
       "errorNamespace": "."
     },
     "rules": {
