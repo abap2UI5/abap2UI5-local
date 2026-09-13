@@ -1,6 +1,3 @@
-build/
-node_modules/
-coverage
-.nyc_output
-.vscode/
-/*.abap
+downport
+node_modules
+output
