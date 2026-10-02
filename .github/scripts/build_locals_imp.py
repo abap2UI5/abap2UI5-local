@@ -9,7 +9,8 @@ Pipeline:
      z2ui5_cl_http_handler entry point, see LOCAL_ADDITIONS).
   4. Rename the persistence tables (z2ui5_t_01 -> z2ui5_t_99, z2ui5_t_91 -> z2ui5_t_98)
      so the local variant stays independent of a regular abap2UI5 installation.
-  5. Rebuild the DEFERRED block and topologically sort all interface/class
+  5. Switch off the user exit lookup (see disable_exit_lookup).
+  6. Rebuild the DEFERRED block and topologically sort all interface/class
      definition blocks so every hard reference (inheritance, INTERFACES,
      component access, RAISING of exception classes) is defined before use.
 
@@ -125,6 +126,38 @@ def rename_tables(src: str) -> str:
         src = re.sub(old, new, src)
         src = re.sub(old.upper(), new.upper(), src)
         assert not re.search(old, src, re.I), f'{old} still referenced'
+    return src
+
+
+EXIT_LOOKUP = re.compile(
+    r'^([ \t]*METHOD exit_class_lookup[ \t]*\.)[^\n]*\n.*?^([ \t]*ENDMETHOD[ \t]*\.)',
+    re.M | re.S | re.I)
+
+
+def disable_exit_lookup(src: str) -> str:
+    """Make z2ui5_cl_ui5_user_exit=>exit_class_lookup name no exit class.
+
+    Upstream finds the user exit by asking the class repository for the
+    classes implementing Z2UI5_IF_UI5_EXIT / Z2UI5_IF_EXIT. In the folded
+    handler both interfaces are LOCAL interfaces of the class pool, and the
+    repository only knows GLOBAL classes - so on a system that also carries a
+    regular abap2UI5 installation the lookup returns that installation's exit
+    (e.g. ZCL_ABAP2UI5_CONFIG). Its instance implements the global interface,
+    the cast to the local one fails, and since upstream fails closed on an
+    exit it cannot instantiate, every request ends in a 500
+    (CX_SY_MOVE_CAST_ERROR). A global class can never be an exit of the local
+    copy, so the lookup is cut off here: the local handler runs on the shipped
+    defaults, independent of any other installation.
+    """
+    src, count = EXIT_LOOKUP.subn(
+        r'\1\n\n'
+        r'    " abap2UI5-local: the exit interfaces are local to this class pool,\n'
+        r'    " a global class found in the repository cannot implement them\n'
+        r'    " (see build_locals_imp.py, disable_exit_lookup)\n'
+        r'    CLEAR result.\n\n'
+        r'\2',
+        src)
+    assert count == 1, f'exit_class_lookup found {count} times, expected 1'
     return src
 
 
@@ -305,6 +338,7 @@ def main():
     src = '\n'.join(lines)
 
     src = rename_tables(src)
+    src = disable_exit_lookup(src)
     src = restructure(src)
 
     # abapGit strips trailing blanks when serializing, so any trailing
