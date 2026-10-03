@@ -27,7 +27,8 @@ it, with nothing in the history to say why the fix vanished.
 ## What this repository does own
 
 Its own machinery and its own documentation: the workflows and scripts under
-`.github/`, `abaplint.jsonc`, `README.md`, this file, and `SECURITY.md`. Those
+`.github/`, `abaplint.jsonc`, `.gitattributes`, `README.md`, this file, and
+`SECURITY.md`. Those
 are the legitimate reason to open a pull request here, and they must target
 `main` — every other branch is generated and rebuilt from scratch.
 

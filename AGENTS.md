@@ -31,7 +31,7 @@ The refresh then brings it here.
 - **What this repository does own** is its machinery and its documentation:
   - `.github/workflows/` and `.github/scripts/`
   - the branch README templates in `.github/readme/`
-  - `abaplint.jsonc`
+  - `abaplint.jsonc` and `.gitattributes`
   - `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and this file
 
   Pull requests for these target `main`.
@@ -48,7 +48,8 @@ The refresh then brings it here.
 | `.github/workflows/update_input.yaml` | The refresh from this side (monthly cron and *Run workflow*). It files an issue when a scheduled run fails |
 | `.github/workflows/generate_branch.yaml` | The shared, `workflow_call` implementation of one branch rebuild |
 | `.github/workflows/generate_{standard,702,cloud}.yaml` | Thin callers of `generate_branch.yaml`. They run on a push to `main`, after a successful `update_input`, and by hand |
-| `.github/dependabot.yml` | GitHub Actions updates only. `main` has no npm manifest |
+| `.github/dependabot.yml` | GitHub Actions updates only, monthly and grouped. `main` has no npm manifest. The third-party actions are pinned to a commit SHA with the version in a trailing comment |
+| `.gitattributes` | LF for all text files. It applies to commits made on `main` (the refresh included), never to the generated branches, which are committed from a checkout of their base branch |
 
 ## The refresh
 
@@ -135,4 +136,6 @@ run `npm ci` and the branch's lint there:
 The `generate_*` workflows run on every push to `main` and rebuild all
 three branches, so a change merged there reaches the branches right away.
 
-All text files are LF-only.
+All text files are LF-only, enforced on `main` by `.gitattributes`.
+abap2UI5 holds its `src/` to LF with the same attributes, so the refresh
+copies LF files and the attributes change nothing in `input/`.

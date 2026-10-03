@@ -1,0 +1,17 @@
+# Normalize line endings to LF for all text files (abapGit + tooling expect LF)
+#
+# input/ is abap2UI5's src/, copied in by .github/scripts/refresh_input.sh;
+# abap2UI5 holds it to LF with the same attributes, so the copy is LF already
+# and this file changes nothing in it. The generated branches (standard, 702,
+# cloud) are committed from a checkout of their base branch, not of main, so
+# this file does not reach them.
+* text=auto eol=lf
+*.abap text eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.md text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
