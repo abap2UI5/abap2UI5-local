@@ -1,0 +1,34 @@
+name: auto_cloud
+
+on:
+  push:
+    branches: [standard]
+
+permissions:
+  contents: write
+
+jobs:
+  auto_cloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout cloud branch
+      uses: actions/checkout@v4
+      with:
+        ref: cloud
+        fetch-depth: 0
+
+    - name: Copy locals_imp from standard
+      run: git checkout origin/standard -- src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+
+    - name: Commit and push
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Sync z2ui5_cl_abap2ui5_local locals_imp from standard"
+          git push origin cloud
+        fi
