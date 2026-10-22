@@ -52,7 +52,9 @@ find input/99 -mindepth 1 -maxdepth 1 \
      ! -name 'z2ui5_if_exit.intf.xml' \
      -exec rm -rf {} +
 
-npx --yes @abaplint/cli@latest
+# the range abap2UI5 itself pins (package.json there): an abaplint release
+# must not turn this refresh red, or green, on its own
+npx --yes @abaplint/cli@^2.120.76
 
 version=$(grep -oP "VALUE \`\K[0-9.]+" input/02/z2ui5_if_app.intf.abap)
 git config user.name 'github-actions[bot]'
