@@ -65,9 +65,21 @@ jobs:
       - name: Build merged handler class from input
         run: python3 main/.github/scripts/build_locals_imp.py main/input /tmp/locals_imp.abap
 
+      # The main README's hand-DDL of z2ui5_t_99 is rendered from the TABL in
+      # input/; a refresh that changes the table's columns fails here until
+      # `table_ddl.py --write README.md` is run on main, instead of shipping a
+      # class that reads a column the README does not tell the user to create
+      - name: Check the README DDL against the shipped table definition
+        run: python3 main/.github/scripts/table_ddl.py main/input/01/01/z2ui5_t_01.tabl.xml --check main/README.md
+
       - name: Update branch content
         run: |
           cp /tmp/locals_imp.abap work/src/z2ui5_cl_abap2ui5_local.clas.locals_imp.abap
+          # z2ui5_t_98 is a static file of the base branches that nothing in
+          # the fold reads (build_locals_imp.py asserts it); it is dropped from
+          # the generated tree rather than from the base branches, which are
+          # never pushed to by hand (AGENTS.md)
+          rm -f work/src/z2ui5_t_98.tabl.xml
           sed 's/{{VERSION}}/${{ steps.version.outputs.version }}/g' 'main/.github/readme/${{ inputs.branch }}.md' > work/README.md
           cd work
           npm ci

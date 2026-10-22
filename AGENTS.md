@@ -44,6 +44,7 @@ The refresh then brings it here.
 | `abaplint.jsonc` | Lints `input/` at `v750` against `abapedia/steampunk-2305-api-intersect-702`. `input/00` is in `noIssues` |
 | `.github/scripts/refresh_input.sh` | The refresh: copy `src/`, prune `input/99`, abaplint, commit, push to `main` |
 | `.github/scripts/build_locals_imp.py` | Builds `z2ui5_cl_abap2ui5_local.clas.locals_imp.abap` from `input/` |
+| `.github/scripts/table_ddl.py` | Renders the README's DDL of `z2ui5_t_99` from `input/01/01/z2ui5_t_01.tabl.xml`; `--check` is a step of the generation |
 | `.github/readme/{standard,702,cloud}.md` | The README template of each generated branch. `{{VERSION}}` is filled in by the generation |
 | `.github/workflows/update_input.yaml` | The refresh from this side (monthly cron and *Run workflow*). It files an issue when a scheduled run fails |
 | `.github/workflows/generate_branch.yaml` | The shared, `workflow_call` implementation of one branch rebuild |
@@ -100,10 +101,16 @@ which is documented in the script:
   `zcx_error`, and the entry point `z2ui5_cl_http_handler`. The branch's
   handler class calls `z2ui5_cl_http_handler=>run( )`, and that name is a
   contract between two files this repository owns.
-- **The persistence tables are renamed** `z2ui5_t_01` → `z2ui5_t_99` and
-  `z2ui5_t_91` → `z2ui5_t_98`. That keeps the local handler independent of a
-  regular installation in the same system, and the README's DDL names the
-  same tables.
+- **The persistence table is renamed** `z2ui5_t_01` → `z2ui5_t_99`. That
+  keeps the local handler independent of a regular installation in the same
+  system, and the README's DDL names the same table - rendered from
+  `input/01/01/z2ui5_t_01.tabl.xml` by `.github/scripts/table_ddl.py`, which
+  `generate_branch.yaml` runs in `--check` mode (`--write README.md`
+  refreshes the block). The second rename, `z2ui5_t_91` → `z2ui5_t_98`, is a
+  guard only: the one upstream user of `z2ui5_t_91` is in `src/99`, which the
+  refresh drops, and the script asserts the fold references neither name.
+  `z2ui5_t_98` shipped on the branches for years without a reader; the
+  generation deletes the sidecar from the branch tree.
 - **The user exit lookup is switched off** (`disable_exit_lookup`). A global
   exit class of a regular installation cannot implement the folded
   handler's local interfaces, and finding one turned every request into a
@@ -120,7 +127,8 @@ There is no `package.json` on `main`. Before pushing a change to the
 machinery, run on `main`:
 
 ```bash
-npx --yes @abaplint/cli@latest            # what refresh_input.sh runs: input/ against abaplint.jsonc
+npx --yes @abaplint/cli@^2.120.76         # what refresh_input.sh runs: input/ against abaplint.jsonc (the range abap2UI5 pins)
+python3 .github/scripts/table_ddl.py input/01/01/z2ui5_t_01.tabl.xml --check README.md
 python3 .github/scripts/build_locals_imp.py input /tmp/locals_imp.abap   # needs Node for npx abapmerge
 ```
 
