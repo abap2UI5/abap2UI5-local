@@ -7,8 +7,9 @@ Pipeline:
   2. Strip the stub report statements from the merged output.
   3. Re-add the abap2UI5-local specific additions (zif_app / zcx_error and the
      z2ui5_cl_http_handler entry point, see LOCAL_ADDITIONS).
-  4. Rename the persistence tables (z2ui5_t_01 -> z2ui5_t_99, z2ui5_t_91 -> z2ui5_t_98)
-     so the local variant stays independent of a regular abap2UI5 installation.
+  4. Rename the persistence table (z2ui5_t_01 -> z2ui5_t_99) so the local variant
+     stays independent of a regular abap2UI5 installation, and assert the fold
+     references no other table (see TABLE_RENAMES).
   5. Switch off the user exit lookup (see disable_exit_lookup).
   6. Rebuild the DEFERRED block and topologically sort all interface/class
      definition blocks so every hard reference (inheritance, INTERFACES,
@@ -74,8 +75,19 @@ ENDCLASS.
 
 TABLE_RENAMES = [
     ('z2ui5_t_01', 'z2ui5_t_99'),
+    # A guard, not a table the branches need: upstream's only user of
+    # z2ui5_t_91 is z2ui5_cl_util_db in src/99, which refresh_input.sh drops,
+    # so the fold has carried no reference to z2ui5_t_98 since. The rename
+    # stays so that an upstream change which brings z2ui5_t_91 back into live
+    # code is renamed consistently - and rename_tables asserts below that the
+    # fold references no table outside TABLES_SHIPPED, so that change
+    # stops the build instead of shipping a class that reads a table no
+    # README names.
     ('z2ui5_t_91', 'z2ui5_t_98'),
 ]
+
+# The tables the branches ship a TABL for and the README has DDL for.
+TABLES_SHIPPED = {'z2ui5_t_99'}
 
 
 def run_abapmerge(upstream_src: Path) -> str:
@@ -126,6 +138,13 @@ def rename_tables(src: str) -> str:
         src = re.sub(old, new, src)
         src = re.sub(old.upper(), new.upper(), src)
         assert not re.search(old, src, re.I), f'{old} still referenced'
+    # in code only: z2ui5_cl_ui5_llm_guide carries the app guide as string
+    # literals, and the guide names tables an app may create for itself
+    code = re.sub(r"`[^`\n]*`|'[^'\n]*'|\|[^|\n]*\||^\s*\*.*$|\".*$", '', src, flags=re.M)
+    referenced = {m.lower() for m in re.findall(r'\bz2ui5_t_\d+\b', code, re.I)}
+    assert referenced <= TABLES_SHIPPED, (
+        f'the fold references {sorted(referenced - TABLES_SHIPPED)}, which no branch ships a '
+        'table for - add the TABL to the base branches and the DDL to the README first')
     return src
 
 

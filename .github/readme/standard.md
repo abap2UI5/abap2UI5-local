@@ -21,7 +21,7 @@ The complete framework is merged into the local classes of a single HTTP handler
 
 **Option A — abapGit (recommended):** pull this branch into your system.
 
-**Option B — copy & paste:** create the handler class manually and copy the sources from `src/`, then create the two tables (DDL in the [main README](https://github.com/abap2UI5/abap2UI5-local#persistence)) and an ICF node pointing to the class.
+**Option B — copy & paste:** create the handler class manually and copy the sources from `src/`, then create the table (DDL in the [main README](https://github.com/abap2UI5/abap2UI5-local#persistence)) and an ICF node pointing to the class.
 
 #### Getting started
 
