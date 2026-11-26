@@ -49,6 +49,8 @@ The refresh then brings it here.
 | `.github/workflows/update_input.yaml` | The refresh from this side (monthly cron and *Run workflow*). It files an issue when a scheduled run fails |
 | `.github/workflows/generate_branch.yaml` | The shared, `workflow_call` implementation of one branch rebuild |
 | `.github/workflows/generate_{standard,702,cloud}.yaml` | Thin callers of `generate_branch.yaml`. They run on a push to `main`, after a successful `update_input`, and by hand |
+| `.github/workflows/check_rename.yaml`, `build_rename.yaml` | The namespace rename of the installed branches `standard` and `702`, see "The namespace rename" |
+| `.github/scripts/rename.mjs`, `rename_prepare.sh` | The shared rename of every renameable abap2UI5 repository (a byte copy - change it there, in all of them), and the step that puts it into a branch checkout |
 | `.github/dependabot.yml` | GitHub Actions updates only, monthly and grouped. `main` has no npm manifest. The third-party actions are pinned to a commit SHA with the version in a trailing comment |
 | `.gitattributes` | LF for all text files. It applies to commits made on `main` (the refresh included), never to the generated branches, which are committed from a checkout of their base branch |
 
@@ -122,6 +124,35 @@ which is documented in the script:
 - **The script stops on its assertions.** An upstream change that breaks one
   of these assumptions stops the build. Fix the cause and leave the
   assertion in place.
+
+## The namespace rename
+
+Every repository of the abap2UI5 ecosystem renames into another namespace;
+here that is a rename of the **installed branches**, because `input/` is
+never installed and is folded into local classes anyway. What a rename
+changes is the handler class `z2ui5_cl_abap2ui5_local`, the table
+`z2ui5_t_99` and the ICF node `z2ui5_local` - the folded framework is local
+classes of the handler and never collides with a second installation.
+
+`check_rename.yaml` (after every `generate_standard` / `generate_702`, and by
+hand) checks out `standard` and `702`, prepares each with
+`.github/scripts/rename_prepare.sh` (copies the shared
+`.github/scripts/rename.mjs` in, installs `@abaplint/cli` 2.120.120, limits
+the name to 9 characters - the ICF node has 11 of the 15 it may have) and
+renames it with the longest name allowed: the result has to lint at the
+branch's own release. `build_rename.yaml` (by hand: name, branch) pushes the
+renamed tree to `rename_<name>` or `rename_<name>_702`. Nothing of it is
+committed to a generated branch.
+
+Not covered, and why:
+
+- **`cloud`.** Its HTTP service (`HTTP`, `SCO2`, `SIA6`, `SUSH`) names the
+  handler class, and abaplint renames none of these objects - abap2UI5
+  backlog items `abaplint-rename-cloud-service-objects` and
+  `abaplint-rename-authorization-objects`.
+- **A registered namespace** (`/CA2UI5/`). abaplint renames the ICF node to
+  `/CA2UI5/LOCAL` and writes the URL `/sap/bc//ca2ui5/local/` -
+  `abaplint-rename-sicf-namespace`. Customer names only, until then.
 
 ## Validation
 
