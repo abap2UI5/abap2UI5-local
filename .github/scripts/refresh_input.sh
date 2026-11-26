@@ -30,27 +30,21 @@ cd "$(dirname "$0")/../.."
 rm -rf input
 cp -r "$upstream_src" input
 
-# src/99 is upstream's FROZEN package: the superseded view builders
-# (z2ui5_cl_xml_view, z2ui5_cl_xml_view_cc), the old HTTP handler, the
-# seventeen built-in popups and two retired interfaces. A self-contained local
-# handler has no use for any of it, and every byte of it lands in the folded
-# class, so it is dropped here rather than carried and ignored.
+# Two upstream packages are dropped, both by what they are, not by size:
 #
-# One exception, and it is measured rather than assumed: z2ui5_if_exit is the
-# only symbol under 99 that live code still references. z2ui5_cl_ui5_user_exit
-# types a CLASS-DATA against it (gi_user_exit_dep) so an exit written against
-# the superseded interface keeps being found and called - the compatibility
-# promise of the rename. Dropping it too would be a framework decision, not a
-# packaging one, so it stays until upstream retires that fallback.
+# - src/03 (since 1.151.0) is the INSTALLATION package: the ICF node
+#   /sap/bc/z2ui5, its handler z2ui5_cl_ui5_icf_handler and the BSP Z2UI5.
+#   This repository ships its own entry point, Z2UI5_CL_ABAP2UI5_LOCAL, so
+#   none of it belongs into the folded class.
+# - src/99 was the frozen legacy package. It left abap2UI5 with 1.151.0
+#   (the objects ship from abap2UI5/abap2UI5-ext, z2ui5_if_exit was
+#   deleted); an older upstream checkout still carries it, so it is dropped
+#   whole when present.
 #
-# Checked by the abaplint run below, which resolves the whole copy: if a
-# future upstream change adds a reference into 99, this fails here instead of
+# Checked by the abaplint run below, which resolves the whole copy: if live
+# code references anything in a dropped package, this fails here instead of
 # in somebody's system.
-find input/99 -mindepth 1 -maxdepth 1 \
-     ! -name 'package.devc.xml' \
-     ! -name 'z2ui5_if_exit.intf.abap' \
-     ! -name 'z2ui5_if_exit.intf.xml' \
-     -exec rm -rf {} +
+rm -rf input/03 input/99
 
 # the range abap2UI5 itself pins (package.json there): an abaplint release
 # must not turn this refresh red, or green, on its own

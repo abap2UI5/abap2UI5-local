@@ -40,9 +40,9 @@ The refresh then brings it here.
 
 | Path | |
 |---|---|
-| `input/` | Snapshot of abap2UI5 `src/` (generated, see above). `input/99` keeps only `z2ui5_if_exit` (see "The refresh") |
+| `input/` | Snapshot of abap2UI5 `src/` (generated, see above), without `03` and `99` (see "The refresh") |
 | `abaplint.jsonc` | Lints `input/` at `v750` against `abapedia/steampunk-2305-api-intersect-702`. `input/00` is in `noIssues` |
-| `.github/scripts/refresh_input.sh` | The refresh: copy `src/`, prune `input/99`, abaplint, commit, push to `main` |
+| `.github/scripts/refresh_input.sh` | The refresh: copy `src/`, drop `input/03` and `input/99`, abaplint, commit, push to `main` |
 | `.github/scripts/build_locals_imp.py` | Builds `z2ui5_cl_abap2ui5_local.clas.locals_imp.abap` from `input/` |
 | `.github/scripts/table_ddl.py` | Renders the README's DDL of `z2ui5_t_99` from `input/01/01/z2ui5_t_01.tabl.xml`; `--check` is a step of the generation |
 | `.github/readme/{standard,702,cloud}.md` | The README template of each generated branch. `{{VERSION}}` is filled in by the generation |
@@ -62,11 +62,13 @@ The refresh then brings it here.
   updates that hash (`sha256sum .github/scripts/refresh_input.sh`).
   Otherwise every upstream push fails its `trigger_local` run until the
   hash catches up. Say so in the pull request here.
-- **`input/99` is pruned on purpose.** It is abap2UI5's frozen package, and
-  the script drops all of it except `package.devc.xml` and `z2ui5_if_exit`,
-  which `z2ui5_cl_ui5_user_exit` still references. Dropping that one too
-  would be a framework decision. The abaplint run in the script is what
-  fails if upstream adds another reference into `99`.
+- **`input/03` and `input/99` are dropped on purpose.** `03` is abap2UI5's
+  installation package since 1.151.0 (ICF node, `z2ui5_cl_ui5_icf_handler`,
+  BSP `Z2UI5`); this repository has its own entry point. `99` was the frozen
+  legacy package, gone upstream since 1.151.0 (its objects ship from
+  abap2UI5-ext, `z2ui5_if_exit` was deleted) and dropped whole when an older
+  checkout still has it. The abaplint run in the script is what fails if
+  live code references a dropped package.
 - The commit message names the upstream commit as well as the version,
   because the version constant only moves on a release.
 
