@@ -4,3 +4,4 @@ coverage
 .nyc_output
 .vscode/
 /*.abap
+/.rename_run.json
