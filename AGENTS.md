@@ -51,7 +51,7 @@ The refresh then brings it here.
 | `.github/workflows/generate_{standard,702,cloud}.yaml` | Thin callers of `generate_branch.yaml`. They run on a push to `main`, after a successful `update_input`, and by hand |
 | `.github/workflows/check_rename.yaml`, `build_rename.yaml` | The namespace rename of the installed branches `standard` and `702`, see "The namespace rename" |
 | `.github/scripts/rename.mjs`, `rename_prepare.sh` | The shared rename of every renameable abap2UI5 repository (a byte copy - change it there, in all of them), and the step that puts it into a branch checkout |
-| `.github/dependabot.yml` | GitHub Actions updates only, monthly and grouped. `main` has no npm manifest. The third-party actions are pinned to a commit SHA with the version in a trailing comment |
+| `.github/dependabot.yml` | GitHub Actions updates only, monthly and grouped. `main` has no npm manifest. The third-party actions are pinned to a commit SHA with the version in a trailing comment; abap2UI5's own `report-scheduled-failure` action is pinned to an abap2UI5 `main` commit, moved by hand |
 | `.gitattributes` | LF for all text files. It applies to commits made on `main` (the refresh included), never to the generated branches, which are committed from a checkout of their base branch |
 
 ## The refresh
