@@ -45,4 +45,4 @@ jobs:
 
       - name: Report scheduled failure as issue
         if: failure() && github.event_name == 'schedule'
-        uses: abap2UI5/abap2UI5/.github/actions/report-scheduled-failure@main
+        uses: abap2UI5/abap2UI5/.github/actions/report-scheduled-failure@f5a82ef5b90ff81f1dd61c6d942411bdae89deaa # main 2026-11-27

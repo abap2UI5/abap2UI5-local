@@ -5,8 +5,11 @@
 # CONVENTIONS section 2); Dependabot moves the SHA and the comment
 # together. Grouped, so one pull request carries all minor/patch moves
 # and a major move comes on its own. The first-party
-# abap2UI5/abap2UI5/.github/actions/report-scheduled-failure@main is
-# a branch reference on purpose and is not something Dependabot moves.
+# abap2UI5/abap2UI5/.github/actions/report-scheduled-failure is pinned
+# by commit too (a commit of abap2UI5 main that carries the action, in
+# the comment) - a branch reference would run whatever main holds at the
+# time, with this repository's token. Move it by hand to a newer commit
+# that still has .github/actions/report-scheduled-failure/.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
